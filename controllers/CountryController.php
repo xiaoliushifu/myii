@@ -1,4 +1,5 @@
 <?php
+
 namespace app\controllers;
 
 #导入基准父控制器
@@ -7,6 +8,7 @@ use yii\web\Controller;
 use yii\data\Pagination;
 //导入模型类
 use app\models\Country;
+
 class CountryController extends Controller
 {
     public function actionIndex()
