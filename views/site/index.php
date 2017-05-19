@@ -2,13 +2,15 @@
 
 /* @var $this yii\web\View */
 
+//$this代表View 组件，view components
 $this->title = 'My Yii Application';
 ?>
 <div class="site-index">
 
     <div class="jumbotron">
         <h1>Congratulations!</h1>
-
+        <!-- 知道是哪个控制器渲染该视图 -->
+        The controller ID is: <?= $this->context->id ?>
         <p class="lead">You have successfully created your Yii-powered application.</p>
 
         <p><a class="btn btn-lg btn-success" href="http://www.yiiframework.com">Get started with Yii</a></p>

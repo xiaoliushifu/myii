@@ -5,6 +5,7 @@
  * @license http://www.yiiframework.com/license/
  */
 
+//定义一个资源包，用来管理css,js,font,图片等静态文件
 namespace app\assets;
 
 use yii\web\AssetBundle;
