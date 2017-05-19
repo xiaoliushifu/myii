@@ -14,12 +14,18 @@ class SiteController extends Controller
 {
     /**
      * @inheritdoc
+     * //过滤器本质上是一类特殊的 行为(方法)，所以使用过滤器和 使用 行为一样
+     * 预过滤器
+     * 后过滤器
+     * 依次执行过滤器，其中某个过滤器返回false,后续过滤器不再执行
      */
     public function behaviors()
     {
         return [
             'access' => [
+                //声明过滤器
                 'class' => AccessControl::className(),
+                //默认对该控制器的所有动作，这里通过only只许logout方法使用
                 'only' => ['logout'],
                 'rules' => [
                     [
@@ -30,6 +36,7 @@ class SiteController extends Controller
                 ],
             ],
             'verbs' => [
+                //声明过滤器
                 'class' => VerbFilter::className(),
                 'actions' => [
                     'logout' => ['post'],
@@ -61,6 +68,8 @@ class SiteController extends Controller
      */
     public function actionIndex()
     {
+        Yii::info('He2llo2');
+        var_dump(\Yii::$app->request->headers);
         return $this->render('index');
     }
 

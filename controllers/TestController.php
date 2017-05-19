@@ -1,6 +1,6 @@
 <?php
 
-namespace app\Controllers;
+namespace app\controllers;
 
 use Yii;
 use app\models\Test;
@@ -29,6 +29,17 @@ class TestController extends Controller
         ];
     }
 
+    //控制器第一个调用的方法
+    public function init()
+    {
+        var_dump(__FUNCTION__);
+    }
+    
+    //第二个调用的方法，且返回false时后续不再执行，直接返回响应
+    public function beforeAction($action)
+    {
+        var_dump($action);
+    }
     /**
      * Lists all Test models.
      * @return mixed
@@ -36,7 +47,6 @@ class TestController extends Controller
     public function actionIndex()
     {
         $searchModel = new TestSearch();
-        var_dump($searchModel);
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
 
         return $this->render('index', [
