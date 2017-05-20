@@ -68,8 +68,6 @@ class SiteController extends Controller
      */
     public function actionIndex()
     {
-        Yii::info('He2llo2');
-        var_dump(\Yii::$app->request->headers);
         return $this->render('index');
     }
 
