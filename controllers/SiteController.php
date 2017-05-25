@@ -70,6 +70,28 @@ class SiteController extends Controller
     {
         return $this->render('index');
     }
+    
+    /**
+     * Displays homepage.
+     *
+     * @return string
+     */
+    public function actionMail()
+    {
+        
+//         Yii::$app->mailer->compose('html',[
+//             'title'=>'标题啊'
+//         ])//compose参数可以使用视图和传参
+        Yii::$app->mailer->compose()
+        ->setFrom('liumingwei@yunzongnet.com')
+        ->setTo('872140945@qq.com')
+        ->setSubject('Message subject')
+        ->setTextBody('Plain text content')
+        ->setHtmlBody('<b>HTML content</b>')
+        ->send();
+        
+        //return $this->render('index');
+    }
 
     /**
      * Login action.

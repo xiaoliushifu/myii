@@ -13,6 +13,8 @@ class CountryController extends Controller
 {
     public function actionIndex()
     {
+        
+        //返回一个ActiveQuery对象
         $query = Country::find();
         
         $pagination = new Pagination([
@@ -21,7 +23,6 @@ class CountryController extends Controller
         ]);
         
         $countries = $query->orderBy('name')->offset($pagination->offset)->limit($pagination->limit)->all();
-        
         return $this->render('index',[
             'countries'=>$countries,
             'pagination'=>$pagination,
