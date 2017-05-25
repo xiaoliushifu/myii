@@ -12,5 +12,4 @@ use yii\widgets\LinkPager;
     </li>
 </ul>
 
-<?php var_dump(\yii::$app)?>
 <?= LinkPager::widget(['pagination'=>$pagination]) ?>
