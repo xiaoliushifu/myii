@@ -85,12 +85,21 @@ class SiteController extends Controller
         Yii::$app->mailer->compose()
         ->setFrom('liumingwei@yunzongnet.com')
         ->setTo('872140945@qq.com')
+        ->setCc('wangyi163mymail@163.com')
         ->setSubject('Message subject')
-        ->setTextBody('Plain text content')
-        ->setHtmlBody('<b>HTML content</b>')
+        ->setTextBody('Plain text content 你好')
+        ->setHtmlBody('<b>HTML content</b>联通')
         ->send();
         
-        //return $this->render('index');
+//         Yii::$app->mailer->compose()
+//         ->setFrom('laoli','liumingwei@yunzongnet.com')
+//         ->setTo('872140945@qq.com')
+//         ->setSubject('Message subject')
+//         ->setHtmlBody('<b>HTML content</b>联通2')
+//         ->send();
+//         $end = microtime(true);
+//         $duration = $end-$start;
+        return 'mail finished'.$duration;
     }
 
     /**
