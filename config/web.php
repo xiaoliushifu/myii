@@ -42,11 +42,18 @@ $config = [
              ],
         ],
         'log' => [
-            'traceLevel' => YII_DEBUG ? 3 : 0,
+            //下面这些属性，是在实例化logger类时，由反射解析依赖传入的
+            //'traceLevel' => YII_DEBUG ? 3 : 0,
+            'traceLevel' => 0,
+            'flushInterval' => 1,#配置输出到target的日志积累量
             'targets' => [
                 [
+                    //Target类的levels,exportInterval可以在反射过程的解析依赖时传入，达到初始化的目的。
                     'class' => 'yii\log\FileTarget',
+                    //因为这里写的日志级别是error和warning，所以我们手动打日志时，最好使用yii:error或者yii::warning
+                    //否则会因为级别不正确而被过滤掉，最终看不到日志信息。
                     'levels' => ['error', 'warning'],
+                    'exportInterval' => 1,#该target也可以配置积累量
                 ],
             ],
         ],
