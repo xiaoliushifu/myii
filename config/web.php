@@ -30,7 +30,16 @@ $config = [
             // send all mails to a file by default. You have to set
             // 'useFileTransport' to false and configure a transport
             // for the mailer to send real emails.
-            'useFileTransport' => true,//开启这个选项时只把邮件放到本地文件系统而不是真的发送
+            'useFileTransport' => false,//开启这个选项时只把邮件放到本地文件系统而不是真的发送
+            'transport' => [
+                 'class' => 'Swift_SmtpTransport',
+                 //'class' => 'Swift_SendmailTransport',
+                 'host' => 'mail.yunzongnet.com',
+                 'username' => 'liumingwei@yunzongnet.com',
+                 'password' => '6oA"3nC"',
+                 //'port' => '587',
+                 //'encryption' => 'tls',
+             ],
         ],
         'log' => [
             'traceLevel' => YII_DEBUG ? 3 : 0,
