@@ -42,7 +42,8 @@ $config = [
              ],
         ],
         'log' => [
-            //下面这些属性，是在实例化logger类时，由反射解析依赖传入的
+            //搞错了，下面这些属性，是实例化Dispatcher(不是logger)类，由反射解析依赖传入的
+            //又搞错了，这些属性最终还是给了logger类，因为Dispatcher通过__set方法，给logger设置了属性。哎
             //'traceLevel' => YII_DEBUG ? 3 : 0,
             'traceLevel' => 0,
             'flushInterval' => 1,#配置输出到target的日志积累量
@@ -52,7 +53,7 @@ $config = [
                     'class' => 'yii\log\FileTarget',
                     //因为这里写的日志级别是error和warning，所以我们手动打日志时，最好使用yii:error或者yii::warning
                     //否则会因为级别不正确而被过滤掉，最终看不到日志信息。
-                    'levels' => ['error', 'warning'],
+                    'levels' => ['error', 'warning','trace','info'],
                     'exportInterval' => 1,#该target也可以配置积累量
                 ],
             ],
@@ -90,5 +91,5 @@ if (YII_ENV_DEV) {
         //'allowedIPs' => ['127.0.0.1', '::1'],
     ];
 }
-
+//所有这些$config配置，都在Component::__construct()时，添加为yii/web/application对象的属性了。
 return $config;
