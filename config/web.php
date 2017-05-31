@@ -46,6 +46,11 @@ $config = [
             'traceLevel' => 0,#调用堆栈信息，明天再看
             'flushInterval' => 1,#配置输出到target的日志积累量
             'targets' => [
+                //同一个日志信息，可以打到不同的目标里
+                [
+                    'class' => 'yii\log\DbTarget',
+                    'levels' => ['error', 'warning'],
+                ],
                 [
                     'class' => 'yii\log\EmailTarget',
                    // 'mailer' => 'mailer', //默认就是使用yii自己的mailer
