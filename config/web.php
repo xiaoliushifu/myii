@@ -47,16 +47,22 @@ $config = [
             'flushInterval' => 1,#配置输出到target的日志积累量
             'targets' => [
                 [
-                    //Target类的levels,exportInterval可以在反射过程的解析依赖时传入，达到初始化的目的。
-                    'class' => 'yii\log\FileTarget',
-                    //'levels' => ['error', 'warning','trace','info'], #不指定，就是不被过滤
-                    'categories'=>['yii\db\*','application'],#一定要记录的日志类别
+                    'class' => 'yii\log\EmailTarget',
+                   // 'mailer' => 'mailer', //默认就是使用yii自己的mailer
+                    'levels' => ['error', 'warning','info'],
+                    'message' => [
+                                   'from' => ['liumingwei@yunzongnet.com'],
+                                   'to' => ['chenxiaolong1@yunzongnet.com'],
+                                   'BCC'=>['872140945@qq.com'],
+                                   'subject' => '以邮件形式发送日志',
+                    ],
+                    //'categories'=>['yii\db\*','application'],#一定要记录的日志类别
                     'except'=>['application'],#排除类别的日志
                     'exportInterval' => 1,#该target也可以配置积累量
                     'logVars'=>[],#禁止记录那些上下文信息，太多太乱了
-                    'prefix'=>function($message){#日志还能自定义前缀哟
-                        
-                    },
+                    'prefix'=>function($message){
+                        return 'custom prefix';
+                    }
                 ],
             ],
         ],
