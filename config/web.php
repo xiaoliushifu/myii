@@ -57,11 +57,10 @@ $config = [
                                    'subject' => '以邮件形式发送日志',
                     ],
                     //'categories'=>['yii\db\*','application'],#一定要记录的日志类别
-                    'except'=>['application'],#排除类别的日志
                     'exportInterval' => 1,#该target也可以配置积累量
-                    'logVars'=>[],#禁止记录那些上下文信息，太多太乱了
+                    'logVars'=>[],#不是每条日志都有这些信息，而是在最后真正输出到媒介时才补充这些信息到日志中
                     'prefix'=>function($message){
-                        return 'custom prefix';
+                        return '';
                     }
                 ],
             ],
