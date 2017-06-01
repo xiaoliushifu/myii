@@ -46,21 +46,9 @@ $config = [
             'traceLevel' => 0,#调用堆栈信息，明天再看
             'flushInterval' => 1,#配置输出到target的日志积累量
             'targets' => [
-                //同一个日志信息，可以打到不同的目标里
                 [
-                    'class' => 'yii\log\DbTarget',
+                    'class'=>'yii\log\FileTarget',
                     'levels' => ['error', 'warning'],
-                ],
-                [
-                    'class' => 'yii\log\EmailTarget',
-                   // 'mailer' => 'mailer', //默认就是使用yii自己的mailer
-                    'levels' => ['error', 'warning','info'],
-                    'message' => [
-                                   'from' => ['liumingwei@yunzongnet.com'],
-                                   'to' => ['chenxiaolong1@yunzongnet.com'],
-                                   'BCC'=>['872140945@qq.com'],
-                                   'subject' => '以邮件形式发送日志',
-                    ],
                     //'categories'=>['yii\db\*','application'],#一定要记录的日志类别
                     'exportInterval' => 1,#该target也可以配置积累量
                     'logVars'=>[],#不是每条日志都有这些信息，而是在最后真正输出到媒介时才补充这些信息到日志中
