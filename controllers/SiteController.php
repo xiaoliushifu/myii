@@ -83,16 +83,16 @@ class SiteController extends Controller
 //             'title'=>'标题啊'
 //         ])//compose参数可以使用视图和传参
         Yii::$app->mailer->compose()
-        ->setFrom('liumingwei@yunzongnet.com')
-        ->setTo('872140945@qq.com')
-        ->setCc('wangyi163mymail@163.com')
+        ->setFrom('xxxxx@xxxxx.com')
+        ->setTo('xxxxxx@qq.com')
+        ->setCc('xxxxxxxx@163.com')
         ->setSubject('Message subject')
         ->setTextBody('Plain text content 你好')
         ->setHtmlBody('<b>HTML content</b>联通')
         ->send();
         
 //         Yii::$app->mailer->compose()
-//         ->setFrom('laoli','liumingwei@yunzongnet.com')
+//         ->setFrom('laoli','xxxxxxx@xxxxxx.com')
 //         ->setTo('872140945@qq.com')
 //         ->setSubject('Message subject')
 //         ->setHtmlBody('<b>HTML content</b>联通2')
