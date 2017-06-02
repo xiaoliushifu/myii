@@ -9,5 +9,11 @@ require(__DIR__ . '/../vendor/autoload.php');
 require(__DIR__ . '/../vendor/yiisoft/yii2/Yii.php');
 
 //开始自己的配置，还可以有更多的配置文件
-$config = require(__DIR__ . '/../config/web.php');
+$config = yii\helpers\ArrayHelper::merge(
+    require(__DIR__ . '/../config/web.php'),
+    require(__DIR__ . '/../config/web-local.php')
+    );
+
+
+
 (new yii\web\Application($config))->run();
