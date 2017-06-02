@@ -68,7 +68,6 @@ class SiteController extends Controller
      */
     public function actionIndex()
     {
-        yii::error("Hello",__METHOD__);
         return $this->render('index');
     }
     
