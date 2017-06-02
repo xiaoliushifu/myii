@@ -39,11 +39,16 @@ class ContactForm extends Model
     {
         return [
             //'verifyCode' => 'Verification Code',
+            'name' => '姓名',
+            'email' => '邮箱',
+            'subject' => '主题',
+            'body' => '摘要',
             'verifyCode' => '验证码',
         ];
     }
 
     /**
+     * 用户通过页面编写内容，并提交表单，程序把用户提交的内容封装成邮件发送给管理员。
      * Sends an email to the specified email address using the information collected by this model.
      * @param string $email the target email address
      * @return bool whether the model passes validation
