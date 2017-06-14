@@ -336,21 +336,21 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
      */
     public function validate($attributeNames = null, $clearErrors = true)
     {
-		//����������Ĵ�����Ϣ
+		//先清除曾经的错误信息
         if ($clearErrors) {
             $this->clearErrors();
         }
 
-		//ע�⣬�����и�before���������������false��������ζ���Ϊ��֤ʧ���ˡ�return false��
+		//注意，这里有个before处理，它如果返回false，无论如何都认为验证失败了。return false嘛
         if (!$this->beforeValidate()) {
             return false;
         }
 
-		//�ٴλ�ȡһ�����г���
+		//再次获取一下所有场景
         $scenarios = $this->scenarios();
-		//��ǰ����
+		//当前场景
         $scenario = $this->getScenario();
-		//������ƥ������쳣
+		//场景不匹配就抛异常
         if (!isset($scenarios[$scenario])) {
             throw new InvalidParamException("Unknown scenario: $scenario");
         }
@@ -359,11 +359,11 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
             $attributeNames = $this->activeAttributes();
         }
 
-		//������Ծ����֤����rules���һ���У���������֤�����Ǹ÷����ĺ���
+		//遍历活跃的验证对象（rules里的一行行），进行验证。这是该方法的核心
         foreach ($this->getActiveValidators() as $validator) {
             $validator->validateAttributes($this, $attributeNames);
         }
-		//��֤�����ж����������������̣�Ҳ��һ�ֱ��˼������ƣ��������¼�
+		//验证过还有动作，类似于切面编程，也是一种编程思想与机制，类似于事件
         $this->afterValidate();
 
         return !$this->hasErrors();
@@ -699,7 +699,9 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
     public function setAttributes($values, $safeOnly = true)
     {
         if (is_array($values)) {
+			//获得当前场景下所有的属性
             $attributes = array_flip($safeOnly ? $this->safeAttributes() : $this->attributes());
+			//遍历本次要处理的属性 是否在该场景要求的属性中
             foreach ($values as $name => $value) {
                 if (isset($attributes[$name])) {
                     $this->$name = $value;
@@ -732,6 +734,8 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
      *
      * @return string the scenario that this model is in. Defaults to [[SCENARIO_DEFAULT]].
      */
+	 //一般在实例化Model对象的时候，传入初始化参数，通过yii2共有对象的_set()魔术方法来设置当前场景的，
+	 //默认就是default
     public function getScenario()
     {
         return $this->_scenario;
@@ -754,20 +758,20 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
      */
     public function safeAttributes()
     {
-		//��ȡ��ǰ�ĳ�����һ����ʵ����modelʱ�������ָ��������֤���ĸ�������
+		//获取当前的场景（一般在实例化model时传入参数指定本次验证是哪个场景）
         $scenario = $this->getScenario();
-		//������ͬ������Ҫ����������  $scenarios�Ƕ�ά����
+		//整理不同场景下要处理的属性  $scenarios是二维数组
         $scenarios = $this->scenarios();
 
-		//��ǰ�������ˣ�ÿ�������µ�����Ҳ���ˣ��ǽ������͸ñȶ��ˡ�
-		//�������ԣ���ֱ���˳�����
+		//当前场景有了，每个场景下的属性也有了，那接下来就该比对了。
+		//场景不对，那直接退出就行
         if (!isset($scenarios[$scenario])) {
             return [];
         }
-		//�������ʵĻ����ǾͰ���������µ����Զ�����ȥ�ɡ����ǻ���һ��С΢��
+		//场景合适的话，那就把这个场景下的属性都返回去吧。但是还有一个小微调
         $attributes = [];
         foreach ($scenarios[$scenario] as $attribute) {
-			//���������������'!storage_name'������'!'ǰ׺�ģ�Ҳ�ų�
+			//如果属性名是类似'!storage_name'这样有'!'前缀的，也排除
             if ($attribute[0] !== '!' && !in_array('!' . $attribute, $scenarios[$scenario])) {
                 $attributes[] = $attribute;
             }
