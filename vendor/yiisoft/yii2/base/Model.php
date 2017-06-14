@@ -747,13 +747,20 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
      */
     public function safeAttributes()
     {
+		//获取当前的场景（一般在实例化model时传入参数指定本次验证是哪个场景）
         $scenario = $this->getScenario();
+		//整理不同场景下要处理的属性  $scenarios是二维数组
         $scenarios = $this->scenarios();
+
+		//当前场景有了，不同场景下的属性也有了，那接下来就该比对了。
+		//场景不对，那直接退出就行
         if (!isset($scenarios[$scenario])) {
             return [];
         }
+		//场景合适的话，那就把这个场景下的属性都返回去吧。但是还有一个小微调
         $attributes = [];
         foreach ($scenarios[$scenario] as $attribute) {
+			//如果属性名是类似'!storage_name'这样有'!'前缀的，也排除
             if ($attribute[0] !== '!' && !in_array('!' . $attribute, $scenarios[$scenario])) {
                 $attributes[] = $attribute;
             }
