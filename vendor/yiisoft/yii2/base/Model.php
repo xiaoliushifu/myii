@@ -792,6 +792,7 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
             return [];
         }
         $attributes = $scenarios[$scenario];
+		//为什么要把属性前面的!号去掉呢？？？
         foreach ($attributes as $i => $attribute) {
             if ($attribute[0] === '!') {
                 $attributes[$i] = substr($attribute, 1);
