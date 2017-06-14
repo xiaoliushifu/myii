@@ -336,16 +336,21 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
      */
     public function validate($attributeNames = null, $clearErrors = true)
     {
+		//先清除曾经的错误信息
         if ($clearErrors) {
             $this->clearErrors();
         }
 
+		//注意，这里有个before处理，它如果返回false，无论如何都认为验证失败了。return false嘛
         if (!$this->beforeValidate()) {
             return false;
         }
 
+		//再次获取一下所有场景
         $scenarios = $this->scenarios();
+		//当前场景
         $scenario = $this->getScenario();
+		//场景不匹配就抛异常
         if (!isset($scenarios[$scenario])) {
             throw new InvalidParamException("Unknown scenario: $scenario");
         }
@@ -354,9 +359,11 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
             $attributeNames = $this->activeAttributes();
         }
 
+		//遍历活跃的验证对象（rules里的一行行），进行验证。这是该方法的核心
         foreach ($this->getActiveValidators() as $validator) {
             $validator->validateAttributes($this, $attributeNames);
         }
+		//验证过还有动作，类似于切面编程，也是一种编程思想与机制，类似于事件
         $this->afterValidate();
 
         return !$this->hasErrors();
@@ -752,7 +759,7 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
 		//整理不同场景下要处理的属性  $scenarios是二维数组
         $scenarios = $this->scenarios();
 
-		//当前场景有了，不同场景下的属性也有了，那接下来就该比对了。
+		//当前场景有了，每个场景下的属性也有了，那接下来就该比对了。
 		//场景不对，那直接退出就行
         if (!isset($scenarios[$scenario])) {
             return [];
