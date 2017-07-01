@@ -22,6 +22,7 @@ $config = [
             'identityClass' => 'app\models\User',
             'enableAutoLogin' => true,
         ],
+		//错误处理器组件必须有
         'errorHandler' => [
             'errorAction' => 'site/error',
         ],

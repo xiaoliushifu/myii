@@ -25,16 +25,28 @@ class SiteController extends Controller
             'access' => [
                 //声明过滤器
                 'class' => AccessControl::className(),
-                //默认对该控制器的所有动作，这里通过only只许logout方法使用
-                'only' => ['logout'],
+                //默认对该控制器的所有动作，这里通过only只对logout方法起作用，大前提
+                //具体的规则，还得看rules数组
+                'only' => ['logout,about'],
                 'rules' => [
                     [
+                        //actions指出当前规则对logout有用
                         'actions' => ['logout'],
                         'allow' => true,
+                        //roles指出约束的角色，@表示已登录用户，？表示未登录用户
                         'roles' => ['@'],
                     ],
+                    [
+                    //actions指出当前规则对logout有用
+                    'actions' => ['about'],
+                    'allow' => true,
+                    //roles指出约束的角色，@表示已登录用户，？表示未登录用户
+                    'roles' => ['@'],
+                    ],
+                //总结来说，就是 在当前控制器中，已登录的用户，才能去访问logout方法
                 ],
             ],
+            //进一步限制，访问该动作时的http方法。
             'verbs' => [
                 //声明过滤器
                 'class' => VerbFilter::className(),
@@ -68,7 +80,7 @@ class SiteController extends Controller
      */
     public function actionIndex()
     {
-        var_dump(Yii::$app->user);
+       // var_dump(Yii::$app->user);
         return $this->render('index');
     }
     
