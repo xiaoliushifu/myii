@@ -193,6 +193,7 @@ class ServiceLocator extends Component
 
         unset($this->_components[$id]);
 
+		/*这段代码非常重要，这里能够解释为什么yii组件的配置都是以数组形式来配置的了*/
         if (is_object($definition) || is_callable($definition, true)) {
             // an object, a class name, or a PHP callable
             $this->_definitions[$id] = $definition;
