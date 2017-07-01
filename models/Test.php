@@ -26,7 +26,10 @@ class Test extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
+			//这一行没有on，那就是所有场景都适用
             [['name'], 'string', 'max' => 20],
+			//下面这一行，就是属于register场景下的验证的，会生成required验证对象。
+			['storage_name','org_id','is_open','!org_name'], 'required','on'=>'register'],
         ];
     }
 
