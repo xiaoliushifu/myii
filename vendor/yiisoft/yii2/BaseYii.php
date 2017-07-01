@@ -49,8 +49,10 @@ defined('YII_ENV_TEST') or define('YII_ENV_TEST', YII_ENV === 'test');
 defined('YII_ENABLE_ERROR_HANDLER') or define('YII_ENABLE_ERROR_HANDLER', true);
 
 /**
+BaseYii是yii框架的核心助手类
  * BaseYii is the core helper class for the Yii framework.
  *
+ * 不要直接使用BaseYii，而是，使用它的子类\Yii来扩展Baseyii的功能，覆盖BaseYii的某些方法等
  * Do not use BaseYii directly. Instead, use its child class [[\Yii]] which you can replace to
  * customize methods of BaseYii.
  *
@@ -59,25 +61,33 @@ defined('YII_ENABLE_ERROR_HANDLER') or define('YII_ENABLE_ERROR_HANDLER', true);
  */
 class BaseYii
 {
-    /**
+    /**该属性服务于Yii的自动加载机制
      * @var array class map used by the Yii autoloading mechanism.
+	 *数组的key存放的是没有命名空间前缀的类名，数组的值是对应的类路径，或者类别名
      * The array keys are the class names (without leading backslashes), and the array values
      * are the corresponding class file paths (or path aliases). This property mainly affects
+	 * 注意影响autoload方法的加载
      * how [[autoload()]] works.
      * @see autoload()
      */
     public static $classMap = [];
-    /**
+
+    /**全局静态属性，一般是console应用app，或者web应用app对象的实例
      * @var \yii\console\Application|\yii\web\Application the application instance
      */
-    public static $app;//全局静态属性
-    /**
+    public static $app;
+
+    /** 静态路径别名列表，和classMap属性相辅相成
+	 * 默认Yii框架自带了一个路径别名，@yii表示的是D:.....\www\basic\vendor\yiisoft\yii2这个绝对字符串
+	 * 注意，有可能是二维数组，暂时先记一下
      * @var array registered path aliases
      * @see getAlias()
      * @see setAlias()
      */
     public static $aliases = ['@yii' => __DIR__];
+
     /**
+	 * 静态属性，依赖注入（DI）容器，尚不明了
      * @var Container the dependency injection (DI) container used by [[createObject()]].
      * You may use [[Container::set()]] to set up the needed dependencies of classes and
      * their initial property values.
@@ -88,6 +98,7 @@ class BaseYii
 
 
     /**
+	 *  这个应该是框架自带的友好方法，跟应用没啥关系
      * Returns a string representing the current version of the Yii framework.
      * @return string the version of Yii framework
      */
@@ -96,27 +107,33 @@ class BaseYii
         return '2.0.11.2';
     }
 
-    /**
+    /**别名转换为真实的文件系统路径
      * Translates a path alias into an actual path.
      *
      * The translation is done according to the following procedure:
-     *
+     * 带有“@”号的才算是别名，否则不是别名，直接返回对应的值，也就是文件系统路径，无需再次解析
      * 1. If the given alias does not start with '@', it is returned back without change;
+	 * 否则按照最长别名优先原则来解析
      * 2. Otherwise, look for the longest registered alias that matches the beginning part
      *    of the given alias. If it exists, replace the matching part of the given alias with
      *    the corresponding registered path.
+	 * 解析不了返回false或者抛异常呗
      * 3. Throw an exception or return false, depending on the `$throwException` parameter.
-     *
+     * 比如@yii表示D:....\basic\vendor\yiisoft\yii2目录，那么@yii/web就是D:....\basic\vendor\yiisoft\yii2/web呗。
+	 * （明白了吧，就是拼接）
      * For example, by default '@yii' is registered as the alias to the Yii framework directory,
      * say '/path/to/yii'. The alias '@yii/web' would then be translated into '/path/to/yii/web'.
-     *
+     * 什么叫最长别名优先原则，比如有@foo和@foo/bar两个别名，现在要解析@foo/bar/config,那么最长优先
+	 * 就是指在@foo和@foo/bar两者之间挑一个最长的，也就是@foo/bar(而不是@foo)来解析@foo/bar/config
      * If you have registered two aliases '@foo' and '@foo/bar'. Then translating '@foo/bar/config'
      * would replace the part '@foo/bar' (instead of '@foo') with the corresponding registered path.
      * This is because the longest alias takes precedence.
-     *
+     *如果出现了@foo/barbar/config的话，那就得解析@foo（而不是@foo/bar）了，因为我们不能拆分@foo/barbar/config为
+	 * @foo/bar。barbar是不能拆的，你说呢？‘/'字符是分割符，注意。
      * However, if the alias to be translated is '@foo/barbar/config', then '@foo' will be replaced
      * instead of '@foo/bar', because '/' serves as the boundary character.
      *
+	 * 注意，该方法仅仅是把别名解析出文件系统的绝对路径，该路径是否真实存在不得而知哟！
      * Note, this method does not check if the returned path exists or not.
      *
      * @param string $alias the alias to be translated.
@@ -125,6 +142,8 @@ class BaseYii
      * @return string|bool the path corresponding to the alias, false if the root alias is not previously registered.
      * @throws InvalidParamException if the alias is invalid while $throwException is true.
      * @see setAlias()
+
+	 *这个方法叫getAlias，我觉得不太好，听名字好像是要获得别名（那个@开头的东西），而不是别名对应的文件系统路径。我觉得应该叫resolveAlias,或者getPathFromAlias更好一点
      */
     public static function getAlias($alias, $throwException = true)
     {
@@ -155,8 +174,9 @@ class BaseYii
         return false;
     }
 
-    /**
+    /**返回参数的root别名，啥叫root别名？
      * Returns the root alias part of a given alias.
+	 * root别名需要首先通过setAlias注册，这里才能getRootAlias。还是不太明白
      * A root alias is an alias that has been registered via [[setAlias()]] previously.
      * If a given alias matches multiple root aliases, the longest one will be returned.
      * @param string $alias the alias
@@ -167,6 +187,7 @@ class BaseYii
         $pos = strpos($alias, '/');
         $root = $pos === false ? $alias : substr($alias, 0, $pos);
 
+		//额外的话题，这里使用的是static::$aliases,而不是self::$aliases，知道区别不？
         if (isset(static::$aliases[$root])) {
             if (is_string(static::$aliases[$root])) {
                 return $root;
@@ -183,27 +204,31 @@ class BaseYii
     }
 
     /**
+	*  注册路径别名
      * Registers a path alias.
-     *
+     * 路径别名是一个较短的字符表示一个较长的路径的机制
      * A path alias is a short name representing a long path (a file path, a URL, etc.)
+	 * 比如属性$Aliases里的@yii就是别名
      * For example, we use '@yii' as the alias of the path to the Yii framework directory.
-     *
+     * 路径别名必须以@开头，这样后续的解析规则才能进行，否则就乱套了
      * A path alias must start with the character '@' so that it can be easily differentiated
      * from non-alias paths.
-     *
+     * 该方法并不判断文件系统路径是否真实存在，仅仅是把一个别名关联上一个文件系统路径而已
      * Note that this method does not check if the given path exists or not. All it does is
      * to associate the alias with the path.
-     *
+     * 拖尾的'/'和'\'字符都会被trim掉
      * Any trailing '/' and '\' characters in the given path will be trimmed.
      *
      * @param string $alias the alias name (e.g. "@yii"). It must start with a '@' character.
      * It may contain the forward slash '/' which serves as boundary character when performing
      * alias translation by [[getAlias()]].
+	 * 如果第二个参数是null的话，代表删除这个别名
      * @param string $path the path corresponding to the alias. If this is null, the alias will
      * be removed. Trailing '/' and '\' characters will be trimmed. This can be
-     *
+     * 刚才一直说别名最终解析成文件系统路径，这其实只是大多数的用法，别名还可以解析成url。
      * - a directory or a file path (e.g. `/tmp`, `/tmp/main.txt`)
      * - a URL (e.g. `http://www.yiiframework.com`)
+	 * 路径还可以再包含别名，那么这里就会先解析路径中包含的别名，再存到$aliases里
      * - a path alias (e.g. `@yii/base`). In this case, the path alias will be converted into the
      *   actual path first by calling [[getAlias()]].
      *
@@ -248,18 +273,23 @@ class BaseYii
     }
 
     /**
+	* Yii框架自己的加载器
      * Class autoload loader.
      * This method is invoked automatically when PHP sees an unknown class.
      * The method will attempt to include the class file according to the following procedure:
-     *
+     * 加载顺序或者说寻找顺序是什么呢？
+	 *  首先从classMap属性中寻找
      * 1. Search in [[classMap]];
+	 * 带有命名空间前缀的，尝试使用关联的路径别名机制去寻找
+	 * 理解这点很重要，命名空间和别名是对应的
      * 2. If the class is namespaced (e.g. `yii\base\Component`), it will attempt
      *    to include the file associated with the corresponding path alias
      *    (e.g. `@yii/base/Component.php`);
-     *
+     * 符合PSR-4标准的php类文件组织形式
      * This autoloader allows loading classes that follow the [PSR-4 standard](http://www.php-fig.org/psr/psr-4/)
      * and have its top-level namespace or sub-namespaces defined as path aliases.
-     *
+     *比如，寻找的类不在classMap中，而是一个带有命名空间前缀的yii\bootstrap\Good.php，那么将把yii\bootstrap当做是
+	 * @yii/bootstrap别名，然后去解析别名，得到文件系统路径。
      * Example: When aliases `@yii` and `@yii/bootstrap` are defined, classes in the `yii\bootstrap` namespace
      * will be loaded using the `@yii/bootstrap` alias which points to the directory where bootstrap extension
      * files are installed and all classes from other `yii` namespaces will be loaded from the yii framework directory.
@@ -292,20 +322,23 @@ class BaseYii
         }
     }
 
-    /**
+    /**实例化对象的静态好方法，根据参数的配置
      * Creates a new object using the given configuration.
-     *
+     *这个方法就是一个全新的new操作符一样。
      * You may view this method as an enhanced version of the `new` operator.
+	 * 这个方法可以根据类名，一个数组配置，或者一个匿名函数类创建对象，非常方便
      * The method supports creating an object based on a class name, a configuration array or
      * an anonymous function.
      *
      * Below are some usage examples:
      *
-     * ```php
+     * ```php   直接用类名
      * // create an object using a class name
      * $object = Yii::createObject('yii\db\Connection');
      *
      * // create an object using a configuration array
+	 * 用创建对象需要的配置信息来创建对象。这个要特别说明一点，yii框架配置文件里的各个组件，主要都是靠这个方法来
+	 * 实例化的，非常的常用呀（只是框架封装的强，不看源码绝不会知道）
      * $object = Yii::createObject([
      *     'class' => 'yii\db\Connection',
      *     'dsn' => 'mysql:host=127.0.0.1;dbname=demo',
@@ -313,19 +346,21 @@ class BaseYii
      *     'password' => '',
      *     'charset' => 'utf8',
      * ]);
-     *
+     * 类名带参数
      * // create an object with two constructor parameters
      * $object = \Yii::createObject('MyClass', [$param1, $param2]);
      * ```
-     *
+     * 这个方法的亮点是使用了依赖注入机制。当然这不是BaseYii类的功能，而是容器类的功能。
      * Using [[\yii\di\Container|dependency injection container]], this method can also identify
      * dependent objects, instantiate them and inject them into the newly created object.
-     *
+     * 第一个参数的类型有三种：  字符串，数组，或者回调。
      * @param string|array|callable $type the object type. This can be specified in one of the following forms:
-     *
+     *  字符串类型的话，肯定就是类名
      * - a string: representing the class name of the object to be created
+	 * 数组的话，一定要有class下标。而其他的下标则代表是实例化class后要设置的属性及属性值。非常常用！
      * - a configuration array: the array must contain a `class` element which is treated as the object class,
      *   and the rest of the name-value pairs will be used to initialize the corresponding object properties
+	 * PHP回调，一般是一个匿名函数或者是[类或对象，方法]这样格式的数组。而且必须返回一个对象.
      * - a PHP callable: either an anonymous function or an array representing a class method (`[$class or $object, $method]`).
      *   The callable should return a new instance of the object being created.
      *
@@ -351,9 +386,12 @@ class BaseYii
         throw new InvalidConfigException('Unsupported configuration type: ' . gettype($type));
     }
 
+	/*嘿嘿，这里还藏了一个私有属性哟，不仔细看还差点忽略了呢，暂时没有注释*/
     private static $_logger;
 
-    /**
+    /** 
+	 * 把获取日志组件的方法写在了这里，看来日志服务真的是一个每个应用的基础呀，而且
+	 * 代码写死了使用yii\log\Logger类作为日志组件。
      * @return Logger message logger
      */
     public static function getLogger()
@@ -375,6 +413,7 @@ class BaseYii
     }
 
     /**
+	* trace级别的日志，主要在开发中记录执行工作流
      * Logs a trace message.
      * Trace messages are logged mainly for development purpose to see
      * the execution work flow of some code.
@@ -417,6 +456,7 @@ class BaseYii
 
     /**
      * Logs an informative message.
+	 * info级别的日志，主要记录一下比较重要的信息
      * An informative message is typically logged by an application to keep record of
      * something important (e.g. an administrator logs in).
      * @param string|array $message the message to be logged. This can be a simple string or a more
@@ -429,6 +469,7 @@ class BaseYii
     }
 
     /**
+	 * 标记一段要分析的代码块，可以嵌套标记
      * Marks the beginning of a code block for profiling.
      * This has to be matched with a call to [[endProfile]] with the same category name.
      * The begin- and end- calls must also be properly nested. For example,
@@ -450,7 +491,7 @@ class BaseYii
         static::getLogger()->log($token, Logger::LEVEL_PROFILE_BEGIN, $category);
     }
 
-    /**
+    /**标记一段要分析的代码块的结尾
      * Marks the end of a code block for profiling.
      * This has to be matched with a previous call to [[beginProfile]] with the same category name.
      * @param string $token token for the code block
@@ -463,6 +504,7 @@ class BaseYii
     }
 
     /**
+	 * 返回一段HTML高亮的字符串，这是Yii框架的炫耀吗？？？？这还是首次见到呀
      * Returns an HTML hyperlink that can be displayed on your Web page showing "Powered by Yii Framework" information.
      * @return string an HTML hyperlink that can be displayed on your Web page showing "Powered by Yii Framework" information
      */
@@ -474,16 +516,17 @@ class BaseYii
         ]);
     }
 
-    /**
+    /** 
+	 * 按照指定的语言翻译一段信息
      * Translates a message to the specified language.
-     *
+     * 是一个快捷方式。也就是yii\i18n\I18N::translate()方法的快捷方式
      * This is a shortcut method of [[\yii\i18n\I18N::translate()]].
      *
      * The translation will be conducted according to the message category and the target language will be used.
      *
      * You can add parameters to a translation message that will be substituted with the corresponding value after
      * translation. The format for this is to use curly brackets around the parameter name as you can see in the following example:
-     *
+     *注意例子非常重要，说一百个字，加上一个例子就能起到画龙点睛的作用！
      * ```php
      * $username = 'Alexander';
      * echo \Yii::t('app', 'Hello, {username}!', ['username' => $username]);
@@ -513,7 +556,9 @@ class BaseYii
         return ($placeholders === []) ? $message : strtr($message, $placeholders);
     }
 
-    /**
+    /**  
+	* 这个配置方法也非常常用，尤其在上述createObject之后，可以配置这个新出炉的对象
+	*  非常常见，而且如果这个对象内部实现了php的__set方法的话，更有意思
      * Configures an object with the initial property values.
      * @param object $object the object to be configured
      * @param array $properties the property initial values given in terms of name-value pairs.
@@ -529,6 +574,9 @@ class BaseYii
     }
 
     /**
+	*返回对象的属性，嘿，php还有这个函数呢？
+	 *在指定的上下文中调用的话，还能返回private的属性。
+	 * 绝不止表面，详情去php.net查看。
      * Returns the public member variables of an object.
      * This method is provided such that we can get the public member variables of an object.
      * It is different from "get_object_vars()" because the latter will return private
