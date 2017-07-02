@@ -123,11 +123,15 @@ class Container extends Component
      */
     private $_params = [];
     /**
-	 * 缓存的反射类对象，下标是接口名或者类名
+	 * 缓存的反射类对象，下标是接口名或者类名，值是反射对象。是如下代码生成的：
+	 * $reflection = new ReflectionClass($class)
+	 * 那么属性中将会存储：$_reflections[$class]=$reflection
      * @var array cached ReflectionClass objects indexed by class/interface names
      */
     private $_reflections = [];
-    /**缓存的依赖项，由类名或接口名为下标。每个类名都关联一系列的构造函数的参数类型或默认值
+    /**缓存的依赖项，由类名或接口名为下标。
+	 * 每个类名都关联一系列的构造函数的参数类型或构造函数参数的默认值
+	 *  和上面的$_reflections属性是相辅相成的
      * @var array cached dependencies indexed by class/interface names. Each class name
      * is associated with a list of constructor parameter types or default values.
      */
@@ -151,7 +155,8 @@ class Container extends Component
      * In this case, the constructor parameters and object configurations will be used
      * only if the class is instantiated the first time.
      *
-	 *  对象在get之前，必须执行set或setSingleton完成注册（依赖注入的注册），Container容器才能自动进行依赖注入的解析
+	 *  对象在get之前，必须执行set或setSingleton完成注册（依赖注入的注册），Container容器才能自动进行依赖注入的解析，其实不完全是，比如errorHandler组件的实例化过程，就直接从get方法开始的，然后build.并没有事先set。
+	 * errorHandler是在web/application执行构造函数之前实例化的
      * @param string $class the class name or an alias name (e.g. `foo`) that was previously registered via [[set()]]
      * or [[setSingleton()]].
 	 * params参数是一个构造函数的参数列表，有序的提供给构造函数的声明里，注意参数的顺序
@@ -482,6 +487,7 @@ class Container extends Component
     protected function resolveDependencies($dependencies, $reflection = null)
     {
         foreach ($dependencies as $index => $dependency) {
+			//这个Instance,并没有被导入，是如何找到它的呢？是自动加载吗？
             if ($dependency instanceof Instance) {
                 if ($dependency->id !== null) {
                     $dependencies[$index] = $this->get($dependency->id);
