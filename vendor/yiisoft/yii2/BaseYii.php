@@ -50,6 +50,7 @@ defined('YII_ENABLE_ERROR_HANDLER') or define('YII_ENABLE_ERROR_HANDLER', true);
 
 /**
 BaseYii是yii框架的核心助手类
+ * 何时加载：在入口文件里被include。是紧接着PSR自动加载器被include之后的一行代码
  * BaseYii is the core helper class for the Yii framework.
  *
  * 不要直接使用BaseYii，而是，使用它的子类\Yii来扩展Baseyii的功能，覆盖BaseYii的某些方法等
@@ -66,7 +67,8 @@ class BaseYii
 	 *数组的key存放的是没有命名空间前缀的类名，数组的值是对应的类路径，或者类别名
      * The array keys are the class names (without leading backslashes), and the array values
      * are the corresponding class file paths (or path aliases). This property mainly affects
-	 * 注意影响autoload方法的加载
+	 * $classMap属性在BaseYii被包含之后，由外部文件YII2_PATH/classes.php里的数组填充，是事先定义好的类名与路径对应* 关系, 看了一下数组里有322个元素
+	 * 在autoload方法里会优先使用这个属性
      * how [[autoload()]] works.
      * @see autoload()
      */
