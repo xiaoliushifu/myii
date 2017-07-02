@@ -29,7 +29,7 @@ use yii\helpers\ArrayHelper;
  * dependent objects, inject them into the object being created, configure and finally return the newly created object.
  *默认，BaseYii的属性$container是容器类的一个引用，它在BaseYii的createObject方法里使用，
  * By default, [[\Yii::$container]] refers to a Container instance which is used by [[\Yii::createObject()]]
- * 用来创建新的对象实例。创建对象时，你可以用BaseYii::createObject方法来代替new操作费，
+ * 用来创建新的对象实例。创建对象时，你可以用BaseYii::createObject方法来代替new操作符
  * to create new object instances. You may use this method to replace the `new` operator
  * 使用这个方法有自动解析依赖并带有默认属性配置的好处
  * when creating a new object, which gives you the benefit of automatic dependency resolution and default
