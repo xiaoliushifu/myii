@@ -89,7 +89,10 @@ class BaseYii
     public static $aliases = ['@yii' => __DIR__];
 
     /**
-	 * 静态属性，依赖注入（DI）容器，尚不明了
+	 * 静态属性，它其实是一个引用指针，指向了一个类，该类是封装了依赖注入（DI）功能的容器类，
+	 * 该属性是何时赋值的？入口文件的第6行代码里，随着Yii.php被include，通过new 容器类直接赋值的
+	 * Yii::$container = new yii\di\Container();
+	 * 就是上面那一行代码。
      * @var Container the dependency injection (DI) container used by [[createObject()]].
      * You may use [[Container::set()]] to set up the needed dependencies of classes and
      * their initial property values.
