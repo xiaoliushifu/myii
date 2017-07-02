@@ -209,13 +209,17 @@ class BaseYii
     }
 
     /**
-	*  注册路径别名
+	*  注册路径别名 
+	*  何时使用：在yii的高级模板里，入口文件会包含一个bootstrap.php，在这个文件里，使用
+	 * 该方法设置了诸如 frontend,backend，common，console等别名对应的文件系统路径。
+	 * 这是框架第一次使用这个方法。
      * Registers a path alias.
      * 路径别名是一个较短的字符表示一个较长的路径的机制
      * A path alias is a short name representing a long path (a file path, a URL, etc.)
 	 * 比如属性$Aliases里的@yii就是别名
      * For example, we use '@yii' as the alias of the path to the Yii framework directory.
-     * 路径别名必须以@开头，这样后续的解析规则才能进行，否则就乱套了
+     * 路径别名必须以@开头，这样后续的解析规则才能进行，否则就乱套了。
+	 * 调用该方法设置别名时，如果没有@字符，则setAlias方法体里也会加上的。
      * A path alias must start with the character '@' so that it can be easily differentiated
      * from non-alias paths.
      * 该方法并不判断文件系统路径是否真实存在，仅仅是把一个别名关联上一个文件系统路径而已
@@ -230,28 +234,38 @@ class BaseYii
 	 * 如果第二个参数是null的话，代表删除这个别名
      * @param string $path the path corresponding to the alias. If this is null, the alias will
      * be removed. Trailing '/' and '\' characters will be trimmed. This can be
-     * 刚才一直说别名最终解析成文件系统路径，这其实只是大多数的用法，别名还可以解析成url。
+     * 刚才一直说别名最终解析成文件系统路径(文件路径或目录路径），这其实只是大多数的用法，别名还可以解析成url。
      * - a directory or a file path (e.g. `/tmp`, `/tmp/main.txt`)
      * - a URL (e.g. `http://www.yiiframework.com`)
-	 * 路径还可以再包含别名，那么这里就会先解析路径中包含的别名，再存到$aliases里
+	 * 路径还可以再包含别名，那么这里就会先解析路径中包含的别名，再存到$aliases里，保证最终的别名值是不可再解析的* * 了
      * - a path alias (e.g. `@yii/base`). In this case, the path alias will be converted into the
      *   actual path first by calling [[getAlias()]].
-     *
+     * 
      * @throws InvalidParamException if $path is an invalid alias.
      * @see getAlias()
      */
     public static function setAlias($alias, $path)
     {
+		//使用php内置函数strncmp比较$alias的第一个字符是不是‘@’符号，据说比substr快呢！
         if (strncmp($alias, '@', 1)) {
             $alias = '@' . $alias;
         }
         $pos = strpos($alias, '/');
+		/**哈哈，下面这行代码之前我看错了，应该是$pos和false全等比较，然后把比较结果返回给$root，
+		而不是$root与$pos一块和false比较,又涨知识了，真好
+		这行代码其实是解析路径别名里是否还有其他子路径别名的情况，如果有的话，先解析出跟路径别名$root,
+		如果没有，那$root就是根路径别名
+		*/
         $root = $pos === false ? $alias : substr($alias, 0, $pos);
+		//路径不为空是设置，路径为null时还有清除的功能呢
         if ($path !== null) {
+			//解析$path是否还包含路径别名，若包含就递归再去解析
             $path = strncmp($path, '@', 1) ? rtrim($path, '\\/') : static::getAlias($path);
             if (!isset(static::$aliases[$root])) {
+				//这是没有设置过这个路径别名，本次的路径别名里也不含子路径别名的情况
                 if ($pos === false) {
                     static::$aliases[$root] = $path;
+				//这是没有设置过路径别名，但本次的路径别名里包含子路径别名的情况（后续注意跟踪这例子）
                 } else {
                     static::$aliases[$root] = [$alias => $path];
                 }
@@ -268,6 +282,7 @@ class BaseYii
                 static::$aliases[$root][$alias] = $path;
                 krsort(static::$aliases[$root]);
             }
+		//清除指定的路径别名
         } elseif (isset(static::$aliases[$root])) {
             if (is_array(static::$aliases[$root])) {
                 unset(static::$aliases[$root][$alias]);
