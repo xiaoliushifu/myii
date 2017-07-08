@@ -15,6 +15,8 @@ use yii\base\Controller;
 
 /**
  * 该类代表由AccessController过滤器定义的一系列规则rules的类
+ * 它的属性就是一个个的规则。通过allows方法进行匹配
+ * 该类不直接使用，而是在AccessControl过滤器中使用
  * This class represents an access rule defined by the [[AccessControl]] action filter
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
@@ -27,11 +29,13 @@ class AccessRule extends Component
      */
     public $allow;
     /**
+	*  actions规则
      * @var array list of action IDs that this rule applies to. The comparison is case-sensitive.
      * If not set or empty, it means this rule applies to all actions.
      */
     public $actions;
     /**
+	*  控制器规则
      * @var array list of the controller IDs that this rule applies to.
      *
      * The comparison uses [[\yii\base\Controller::uniqueId]], so each controller ID is prefixed
@@ -44,7 +48,7 @@ class AccessRule extends Component
      * If not set or empty, it means this rule applies to all controllers.
      */
     public $controllers;
-    /**
+    /**角色规则
      * @var array list of roles that this rule applies to. Two special roles are recognized, and
      * they are checked via [[User::isGuest]]:
      *
@@ -57,7 +61,7 @@ class AccessRule extends Component
      * If this property is not set or empty, it means this rule applies to all roles.
      */
     public $roles;
-    /**
+    /**IP规则
      * @var array list of user IP addresses that this rule applies to. An IP address
      * can contain the wildcard `*` at the end so that it matches IP addresses with the same prefix.
      * For example, '192.168.*' matches all IP addresses in the segment '192.168.'.
@@ -65,13 +69,13 @@ class AccessRule extends Component
      * @see Request::userIP
      */
     public $ips;
-    /**
+    /**http的请求方法规则
      * @var array list of request methods (e.g. `GET`, `POST`) that this rule applies to.
      * If not set or empty, it means this rule applies to all request methods.
      * @see \yii\web\Request::method
      */
     public $verbs;
-    /**
+    /**自定义规则
      * @var callable a callback that will be called to determine if the rule should be applied.
      * The signature of the callback should be as follows:
      *
@@ -83,7 +87,7 @@ class AccessRule extends Component
      * The callback should return a boolean value indicating whether this rule should be applied.
      */
     public $matchCallback;
-    /**
+    /**如果经过规则的判断后是拒绝（或者）规则不匹配，则执行这个拒绝回调函数
      * @var callable a callback that will be called if this rule determines the access to
      * the current action should be denied. If not set, the behavior will be determined by
      * [[AccessControl]].

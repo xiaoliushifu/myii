@@ -16,7 +16,14 @@ use yii\web\ForbiddenHttpException;
 
 /**
  * AccessControl provides simple access control based on a set of rules.
- *
+ *AccessControl是一个动作过滤器。可以针对具体的控制器里的方法（动作）进行规则配置
+ * 比如哪些方法受约束，如果约束的话，约束规则是什么。
+ * *如果请求方法不受约束，则直接放行。
+ * 如果当前的请求方法受约束的话，规则的设置一般是：
+ * 用户是什么角色[未登录的访客，登录用户，具体角色的用户]
+ * 用户本次请求的IP是什么
+ * 根据上述进行匹配。
+ * 约束规则不匹配则拒绝
  * AccessControl is an action filter. It will check its [[rules]] to find
  * the first rule that matches the current context variables (such as user IP address, user role).
  * The matching rule will dictate whether to allow or deny the access to the requested controller
