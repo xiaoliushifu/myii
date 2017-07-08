@@ -14,10 +14,6 @@ class SiteController extends Controller
 {
     /**
      * @inheritdoc
-     * //过滤器本质上是一类特殊的 行为(方法)，所以使用过滤器和 使用 行为一样
-     * 预过滤器
-     * 后过滤器
-     * 依次执行过滤器，其中某个过滤器返回false,后续过滤器不再执行
      */
     public function behaviors()
     {
@@ -25,25 +21,42 @@ class SiteController extends Controller
             'access' => [
                 //声明过滤器
                 'class' => AccessControl::className(),
-                //默认对该控制器的所有动作，这里通过only只对logout方法起作用，大前提
-                //具体的规则，还得看rules数组
-                'only' => ['logout,about'],
+                //默认对该控制器的所有动作，这里通过only数组指定ACF
+				//只对logout,about方法起作用，其他方法不受限制。only指出动作的范围，或者约束的对象。
+                //具体的对象如何约束。约束规则，还得看rules数组。
+                'only' => ['logout','about'],
+				//rule里各个字段的匹配顺序，看看filters/AccessRule.php的allows方法就清楚了
+				//顺序是：action-->role-->ip-->verb-->controllers-->callback
+
+				//rules数组是针对控制器的某个动作或者某几个动作来划分为一个个具体的rule的。
                 'rules' => [
+					//第一个规则（只针对logout动作）
                     [
-                        //actions指出当前规则对logout有用
+                        //actions指出当前rule规则对logout有用，不写则当前规则对全部动作都起作用
                         'actions' => ['logout'],
+						'controllers'=>[],//适用的控制器，一般在父类控制器中使用才有效
+						'ips'=>[''],//用户ip的配置，默认所有IP
                         'allow' => true,
-                        //roles指出约束的角色，@表示已登录用户，？表示未登录用户
+						//还能配置允许的http方法
+						'verbs' => ['POST'],
+                        //roles指出约束的角色，@表示已登录用户，？表示未登录用户，还可以关联rbac的角色
+						//为空则代表适用于所有角色
                         'roles' => ['@'],
                     ],
+					//第二个规则（只针对about动作）
                     [
-                    //actions指出当前规则对logout有用
+                    //actions指出当前规则对about有用
                     'actions' => ['about'],
-                    'allow' => true,
-                    //roles指出约束的角色，@表示已登录用户，？表示未登录用户
+                    'allow' => false,
                     'roles' => ['@'],
                     ],
-                //总结来说，就是 在当前控制器中，已登录的用户，才能去访问logout方法
+					//第三个规则.......
+					//从上到下。依次按照规则进行匹配。有一个规则与控制器的动作匹配上了，后续的rule就
+					//不再匹配了。
+					
+
+
+                //总结来说，就是 在当前控制器中，已登录的用户，才能去访问about,logout方法
                 ],
             ],
             //进一步限制，访问该动作时的http方法。
@@ -51,7 +64,7 @@ class SiteController extends Controller
                 //声明过滤器
                 'class' => VerbFilter::className(),
                 'actions' => [
-                    'logout' => ['post'],
+                   // 'logout' => ['post'],
                 ],
             ],
         ];

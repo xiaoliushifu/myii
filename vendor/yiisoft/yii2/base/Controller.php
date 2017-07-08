@@ -139,7 +139,7 @@ class Controller extends Component implements ViewContextInterface
         $modules = [];
         $runAction = true;
 
-        // call beforeAction on modules
+        // call beforeAction on modules  beforeAction也分级别哟。module级别的。下面是Controller级别的
         foreach ($this->getModules() as $module) {
             if ($module->beforeAction($action)) {
                 array_unshift($modules, $module);
@@ -150,7 +150,7 @@ class Controller extends Component implements ViewContextInterface
         }
 
         $result = null;
-
+        //过滤器由beforeAction里的beforeAction事件触发而发挥作用
         if ($runAction && $this->beforeAction($action)) {
             // run the action
             $result = $action->runWithParams($params);

@@ -383,7 +383,7 @@ class User extends Component
      * ```
      */
     public function setReturnUrl($url)
-    {
+    {//使用session来保存登录后要跳转到的url地址。一般在重定向之前执行该方法来设置
         Yii::$app->getSession()->set($this->returnUrlParam, $url);
     }
 

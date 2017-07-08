@@ -157,7 +157,7 @@ class Controller extends \yii\base\Controller
     }
 
     /**
-     * @inheritdoc
+     * @inheritdoc  csrf是在beforeAction中完成的。每个action都有判断
      */
     public function beforeAction($action)
     {
