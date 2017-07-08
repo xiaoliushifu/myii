@@ -14,6 +14,7 @@ use yii\web\Request;
 use yii\base\Controller;
 
 /**
+ * 该类代表由AccessController过滤器定义的一系列规则rules的类
  * This class represents an access rule defined by the [[AccessControl]] action filter
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
@@ -99,6 +100,8 @@ class AccessRule extends Component
 
 
     /**
+	 * 重点看，rules的规则验证顺序。
+	 * action---->Role--->IP-->Verb-->Controller-->Custom
      * Checks whether the Web user is allowed to perform the specified action.
      * @param Action $action the action to be performed
      * @param User $user the user object
@@ -144,7 +147,7 @@ class AccessRule extends Component
      */
     protected function matchRole($user)
     {
-        if (empty($this->roles)) {
+        if (empty($this->roles)) {//为空，则所有角色都匹配
             return true;
         }
         foreach ($this->roles as $role) {

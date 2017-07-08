@@ -40,7 +40,7 @@ $config = [
 
 if (YII_ENV_DEV) {
     // configuration adjustments for 'dev' environment
-    $config['bootstrap'][] = 'debug';
+   // $config['bootstrap'][] = 'debug';
     
     //添加一个模块debug
     $config['modules']['debug'] = [

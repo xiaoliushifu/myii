@@ -9,10 +9,15 @@ namespace yii\base;
 
 /**
  * ActionFilter is the base class for action filters.
- *
+ *ActionFilter是所有动作过滤器的基类
+ * 动作过滤器通过由模块和控制器触发的响应事件来参与到动作执行流中，
+ * 模块里的动作过滤器比控制器里的动作过滤器优先执行（它们都属于预过滤器），另外还有application级别的动作过滤器这里没有提及
+ * 
  * An action filter will participate in the action execution workflow by responding to
  * the `beforeAction` and `afterAction` events triggered by modules and controllers.
- *
+ *具体的filter比如AccessControll，PageCache都是继承自Actionfilter。
+ *它们都是动作过滤器，至少都得实现beforeAction,afterAction啊这些个。
+ *在beforeAction里可以干啥，那就看具体的动作过滤器类的实现了。存取访问？页面缓存等都行。
  * Check implementation of [[\yii\filters\AccessControl]], [[\yii\filters\PageCache]] and [[\yii\filters\HttpCache]] as examples on how to use it.
  *
  * For more details and usage information on ActionFilter, see the [guide article on filters](guide:structure-filters).
@@ -23,6 +28,7 @@ namespace yii\base;
 class ActionFilter extends Behavior
 {
     /**
+	 *  动作名的数组，为空则过滤器应用于所有动作，除非写在except数组里
      * @var array list of action IDs that this filter should apply to. If this property is not set,
      * then the filter applies to all actions, unless they are listed in [[except]].
      * If an action ID appears in both [[only]] and [[except]], this filter will NOT apply to it.

@@ -76,12 +76,18 @@ class AccessControl extends ActionFilter
      */
     public $denyCallback;
     /**
+	*  rules类的配置，指明使用哪个rule类，及rule类的属性设置。
+	*  而且在这里设置rule类的属性，比下面的rules属性里设置的属性优先。
      * @var array the default configuration of access rules. Individual rule configurations
      * specified via [[rules]] will take precedence when the same property of the rule is configured.
      */
     public $ruleConfig = ['class' => 'yii\filters\AccessRule'];
     /**
+	 * rules里装满了一系列的rule对象，或者能够生成rules对象的配置信息，数组格式。
      * @var array a list of access rule objects or configuration arrays for creating the rule objects.
+	 * 如果是rule类的配置信息，那么会参考上一个ruleConfig属性。
+	 * rule是需要我们在各个控制器的behavior方法里配置的，比如siteController
+	 * 一个rule一般约束一个或几个具体的动作，多个rule各自约束的动作相同
      * If a rule is specified via a configuration array, it will be merged with [[ruleConfig]] first
      * before it is used for creating the rule object.
      * @see ruleConfig
@@ -89,7 +95,7 @@ class AccessControl extends ActionFilter
     public $rules = [];
 
 
-    /**
+    /** 在init方法里，创建AccessRule类。
      * Initializes the [[rules]] array by instantiating rule objects from configurations.
      */
     public function init()
@@ -115,14 +121,24 @@ class AccessControl extends ActionFilter
         $request = Yii::$app->getRequest();
         /* @var $rule AccessRule */
         foreach ($this->rules as $rule) {
+			//根据配置好的rules数组，依次遍历，靠前的rule如果允许，则后续的rule不再验证
+			//因为根据siteController::behaviors方法里rules的配置。
+			//每个具体的rule都是指定一个动作或者多个动作，各个rule针对的动作不会相同。
+			//所以有一个rule类匹配并验证该动作后的allow为真，那就不用看后续的rule了。
+			//因为后续的rule不可能再匹配当前的动作了
+			//通过查看AccessRule类的allows方法知道，allows方法返回三种值：
+			//null，代表该rule没有匹配上，继续下一个rule的匹配
+			//true,代表匹配上了，且为允许
+			//false,代表匹配上了，且为拒绝
             if ($allow = $rule->allows($action, $user, $request)) {
-                return true;
+                return true;//这下，ruturn true就明白了吧？
             } elseif ($allow === false) {
                 if (isset($rule->denyCallback)) {
                     call_user_func($rule->denyCallback, $rule, $action);
                 } elseif ($this->denyCallback !== null) {
                     call_user_func($this->denyCallback, $rule, $action);
                 } else {
+                    //不允许，那就拒绝，执行denyAccess
                     $this->denyAccess($user);
                 }
                 return false;
@@ -131,12 +147,16 @@ class AccessControl extends ActionFilter
         if ($this->denyCallback !== null) {
             call_user_func($this->denyCallback, null, $action);
         } else {
+            //所有规则都不适用，也拒绝
             $this->denyAccess($user);
         }
         return false;
     }
 
     /**
+	 * 对于AccessController过滤器来说，当所有规则都不适用时，看两种情况：
+	 * 未登录，就重定向到登录页面
+	 * 已登录，报禁止异常错误
      * Denies the access of the user.
      * The default implementation will redirect the user to the login page if he is a guest;
      * if the user is already logged, a 403 HTTP exception will be thrown.
