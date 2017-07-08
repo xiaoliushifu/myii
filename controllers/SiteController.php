@@ -59,7 +59,7 @@ class SiteController extends Controller
                 //总结来说，就是 在当前控制器中，已登录的用户，才能去访问about,logout方法
                 ],
             ],
-            //进一步限制，访问该动作时的http方法。
+            //verbs过滤器，与
             'verbs' => [
                 //声明过滤器
                 'class' => VerbFilter::className(),

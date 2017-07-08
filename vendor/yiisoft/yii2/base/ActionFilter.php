@@ -142,6 +142,8 @@ class ActionFilter extends Behavior
     }
 
     /**
+	 * 判断当前的动作是否受动作过滤器的约束，受约束则是active,不受约束则not active
+	 * 本质上就是通过only数组来判断的。
      * Returns a value indicating whether the filter is active for the given action.
      * @param Action $action the action being filtered
      * @return bool whether the filter is active for the given action.
