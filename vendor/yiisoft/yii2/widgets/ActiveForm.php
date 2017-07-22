@@ -294,6 +294,7 @@ class ActiveForm extends Widget
     /**
      * Generates a form field.
      * A form field is associated with a model and an attribute. It contains a label, an input and an error message
+     * 这里指明一个表单项包含 label,input,error这三个元素（对应模板配置里的{label},{input},{error}）
      * and use them to interact with end users to collect their inputs for the attribute.
      * @param Model $model the data model.
      * @param string $attribute the attribute name or expression. See [[Html::getAttributeName()]] for the format
