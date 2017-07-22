@@ -34,11 +34,11 @@ class SiteController extends Controller
                     [
                         //actions指出当前rule规则对logout有用，不写则当前规则对全部动作都起作用
                         'actions' => ['logout'],
-						'controllers'=>[],//适用的控制器，一般在父类控制器中使用才有效
-						'ips'=>[''],//用户ip的配置，默认所有IP
+						//'controllers'=>[],//适用的控制器，一般在父类控制器中使用才有效
+						//'ips'=>[''],//用户ip的配置，默认所有IP
                         'allow' => true,
 						//还能配置允许的http方法
-						'verbs' => ['POST'],
+						//'verbs' => ['POST'],
                         //roles指出约束的角色，@表示已登录用户，？表示未登录用户，还可以关联rbac的角色
 						//为空则代表适用于所有角色
                         'roles' => ['@'],
@@ -47,7 +47,7 @@ class SiteController extends Controller
                     [
                     //actions指出当前规则对about有用
                     'actions' => ['about'],
-                    'allow' => false,
+                    'allow' => true,
                     'roles' => ['@'],
                     ],
 					//第三个规则.......
