@@ -98,64 +98,81 @@ class ActiveForm extends Widget
     public $validatingCssClass = 'validating';
     /**
      * @var bool whether to enable client-side data validation.
+     * 这个属性是总体form的设置，ActiveField也可以覆盖ActiveForm里的设置
      * If [[ActiveField::enableClientValidation]] is set, its value will take precedence for that input field.
+     * 如果这个属性设置为false,客户端将不会生成有关验证表单项的js代码，但仍然会加载yii.activeForm.js文件。
+     * 当你想利用yii.activeForm.js但又不想用yii框架已经实现的验证逻辑，而是想自己实现验证逻辑的话，可以把这个属性设置为false.
      */
     public $enableClientValidation = true;
     /**
      * @var bool whether to enable AJAX-based data validation.
+     * 这个属性是总体form的设置，ActiveField也可以覆盖ActiveForm里的设置
      * If [[ActiveField::enableAjaxValidation]] is set, its value will take precedence for that input field.
+     * 仅仅关闭客户端ajax验证而已，其他验证逻辑还可以发挥作用
      */
     public $enableAjaxValidation = false;
     /**
      * @var bool whether to hook up `yii.activeForm` JavaScript plugin.
+     * 
      * This property must be set `true` if you want to support client validation and/or AJAX validation, or if you
      * want to take advantage of the `yii.activeForm` plugin. When this is `false`, the form will not generate
      * any JavaScript.
+     * 这个属性设置为false的话，那么yii.activeForm.js不会被加载，更不会生成jQuery('#form').yiiActiveForm()的代码了
      */
     public $enableClientScript = true;
     /**
      * @var array|string the URL for performing AJAX-based validation. This property will be processed by
      * [[Url::to()]]. Please refer to [[Url::to()]] for more details on how to configure this property.
      * If this property is not set, it will take the value of the form's action attribute.
+     * yii.activeForm.js文件里也有这样的配置
      */
     public $validationUrl;
     /**
      * @var bool whether to perform validation when the form is submitted.
+     * yii.activeForm.js文件里defaults对象也有这样的配置
+     * yii
      */
     public $validateOnSubmit = true;
     /**
      * @var bool whether to perform validation when the value of an input field is changed.
      * If [[ActiveField::validateOnChange]] is set, its value will take precedence for that input field.
+     * yii.activeForm.js文件里attributeDefaults对象也有这样的配置
      */
     public $validateOnChange = true;
     /**
      * @var bool whether to perform validation when an input field loses focus.
      * If [[ActiveField::$validateOnBlur]] is set, its value will take precedence for that input field.
+     * yii.activeForm.js文件里attributeDefaults对象也有这样的配置
      */
     public $validateOnBlur = true;
     /**
      * @var bool whether to perform validation while the user is typing in an input field.
      * If [[ActiveField::validateOnType]] is set, its value will take precedence for that input field.
      * @see validationDelay
+     * yii.activeForm.js文件里attributeDefaults对象也有这样的配置
      */
     public $validateOnType = false;
     /**
      * @var int number of milliseconds that the validation should be delayed when the user types in the field
      * and [[validateOnType]] is set `true`.
      * If [[ActiveField::validationDelay]] is set, its value will take precedence for that input field.
+     * yii.activeForm.js文件里attributeDefaults对象也有这样的配置
      */
     public $validationDelay = 500;
     /**
      * @var string the name of the GET parameter indicating the validation request is an AJAX request.
+     * yii.activeForm.js文件里defaults对象也有这样的配置
      */
     public $ajaxParam = 'ajax';
     /**
      * @var string the type of data that you're expecting back from the server.
+     * yii.activeForm.js文件里defaults对象也有这样的配置
      */
     public $ajaxDataType = 'json';
     /**
      * @var bool whether to scroll to the first error after validation.
      * @since 2.0.6
+     * yii.activeForm.js文件里defaults对象也有这样的配置
      */
     public $scrollToError = true;
     /**
