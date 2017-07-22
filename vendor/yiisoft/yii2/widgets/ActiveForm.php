@@ -157,6 +157,7 @@ class ActiveForm extends Widget
      * and [[validateOnType]] is set `true`.
      * If [[ActiveField::validationDelay]] is set, its value will take precedence for that input field.
      * yii.activeForm.js文件里attributeDefaults对象也有这样的配置
+     * 当用户在敲击键盘输入时，延迟调用客户端validate方法的时间，当然得开启validateOnType为true时才有用，这是前提
      */
     public $validationDelay = 500;
     /**
