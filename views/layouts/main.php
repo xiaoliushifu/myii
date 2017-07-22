@@ -9,6 +9,7 @@ use yii\bootstrap\NavBar;
 use yii\widgets\Breadcrumbs;
 use app\assets\AppAsset;
 
+//注册已经定义好的资源包，使得该视图中依赖的css,js等文件可以加载进来
 AppAsset::register($this);
 ?>
 <?php $this->beginPage() ?>
