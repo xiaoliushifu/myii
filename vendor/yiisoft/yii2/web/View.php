@@ -54,26 +54,31 @@ class View extends \yii\base\View
     /**
      * The location of registered JavaScript code block or files.
      * This means the location is in the head section.
+     * 在视图文件的<head>中
      */
     const POS_HEAD = 1;
     /**
      * The location of registered JavaScript code block or files.
      * This means the location is at the beginning of the body section.
+     * 在<body>标签的开始的地方
      */
     const POS_BEGIN = 2;
     /**
      * The location of registered JavaScript code block or files.
      * This means the location is at the end of the body section.
+     * 在</body>标签结束的地方
      */
     const POS_END = 3;
     /**
      * The location of registered JavaScript code block.
      * This means the JavaScript code block will be enclosed within `jQuery(document).ready()`.
+     * 注册在jQuery的ready函数里
      */
     const POS_READY = 4;
     /**
      * The location of registered JavaScript code block.
      * This means the JavaScript code block will be enclosed within `jQuery(window).load()`.
+     * 注册js代码块到jQuery对象的load方法里
      */
     const POS_LOAD = 5;
     /**
@@ -129,7 +134,8 @@ class View extends \yii\base\View
      * @see registerJsFile()
      */
     public $jsFiles;
-
+    
+    //存储assetManager对象
     private $_assetManager;
 
 
@@ -454,7 +460,8 @@ class View extends \yii\base\View
      * - `position`: specifies where the JS script tag should be inserted in a page. The possible values are:
      *     * [[POS_HEAD]]: in the head section
      *     * [[POS_BEGIN]]: at the beginning of the body section
-     *     * [[POS_END]]: at the end of the body section. This is the default value.
+     *     * [[POS_END]]: at the end of the body section. This is the default value。
+     *     js文件默认都注册到body标签的最末尾，也就是</body>之前，
      *
      * Please refer to [[Html::jsFile()]] for other supported options.
      *
