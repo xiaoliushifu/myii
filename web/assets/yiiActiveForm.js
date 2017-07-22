@@ -141,6 +141,8 @@
 		//验证只能一个个去验证，用Css类validating表示当前正在验证的表单项
         validatingCssClass: 'validating',
         // the GET parameter name indicating an AJAX-based validation
+		//当开启前端异步ajax验证时，为区别是ajax验证而非真正post数据到服务端，特增加一个GET参数
+		//这个参数默认是ajax,也就是说ajax=xxxx存在时，表示这是客户端异步ajax验证
         ajaxParam: 'ajax',
         // the type of data that you're expecting back from the server
 		//期待ajax调用后服务端返回的数据类型（需要有jquery的ajax知识点）
