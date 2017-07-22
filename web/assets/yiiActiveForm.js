@@ -11,12 +11,26 @@
  */
 (function ($) {
 
+	//ä¸ºJQueryç±»æ‰©å±•é™æ€æ–¹æ³•yiiActiveForm
     $.fn.yiiActiveForm = function (method) {
+		//methodsæ˜¯ä¸ªå¯¹è±¡ï¼Œç¨åä¼šçœ‹åˆ°å®šä¹‰ã€‚å…¶ä¸­æ¯ä¸ªå¯¹è±¡çš„å±æ€§éƒ½æ˜¯yiiActiveFormå…è®¸çš„æ–¹æ³•å
         if (methods[method]) {
+			//ä½¿ç”¨javascriptçš„applyæ–¹å¼è°ƒç”¨æŒ‡å®šçš„methodã€‚applyé‡Œå‚æ•°ä¼ é€’çš„æ–¹å¼æ˜¯æ•°ç»„ï¼Œcallæ˜¯ä¸€ä¸ªä¸ªæ¥ä¼ é€’
+			//Array.prototype.slice.call(arguments,1)å°±å¥½æ¯”æ˜¯arguments.slice(1)
+			//ä¸èƒ½ç›´æ¥ç”¨argumentså¯¹è±¡è°ƒç”¨Arrayå¯¹è±¡çš„sliceæ–¹æ³•ã€‚å› ä¸ºargumentsç§°ä¸ºä¼ªæ•°ç»„ï¼Œå¹¶ä¸æ˜¯çœŸæ­£çš„æ•°ç»„ã€‚æ•…å€Ÿç”¨
+			//jsçš„applyæœºåˆ¶è°ƒç”¨ï¼Œéå¸¸æ£’ï¼
+			//methodsæ˜¯ä¸€ä¸ªå¯¹è±¡ï¼Œä¸‹é¢methods[method].applyæ²¡æœ‰é—®é¢˜
+			//ä½†æ˜¯methods.method.apply()ä¼šæŠ¥é”™ï¼Œä¸ºä»€ä¹ˆå‘¢ï¼Ÿå› ä¸ºmethodå‚æ•°æ˜¯ä¸€ä¸ªå­—ç¬¦ä¸²ã€‚jså¯¹è±¡è®¿é—®å±æ€§çš„ä¸¤ç§æ–¹å¼:
+			//Obj.testæˆ–è€…Obj['test']ã€‚çœ‹å‡ºåŒºåˆ«äº†å—ï¼Ÿä¸€ä¸ªæ˜¯å­—ç¬¦ä¸²ï¼Œä¸€ä¸ªæ˜¯å­—é¢é‡ã€‚é’ˆå¯¹æœ¬ä¾‹æ¥è¯´ï¼Œmethodæ˜¯ä¸€ä¸ªå­—ç¬¦ä¸²ï¼Œ
+			//æ‰€ä»¥åªèƒ½ä½¿ç”¨Obj['test']è¿™ç§æ–¹å¼è°ƒç”¨
             return methods[method].apply(this, Array.prototype.slice.call(arguments, 1));
+
+		//æˆ–è€…æ˜¯ä¸€ä¸ªjså¯¹è±¡ï¼Œæˆ–è€…æ˜¯ä¸€ä¸ªéå‡çš„jså…¶ä»–å¯¹è±¡ï¼ˆ0,0.0,"",'',NaN,undefined,NULL,false,å…«ä¸ªéƒ½æ˜¯å‡ï¼‰
         } else if (typeof method === 'object' || !method) {
             return methods.init.apply(this, arguments);
+		//æœ€åå°±æŠ¥é”™
         } else {
+			//è°ƒç”¨Jqueryçš„erroræ–¹æ³•ï¼Œæ˜¯ä¸€ä¸ªåœ¨æ§åˆ¶å°è¾“å‡ºå†…å®¹çš„æ–¹æ³•
             $.error('Method ' + method + ' does not exist on jQuery.yiiActiveForm');
             return false;
         }
@@ -24,7 +38,7 @@
 
     var events = {
         /**
-		 * ÔÚvalidate·½·¨Àï´¥·¢
+		 * åœ¨validateæ–¹æ³•é‡Œè§¦å‘
          * beforeValidate event is triggered before validating the whole form.
          * The signature of the event handler should be:
          *     function (event, messages, deferreds)
@@ -283,8 +297,8 @@
         },
 
         // validate all applicable inputs in the form
-		//¿ªÊ¼ÑéÖ¤£¬Õâ¸ö·½·¨ÊÇÕæÕıÑéÖ¤µÄºËĞÄ£¬Î¬¶È×îµÍ£¬ÎŞÂÛ¸÷ÖÖ´¥·¢ÑéÖ¤µÄÊÂ¼ş£¨submit,blur,changeµÈ£©¶¼»á
-		//Ö´ĞĞµ½ÕâÀï
+		//å¼€å§‹éªŒè¯ï¼Œè¿™ä¸ªæ–¹æ³•æ˜¯çœŸæ­£éªŒè¯çš„æ ¸å¿ƒï¼Œç»´åº¦æœ€ä½ï¼Œæ— è®ºå„ç§è§¦å‘éªŒè¯çš„äº‹ä»¶ï¼ˆsubmit,blur,changeç­‰ï¼‰éƒ½ä¼š
+		//æ‰§è¡Œåˆ°è¿™é‡Œ
         validate: function () {
             var $form = $(this),
                 data = $form.data('yiiActiveForm'),
@@ -292,10 +306,10 @@
                 messages = {},
                 deferreds = deferredArray(),
                 submitting = data.submitting;
-			//Ã¿¸öÑéÖ¤¿ªÊ¼Ö®Ç°¶¼»á´¥·¢Õâ¸öÊÂ¼ş
+			//æ¯ä¸ªéªŒè¯å¼€å§‹ä¹‹å‰éƒ½ä¼šè§¦å‘è¿™ä¸ªäº‹ä»¶
             var event = $.Event(events.beforeValidate);
             $form.trigger(event, [messages, deferreds]);
-			//Ó¦¸ÃÊÇËµÕâÊÇÔÚµã»÷submit°´Å¥Ö´ĞĞµÄ£¬²¢²»ÊÇ¹ÂÁ¢µØÖ´ĞĞ
+			//åº”è¯¥æ˜¯è¯´è¿™æ˜¯åœ¨ç‚¹å‡»submitæŒ‰é’®æ‰§è¡Œçš„ï¼Œå¹¶ä¸æ˜¯å­¤ç«‹åœ°æ‰§è¡Œ
             if (submitting) {
                 if (event.result === false) {
                     data.submitting = false;
@@ -304,26 +318,26 @@
                 }
             }
 
-            // client-side validation£¬±éÀú±íµ¥¶ÔÏóµÄ¸÷¸ö±íµ¥Ïî½øĞĞÑéÖ¤
+            // client-side validationï¼Œéå†è¡¨å•å¯¹è±¡çš„å„ä¸ªè¡¨å•é¡¹è¿›è¡ŒéªŒè¯
             $.each(data.attributes, function () {
                 if (!$(this.input).is(":disabled")) {
                     this.cancelled = false;
                     // perform validation only if the form is being submitted or if an attribute is pending validation
                     if (data.submitting || this.status === 2 || this.status === 3) {
-						//È¥³ömsg,È»ºóÔÙ·Å»Ø£¬ÕâÊÇÒª¸ÉÂï£¿
+						//å»å‡ºmsg,ç„¶åå†æ”¾å›ï¼Œè¿™æ˜¯è¦å¹²å˜›ï¼Ÿ
                         var msg = messages[this.id];
                         if (msg === undefined) {
                             msg = [];
                             messages[this.id] = msg;
                         }
-						//ÓÖÒ»¸öÊÂ¼ş´¥·¢£¬Õâ¸öÎ¬¶È¸üµÍ£¬Õë¶ÔÃ¿¸öÊôĞÔ
+						//åˆä¸€ä¸ªäº‹ä»¶è§¦å‘ï¼Œè¿™ä¸ªç»´åº¦æ›´ä½ï¼Œé’ˆå¯¹æ¯ä¸ªå±æ€§
                         var event = $.Event(events.beforeValidateAttribute);
                         $form.trigger(event, [this, msg, deferreds]);
                         if (event.result !== false) {
                             if (this.validate) {
                                 this.validate(this, getValue($form, this), msg, deferreds, $form);
                             }
-							//¿É¼û£¬ajaxÑéÖ¤ÊÇÔÚÕâÀï´ò¿ªµÄ£¬Ò²¾ÍÊÇËµ£¬ajaxÊÇºóĞøÑéÖ¤µÄ
+							//å¯è§ï¼ŒajaxéªŒè¯æ˜¯åœ¨è¿™é‡Œæ‰“å¼€çš„ï¼Œä¹Ÿå°±æ˜¯è¯´ï¼Œajaxæ˜¯åç»­éªŒè¯çš„
                             if (this.enableAjaxValidation) {
                                 needAjaxValidation = true;
                             }
@@ -335,7 +349,7 @@
             });
 
             // ajax validation
-			//ĞèÒªÒ»Ğ©JqueryµÄDeferred¶ÔÏóÁË½â
+			//éœ€è¦ä¸€äº›Jqueryçš„Deferredå¯¹è±¡äº†è§£
             $.when.apply(this, deferreds).always(function() {
                 // Remove empty message arrays
                 for (var i in messages) {
@@ -349,21 +363,21 @@
                     if ($button && $button.length && $button.attr('name')) {
                         extData += '&' + $button.attr('name') + '=' + $button.attr('value');
                     }
-					//×é×°AjaxÇëÇó²ÎÊı
+					//ç»„è£…Ajaxè¯·æ±‚å‚æ•°
                     $.ajax({
-						//urlÊÇÄÄ¸ö£¿
+						//urlæ˜¯å“ªä¸ªï¼Ÿ
                         url: data.settings.validationUrl,
                         type: $form.attr('method'),
                         data: $form.serialize() + extData,
                         dataType: data.settings.ajaxDataType,
-						//´ÓÕâÀï¿ÉÒÔ¿´³ö£¬Èç¹ûĞèÒªµÃµ½ajax·µ»ØµÄ½á¹û£¬ÄÇ¾Í¼àÌıajaxXXXXÊÂ¼ş¾ÍĞĞÁË
+						//ä»è¿™é‡Œå¯ä»¥çœ‹å‡ºï¼Œå¦‚æœéœ€è¦å¾—åˆ°ajaxè¿”å›çš„ç»“æœï¼Œé‚£å°±ç›‘å¬ajaxXXXXäº‹ä»¶å°±è¡Œäº†
                         complete: function (jqXHR, textStatus) {
                             $form.trigger(events.ajaxComplete, [jqXHR, textStatus]);
                         },
                         beforeSend: function (jqXHR, settings) {
                             $form.trigger(events.ajaxBeforeSend, [jqXHR, settings]);
                         },
-						//´ÓÕâÀï¿´³öÀ´£¬yii.activeForm.jsÊÇºÍ·şÎñ¶ËµÄÑéÖ¤ÅäºÏÊ¹ÓÃµÄ
+						//ä»è¿™é‡Œçœ‹å‡ºæ¥ï¼Œyii.activeForm.jsæ˜¯å’ŒæœåŠ¡ç«¯çš„éªŒè¯é…åˆä½¿ç”¨çš„
                         success: function (msgs) {
                             if (msgs !== null && typeof msgs === 'object') {
                                 $.each(data.attributes, function () {
@@ -397,7 +411,7 @@
                 data = $form.data('yiiActiveForm');
 
             if (data.validated) {
-				//µÚ¶ş´Î²Å»áÖ´ĞĞÕâ¸ö·ÖÖ§
+				//ç¬¬äºŒæ¬¡æ‰ä¼šæ‰§è¡Œè¿™ä¸ªåˆ†æ”¯
                 // Second submit's call (from validate/updateInputs)
                 data.submitting = false;
                 var event = $.Event(events.beforeSubmit);
@@ -411,14 +425,14 @@
                 return true;   // continue submitting the form since validation passes
             } else {
                 // First submit's call (from yii.js/handleAction) - execute validating
-				//µÚÒ»´Î»áÖ´ĞĞÕâ¸ö·ÖÖ§
+				//ç¬¬ä¸€æ¬¡ä¼šæ‰§è¡Œè¿™ä¸ªåˆ†æ”¯
                 setSubmitFinalizeDefer($form);
 
                 if (data.settings.timer !== undefined) {
                     clearTimeout(data.settings.timer);
                 }
                 data.submitting = true;
-				//¿ªÊ¼Ö´ĞĞÑéÖ¤
+				//å¼€å§‹æ‰§è¡ŒéªŒè¯
                 methods.validate.call($form);
                 return false;
             }
@@ -483,13 +497,13 @@
 
     var watchAttribute = function ($form, attribute) {
         var $input = findInput($form, attribute);
-		//ÊÇ·ñ¼àÌıchangeÑéÖ¤
+		//æ˜¯å¦ç›‘å¬changeéªŒè¯
         if (attribute.validateOnChange) {
             $input.on('change.yiiActiveForm', function () {
                 validateAttribute($form, attribute, false);
             });
         }
-		//ÊÇ·ñ¼àÌıBlurÑéÖ¤
+		//æ˜¯å¦ç›‘å¬BluréªŒè¯
         if (attribute.validateOnBlur) {
             $input.on('blur.yiiActiveForm', function () {
                 if (attribute.status == 0 || attribute.status == 1) {
@@ -497,7 +511,7 @@
                 }
             });
         }
-		//ÊÇ·ñ¼àÌı¼üÈëÑéÖ¤
+		//æ˜¯å¦ç›‘å¬é”®å…¥éªŒè¯
         if (attribute.validateOnType) {
             $input.on('keyup.yiiActiveForm', function (e) {
                 if ($.inArray(e.which, [16, 17, 18, 37, 38, 39, 40]) !== -1 ) {
@@ -514,7 +528,7 @@
         findInput($form, attribute).off('.yiiActiveForm');
     };
 
-	//Õâ¸öÊÇYiiÌá¹©µÄÑéÖ¤Ä³¸öÊôĞÔµÄ·½·¨£¬ÎŞĞèÊÖ¶¯µ÷ÓÃ£¬ÓÉÆäËû·½·¨µ÷ÓÃ
+	//è¿™ä¸ªæ˜¯Yiiæä¾›çš„éªŒè¯æŸä¸ªå±æ€§çš„æ–¹æ³•ï¼Œæ— éœ€æ‰‹åŠ¨è°ƒç”¨ï¼Œç”±å…¶ä»–æ–¹æ³•è°ƒç”¨
     var validateAttribute = function ($form, attribute, forceValidate, validationDelay) {
         var data = $form.data('yiiActiveForm');
 
@@ -544,7 +558,7 @@
                     $form.find(this.container).addClass(data.settings.validatingCssClass);
                 }
             });
-			//Ö´ĞĞÑéÖ¤£¬ÓÃ$form¶ÔÏóµ÷ÓÃvalidate·½·¨
+			//æ‰§è¡ŒéªŒè¯ï¼Œç”¨$formå¯¹è±¡è°ƒç”¨validateæ–¹æ³•
             methods.validate.call($form);
         }, validationDelay ? validationDelay : 200);
     };
@@ -705,9 +719,9 @@
     };
 
 	/**
-	*»ñµÃÄ³¸ö±íµ¥ÏîµÄÖµ
-	$form Jquery Form ¶ÔÏó
-	attributeÊÇDOM¶ÔÏó£¬Ä³¸ö±íµ¥Ïî
+	*è·å¾—æŸä¸ªè¡¨å•é¡¹çš„å€¼
+	$form Jquery Form å¯¹è±¡
+	attributeæ˜¯DOMå¯¹è±¡ï¼ŒæŸä¸ªè¡¨å•é¡¹
 	*/
     var getValue = function ($form, attribute) {
         var $input = findInput($form, attribute);
