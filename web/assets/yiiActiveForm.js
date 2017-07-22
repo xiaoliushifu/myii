@@ -124,6 +124,7 @@
     // NOTE: If you change any of these defaults, make sure you update yii\widgets\ActiveForm::getClientOptions() as well
 	//一些默认配置项
 	//注意，这些默认配置项和服务端ActiveForm是一致的，所以修改时要两个都修改，保持一致
+	//服务端是yii\widgets\ActiveForm。该类也有下面的一些属性，且有一样的默认配置
     var defaults = {
         // whether to encode the error summary
         encodeErrorSummary: true,
