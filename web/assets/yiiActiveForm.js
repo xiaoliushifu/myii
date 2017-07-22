@@ -36,6 +36,9 @@
         }
     };
 
+	//定义穿插在验证代码里的事件列表，如果你想在验证代码里嵌入自己的代码，直接写下面的事件处理函数就行了
+	//在合适的时机下，就会调用
+	//因为下述事件是写死在验证代码里的，故暂不支持自定义事件名
     var events = {
         /**
 		 * 在validate方法里触发
@@ -119,6 +122,8 @@
     };
 
     // NOTE: If you change any of these defaults, make sure you update yii\widgets\ActiveForm::getClientOptions() as well
+	//一些默认配置项
+	//注意，这些默认配置项和服务端ActiveForm是一致的，所以修改时要两个都修改，保持一致
     var defaults = {
         // whether to encode the error summary
         encodeErrorSummary: true,
@@ -127,16 +132,21 @@
         // whether to perform validation before submitting the form.
         validateOnSubmit: true,
         // the container CSS class representing the corresponding attribute has validation error
+		//配置errorCssClass，当验证出错时，为当前表单项的容器添加has-error的css类（红色)
         errorCssClass: 'has-error',
         // the container CSS class representing the corresponding attribute passes validation
+		//验证通过时，添加has-success的css类
         successCssClass: 'has-success',
         // the container CSS class representing the corresponding attribute is being validated
+		//验证只能一个个去验证，用Css类validating表示当前正在验证的表单项
         validatingCssClass: 'validating',
         // the GET parameter name indicating an AJAX-based validation
         ajaxParam: 'ajax',
         // the type of data that you're expecting back from the server
+		//期待ajax调用后服务端返回的数据类型（需要有jquery的ajax知识点）
         ajaxDataType: 'json',
         // the URL for performing AJAX-based validation. If not set, it will use the the form's action
+		//配置ajax验证时的http请求地址，默认是form的action属性值
         validationUrl: undefined,
         // whether to scroll to first visible error after validation.
         scrollToError: true
