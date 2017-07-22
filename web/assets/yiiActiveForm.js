@@ -557,10 +557,12 @@
         if (!forceValidate) {
             return;
         }
-
+		//清除上次的定时器
         if (data.settings.timer !== undefined) {
             clearTimeout(data.settings.timer);
         }
+		//这是validationDelay配置项发挥作用的地方，有些验证并不是马上就调用validate方法
+		//而是利用javascript的setTimeout设定一个毫秒级的延迟.
         data.settings.timer = setTimeout(function () {
             if (data.submitting || $form.is(':hidden')) {
                 return;
