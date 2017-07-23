@@ -1,0 +1,125 @@
+.bs-callout {
+    padding: 20px;
+    margin: 0 0 20px 0;
+
+    border: 1px solid #eee;
+    border-left-width: 5px;
+    border-radius: 3px;
+    background-color: white;
+}
+
+.bs-callout h4 {
+    margin-top: 0;
+    margin-bottom: 5px;
+}
+
+.bs-callout + .bs-callout {
+    margin-top: -5px;
+}
+
+.bs-callout-default {
+    border-left-color: #777;
+}
+
+.bs-callout-primary {
+    border-left-color: #00C0EF;
+}
+
+.bs-callout-success {
+    border-left-color: #5cb85c;
+}
+
+.bs-callout-danger {
+    border-left-color: #d9534f;
+}
+
+.bs-callout-warning {
+    border-left-color: #f0ad4e;
+}
+
+.bs-callout-info {
+    border-left-color: #5bc0de;
+}
+
+.examNum {
+    border: #ccc solid 1px;
+    float: left;
+    width: 20px;
+    height: 20px;
+    text-align: center;
+    margin: 0 5px 5px 0;
+    background-color: white;
+    position: relative;
+}
+
+.selected {
+    background-color: #00C0EF;
+    color: #FFFFFF;
+    border: #00C0EF;
+}
+
+.selectedStar {
+    color: gold;
+}
+
+.selected a {
+    color: #FFFFFF;
+}
+
+.star {
+    color: #cccccc;
+}
+
+.gWel-mailInfo-status {
+    position: absolute;
+    left: -9px;
+    top: -9px;
+    color: gold;
+    border-radius: 16px;
+    min-width: 10px;
+    height: 16px;
+    padding: 0 3px;
+    line-height: 16px;
+    font-size: 12px;
+    text-align: center;
+    vertical-align: top;
+}
+
+.radio label {
+    display: block;
+}
+.examNum:hover {
+    cursor: pointer;
+}
+
+fieldset label {
+    font-size: 13px;font-weight: 400;
+}
+.circle {
+    width: 90px;
+    height: 90px;
+    background: #00C0EF;
+    -moz-border-radius: 50px;
+    -webkit-border-radius: 50px;
+    border-radius: 50px;
+    text-align: center;
+    padding-top: 20px;
+    color: white;
+}
+.failCircle {
+    width: 90px;
+    height: 90px;
+    background: #e65451;
+    -moz-border-radius: 50px;
+    -webkit-border-radius: 50px;
+    border-radius: 50px;
+    text-align: center;
+    padding-top: 20px;
+    color: white;
+}
+.resultsNum {
+    font-size: 20px;
+    color: #666666;
+    font-family: 'PingFangSC-Thin', 'PingFang SC Thin', 'PingFang SC';
+}
+
