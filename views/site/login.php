@@ -12,10 +12,8 @@ $this->title = 'Login';
 $this->params['breadcrumbs'][] = $this->title;
 MyAsset::register($this);
 
-//单独加载的JS代码块，代码位置写在视图文件的开始处，则加载到.yiiActiveForm()之前。
- $this->registerJs("console.log('this is registerJs')");
-//直接在视图里调用自己的方法就是了
-//$this->registerJsFile('static/js/yz_stock_in.js');
+//单独加载的JS代码块，通过参数二指定加载位置在<head>。
+$this->registerJs("console.log('this is registerJs')",$this::POS_HEAD, $key = null);
 ?>
 <div class="site-login">
     <h1><?= Html::encode($this->title) ?></h1>
@@ -81,11 +79,9 @@ MyAsset::register($this);
         这种时候就不要使用原始加载方式了，只能写个AssetBundle，其中的position位置是View::POS_END，depends写好才能解决问题
  -->
 <script type="text/javascript" src="static/js/yz_stock_in.js"></script>
-<!-- 直接注入JS代码，而不是js文件。注意这种直接注入Js代码的方式，默认会把代码注入到</body>里，而且是Jquery的预加载ready函数里。
-但是它和.yiiActiveForm()的位置根据它注册代码位置的不同而有区别：
-写在视图文件的末尾，就会注入到.yiiactiveForm()代码之后（写在视图文件的开始处，就会注册到.yiiActiveForm之前）
- -->
-<?=$this->registerJs("console.log('this is registerJs2')");?>
+
+<!-- 单独加载JS代码块，通过参数二指定位置是 .POS_LOAD会嵌入到HTMl的</body>里单独一个Jquery的load函数中-->
+<?= $this->registerJs("console.log('this is registerJs2')",$this::POS_LOAD, $key = null);?>
 <!--  如下的Css文件将加载到<head>区里所有css文件的最上面 , css文件只能加载到<head>中 -->
 <?= $this->registerCssFile('static/css/word_day.css'); ?>
 <!--  如下的Css文件将按顺序加载到上一个Css文件后面 -->
