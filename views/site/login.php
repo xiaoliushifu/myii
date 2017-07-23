@@ -11,7 +11,6 @@ use app\assets\MyAsset;
 $this->title = 'Login';
 $this->params['breadcrumbs'][] = $this->title;
 
-MyAsset::register($this);
 ?>
 <div class="site-login">
     <h1><?= Html::encode($this->title) ?></h1>
@@ -78,3 +77,10 @@ MyAsset::register($this);
 <?= $this->registerCssFile('@webroot/static/css/word_day.css'); ?>
 <!--  如下的Css文件将按顺序加载到上一个Css文件后面 -->
 <?= $this->registerCssFile('@webroot/static/css/exam-my.css'); ?>
+
+<?php
+//调整Asset的位置，也会改变加载的顺序，在上面时，会在yii.validation.js和yii.activeForm.js的前面
+//在这里时，会在yii.validation.js和yii.activeForm.js的后面
+//yii.validation.js和yii.activeForm.js文件是如何加载的，稍后再说，估计跟使用ActiveForm有关吧
+MyAsset::register($this); 
+?>
