@@ -433,8 +433,10 @@ class View extends \yii\base\View
      * - [[POS_BEGIN]]: at the beginning of the body section
      * - [[POS_END]]: at the end of the body section
      * - [[POS_LOAD]]: enclosed within jQuery(window).load().
+     * 使用了POS_LOAD位置参数的话，该方法会自动注册JQuery的js文件
      *   Note that by using this position, the method will automatically register the jQuery js file.
      * - [[POS_READY]]: enclosed within jQuery(document).ready(). This is the default value.
+     *   直接注入js代码，默认是使用Jquery的ready方法，而ready方法需要自动加载Jquery
      *   Note that by using this position, the method will automatically register the jQuery js file.
      *
      * @param string $key the key that identifies the JS code block. If null, it will use
@@ -445,6 +447,7 @@ class View extends \yii\base\View
     {
         $key = $key ?: md5($js);
         $this->js[$position][$key] = $js;
+        //从代码里果然看到，REDAY和LOAD位置都会自动加载Jquery文件
         if ($position === self::POS_READY || $position === self::POS_LOAD) {
             JqueryAsset::register($this);
         }

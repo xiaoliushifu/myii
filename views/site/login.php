@@ -11,8 +11,11 @@ use app\assets\MyAsset;
 $this->title = 'Login';
 $this->params['breadcrumbs'][] = $this->title;
 MyAsset::register($this);
+
+//单独加载的JS代码块，代码位置写在视图文件的开始处，则加载到.yiiActiveForm()之前。
+ $this->registerJs("console.log('this is registerJs')");
 //直接在视图里调用自己的方法就是了
-$this->registerJsFile('static/js/yz_stock_in.js');
+//$this->registerJsFile('static/js/yz_stock_in.js');
 ?>
 <div class="site-login">
     <h1><?= Html::encode($this->title) ?></h1>
@@ -69,10 +72,21 @@ $this->registerJsFile('static/js/yz_stock_in.js');
         To modify the username/password, please check out the code <code>app\models\User::$users</code>.
     </div>
 </div>
-
-
+<!-- 下述使用最原始的方式在视图里引用js文件，这种方式与AssetBundle无关，会直接在页面位置加载，写在哪就从哪里加载。
+        与AssetBundle加载js的区别是，AssetBundle全部加载到</body>。
+        如果原始加载的js无需其他依赖，可以写在这里。
+        如果有需要jquery等其他库的依赖，也需要自己处理依赖关系。
+        如果当前js依赖的Query在layout中可以加载进来，就不必在该视图中再次重复了，但是加载顺序问题怎么解决呢？
+        因为平时开发时一般情况下个别js文件只是某个视图需要，就样就不能直接去编辑layout，也就不能直接写在</body>前的jquery.js之后，
+        这种时候就不要使用原始加载方式了，只能写个AssetBundle，其中的position位置是View::POS_END，depends写好才能解决问题
+ -->
+<script type="text/javascript" src="static/js/yz_stock_in.js"></script>
+<!-- 直接注入JS代码，而不是js文件。注意这种直接注入Js代码的方式，默认会把代码注入到</body>里，而且是Jquery的预加载ready函数里。
+但是它和.yiiActiveForm()的位置根据它注册代码位置的不同而有区别：
+写在视图文件的末尾，就会注入到.yiiactiveForm()代码之后（写在视图文件的开始处，就会注册到.yiiActiveForm之前）
+ -->
+<?=$this->registerJs("console.log('this is registerJs2')");?>
 <!--  如下的Css文件将加载到<head>区里所有css文件的最上面 , css文件只能加载到<head>中 -->
 <?= $this->registerCssFile('static/css/word_day.css'); ?>
 <!--  如下的Css文件将按顺序加载到上一个Css文件后面 -->
 <?= $this->registerCssFile('static/css/exam-my.css'); ?>
-?>
