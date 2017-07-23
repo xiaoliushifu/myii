@@ -6,9 +6,12 @@
 
 use yii\helpers\Html;
 use yii\bootstrap\ActiveForm;
+use app\assets\MyAsset;
 
 $this->title = 'Login';
 $this->params['breadcrumbs'][] = $this->title;
+
+MyAsset::register($this);
 ?>
 <div class="site-login">
     <h1><?= Html::encode($this->title) ?></h1>
@@ -65,3 +68,13 @@ $this->params['breadcrumbs'][] = $this->title;
         To modify the username/password, please check out the code <code>app\models\User::$users</code>.
     </div>
 </div>
+<!--  如下的js文件将加载到</body>区里所有js文件的最上面, JS文件的默认position是</body> -->
+<?= $this->registerJsFile('@webroot/static/js/yz_stock_in.js'); ?>
+<!--  如下的js文件将加载到<body>区,因为POS_BEGIN -->
+<?= $this->registerJsFile('@webroot/static/js/yz_stock_in.js',['position'=>$this::POS_BEGIN]); ?>
+
+
+<!--  如下的Css文件将加载到<head>区里所有css文件的最上面 , css文件只能加载到<head>中 -->
+<?= $this->registerCssFile('@webroot/static/css/word_day.css'); ?>
+<!--  如下的Css文件将按顺序加载到上一个Css文件后面 -->
+<?= $this->registerCssFile('@webroot/static/css/exam-my.css'); ?>
