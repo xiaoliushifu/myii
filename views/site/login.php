@@ -12,9 +12,7 @@ $this->title = 'Login';
 $this->params['breadcrumbs'][] = $this->title;
 MyAsset::register($this);
 //直接在视图里调用自己的方法就是了
-$this->registerJsFile('@webroot/static/js/yz_stock_in.js');
-//多余的方法而已
-//MyAsset::addScript($this,'@webroot/static/js/yz_stock_in.js'); 
+$this->registerJsFile('static/js/yz_stock_in.js');
 ?>
 <div class="site-login">
     <h1><?= Html::encode($this->title) ?></h1>
@@ -74,7 +72,7 @@ $this->registerJsFile('@webroot/static/js/yz_stock_in.js');
 
 
 <!--  如下的Css文件将加载到<head>区里所有css文件的最上面 , css文件只能加载到<head>中 -->
-<?= $this->registerCssFile('@webroot/static/css/word_day.css'); ?>
+<?= $this->registerCssFile('static/css/word_day.css'); ?>
 <!--  如下的Css文件将按顺序加载到上一个Css文件后面 -->
-<?= $this->registerCssFile('@webroot/static/css/exam-my.css'); ?>
+<?= $this->registerCssFile('static/css/exam-my.css'); ?>
 ?>
