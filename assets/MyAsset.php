@@ -32,14 +32,4 @@ class MyAsset extends AssetBundle
         'yii\web\YiiAsset',
         'yii\bootstrap\BootstrapAsset',
     ];
-    //定义按需加载JS方法，其实这个addScript方法有点多余，没什么用，还不如直接在视图文件里调用函数体呢
-    /**
-     * 直接在视图文件里这样写
-     * php```
-     * $this->registerJsFile('xxxx.js', ['depends' => ['app\assets\AppAsset']]);
-     * ```
-     */
-    public static function addScript($view, $jsfile) {
-        $view->registerJsFile($jsfile, [MyAsset::className(), 'depends' => ['app\assets\AppAsset']]);
-    }  
 }
