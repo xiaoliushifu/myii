@@ -540,34 +540,46 @@ class Component extends Object
     }
 
     /**
+	* 触发一个事件
      * Triggers an event.
+	 * 该方法代表一个事件的发生
      * This method represents the happening of an event. It invokes
+	 * 将会调用所有曾经绑定的事件处理者，包含类级别的事件处理者（第一维是事件名）
      * all attached handlers for the event including class-level handlers.
-     * @param string $name the event name
-     * @param Event $event the event parameter. If not set, a default [[Event]] object will be created.
+     * @param string $name the event name 事件名
+     * @param Event $event the event parameter. If not set, a default [[Event]] object will be created. 事件对象
      */
     public function trigger($name, Event $event = null)
     {
         $this->ensureBehaviors();
+		//这个事件有事件处理者绑定者
         if (!empty($this->_events[$name])) {
+			//没有事件对象，就自动生成一个，这个事件对象是不可缺少的
             if ($event === null) {
                 $event = new Event;
             }
+			//把当前调用trigger的对象放到事件对象的sender属性里
             if ($event->sender === null) {
                 $event->sender = $this;
             }
             $event->handled = false;
+			//事件对象的name属性，就是事件名
             $event->name = $name;
+			//遍历开始
             foreach ($this->_events[$name] as $handler) {
                 $event->data = $handler[1];
+				//调用每个事件处理者的时候，都会传递这个共享的事件对象
                 call_user_func($handler[0], $event);
                 // stop further handling if the event is handled
+				//什么叫事件处理完了？有两种情况：1：只事件对象的handled属性为true就认为事件处理完了，虽然可能有其他的事件处理者还没来得及被调用
+				//2 该事件绑定的所有事件处理者都被调用了，遍历结束了
                 if ($event->handled) {
                     return;
                 }
             }
         }
         // invoke class-level attached handlers
+		//最后，才有机会调用类级别的事件处理者。注意，类是哪个类，就是$this
         Event::trigger($this, $name, $event);
     }
 
