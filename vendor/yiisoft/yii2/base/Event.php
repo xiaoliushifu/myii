@@ -9,16 +9,20 @@ namespace yii\base;
 
 /**
  * Event is the base class for all event classes.
- *
+ * Event类是所有事件类的基类
  * It encapsulates the parameters associated with an event.
+ * 它封装了一个事件里需要的参数
  * The [[sender]] property describes who raises the event.
+ * sender属性描述了谁触发了这个事件，哪个对象触发的
  * And the [[handled]] property indicates if the event is handled.
+ * handled属性表示事件是否已处理完，是一个标记。如果其中的一个事件处理者把handled设置为true,那余下的
+ * 事件处理者将不再被调用了
  * If an event handler sets [[handled]] to be `true`, the rest of the
  * uninvoked handlers will no longer be called to handle the event.
- *
+ * 还要补充一下，当绑定一个事件处理者的时候，还可以传递额外的参数，可以在事件处理者调用时使用
  * Additionally, when attaching an event handler, extra data may be passed
  * and be available via the [[data]] property when the event handler is invoked.
- *
+ * *更多信息，去看权威指南
  * For more details and usage information on Event, see the [guide article on events](guide:concept-events).
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
