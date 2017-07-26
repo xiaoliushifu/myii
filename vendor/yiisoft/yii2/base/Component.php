@@ -484,10 +484,15 @@ class Component extends Object
      */
     public function on($name, $handler, $data = null, $append = true)
     {
+		//这行代码是干啥的，好多地方有，暂且略过
         $this->ensureBehaviors();
+		
+		//第四个参数是true(默认值）；或者这个事件还没有事件处理者，都把事件名为下标，保存成二维数组。
         if ($append || empty($this->_events[$name])) {
             $this->_events[$name][] = [$handler, $data];
         } else {
+		//第四个参数是false,并且$name事件的处理者队列不空，那么就把当前的事件处理者放到队列的前头。
+		//使用php原生函数array_unshift即可。
             array_unshift($this->_events[$name], [$handler, $data]);
         }
     }
