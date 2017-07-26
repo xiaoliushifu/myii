@@ -101,6 +101,8 @@ class Component extends Object
 {
     /**
      * @var array the attached event handlers (event name => handlers)
+	 *私有属性，属于Component类的，注意Event类也有一个同名的属性
+	 * 二维数组，以事件名为下标，事件处理者队列为值
      */
     private $_events = [];
     /**

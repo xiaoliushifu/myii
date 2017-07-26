@@ -52,16 +52,19 @@ class Event extends Object
 
     /**
      * @var array contains all globally registered event handlers.
+	 * 私有静态变量
+	 *  这里放置全局注册的或者全局绑定的事件处理者，注意与Component.php里的$_events不同。
      */
     private static $_events = [];
 
 
     /**
      * Attaches an event handler to a class-level event.
-     *
+     * 绑定一个事件处理者到一个事件上，一个类级别的事件。
+	 * 当类级别的事件触发后，所有这些类及父类的事件处理者都会被调用
      * When a class-level event is triggered, event handlers attached
      * to that class and all parent classes will be invoked.
-     *
+     * 比如，如下代码绑定绑定事件处理者到ActiveRecord类的ActiveRecord::EVENT_AFTER_INSERT事件
      * For example, the following code attaches an event handler to `ActiveRecord`'s
      * `afterInsert` event:
      *
@@ -70,16 +73,20 @@ class Event extends Object
      *     Yii::trace(get_class($event->sender) . ' is inserted.');
      * });
      * ```
-     *
+     * 上述事件处理者将在AR对象成功插入一条记录的时候调用
      * The handler will be invoked for EVERY successful ActiveRecord insertion.
-     *
+     * 如何声明事件处理者，请参考Component的on方法
      * For more details about how to declare an event handler, please refer to [[Component::on()]].
-     *
+     * 全命名空间的类名，类级别事件中涉及的那个类
      * @param string $class the fully qualified class name to which the event handler needs to attach.
+	 * 事件名，一般是类常量
      * @param string $name the event name.
+	 * 事件处理者，一般是php函数或方法
      * @param callable $handler the event handler.
+	 * 事件触发时，传递给事件处理者的参数，在事件处理者中通过Event::data访问
      * @param mixed $data the data to be passed to the event handler when the event is triggered.
      * When the event handler is invoked, this data can be accessed via [[Event::data]].
+	 * 默认是true,代表顺序添加到事件处理者队列的队尾，若是false,则添加到队头
      * @param bool $append whether to append new event handler to the end of the existing
      * handler list. If `false`, the new handler will be inserted at the beginning of the existing
      * handler list.
@@ -87,7 +94,9 @@ class Event extends Object
      */
     public static function on($class, $name, $handler, $data = null, $append = true)
     {
+		//去除最左边的斜杠，据说这是PHP早期支持命名空间时的bug
         $class = ltrim($class, '\\');
+		//下面的代码和Component::on类似，只是加上了$class参数，变成了三维数组
         if ($append || empty(self::$_events[$name][$class])) {
             self::$_events[$name][$class][] = [$handler, $data];
         } else {
@@ -142,7 +151,7 @@ class Event extends Object
         self::$_events = [];
     }
 
-    /**
+    /**判断某一个类级别的事件，是否有绑定的事件处理者
      * Returns a value indicating whether there is any handler attached to the specified class-level event.
      * Note that this method will also check all parent classes to see if there is any handler attached
      * to the named event.
