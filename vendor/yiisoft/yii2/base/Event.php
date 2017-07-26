@@ -40,11 +40,13 @@ class Event extends Object
     public $sender;
     /**
      * @var bool whether the event is handled. Defaults to `false`.
+	 * 当一个事件对象的handled属性在事件处理过程中置为true时，事件处理过程将会终止，后续
+	 * 的事件处理者就都不执行调用了
      * When a handler sets this to be `true`, the event processing will stop and
      * ignore the rest of the uninvoked event handlers.
      */
     public $handled = false;
-    /**
+    /**参数，当通过Component::on方法绑定事件处理者时，传递的参数，将来触发时作为事件对象的data属性可以使用
      * @var mixed the data that is passed to [[Component::on()]] when attaching an event handler.
      * Note that this varies according to which event handler is currently executing.
      */
