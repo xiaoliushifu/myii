@@ -440,13 +440,15 @@ class Component extends Object
     }
 
     /**
+	*  判断一个事件是否已经绑定了事件处理者
      * Returns a value indicating whether there is any handler attached to the named event.
-     * @param string $name the event name
+     * @param string $name the event name 事件名
      * @return bool whether there is any handler attached to the event.
      */
     public function hasEventHandlers($name)
     {
         $this->ensureBehaviors();
+		//既判断Components的事件，还判断类级别的事件
         return !empty($this->_events[$name]) || Event::hasHandlers($this, $name);
     }
 
