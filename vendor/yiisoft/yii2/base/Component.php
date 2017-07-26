@@ -499,25 +499,31 @@ class Component extends Object
 
     /**
      * Detaches an existing event handler from this component.
+	 * 解绑一个已经绑定的事件处理者
      * This method is the opposite of [[on()]].
-     * @param string $name event name
-     * @param callable $handler the event handler to be removed.
+	 * 这个方法是on方法的相反操作
+     * @param string $name event name  事件名
+     * @param callable $handler the event handler to be removed.  要删除的事件处理者
      * If it is null, all handlers attached to the named event will be removed.
-     * @return bool if a handler is found and detached
+     * @return bool if a handler is found and detached 有这个事件处理者并删除它就是true.
      * @see on()
      */
     public function off($name, $handler = null)
     {
+		//还是那一段代码，稍后再研究
         $this->ensureBehaviors();
+		//事件队列里，根本没这个事件
         if (empty($this->_events[$name])) {
             return false;
         }
+		//事件处理者参数为空，则把该事件下的所有事件处理者都干掉
         if ($handler === null) {
             unset($this->_events[$name]);
             return true;
         }
-
+		//来个标记
         $removed = false;
+		//开始遍历，熟悉事件处理者的结构，0是事件处理者本身，1是事件处理者的data参数
         foreach ($this->_events[$name] as $i => $event) {
             if ($event[0] === $handler) {
                 unset($this->_events[$name][$i]);
@@ -525,6 +531,7 @@ class Component extends Object
             }
         }
         if ($removed) {
+			//重新排列事件处理者队列的顺序，我觉得完全可以写在foreach中
             $this->_events[$name] = array_values($this->_events[$name]);
         }
         return $removed;
