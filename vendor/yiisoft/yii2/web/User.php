@@ -237,6 +237,7 @@ class User extends Component
      */
     public function login(IdentityInterface $identity, $duration = 0)
     {
+        //先去执行beforeLogin方法，看到没，Yii框架自带的事件，不是明显的$this->trigger(),而是写到一个方法里，在beforeLogin里trigger
         if ($this->beforeLogin($identity, false, $duration)) {
             $this->switchIdentity($identity, $duration);
             $id = $identity->getId();
@@ -247,6 +248,7 @@ class User extends Component
                 $log = "User '$id' logged in from $ip. Session not enabled.";
             }
             Yii::info($log, __METHOD__);
+            //在之类trigger另一个事件，而且事件名和方法名是一致的，里面肯定是trigger(EVENT_AFTER_LOGIN,xxxx)
             $this->afterLogin($identity, false, $duration);
         }
 
