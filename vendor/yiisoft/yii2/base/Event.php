@@ -54,6 +54,7 @@ class Event extends Object
      * @var array contains all globally registered event handlers.
 	 * 私有静态变量
 	 *  这里放置全局注册的或者全局绑定的事件处理者，注意与Component.php里的$_events不同。
+	 * 这个属性是三维数组，[$name][$class][]=[$handler,$data]这样的
      */
     private static $_events = [];
 
@@ -144,7 +145,10 @@ class Event extends Object
         return $removed;
     }
 
-    /**
+    /** 
+	 * 直接清空所有的类的所有事件的所有事件处理者队列
+	 * 一句话，全部都清空。
+	 * 我倒想不到，什么场景下需要调用这个方法呢？
      * Detaches all registered class-level event handlers.
      * @see on()
      * @see off()
@@ -157,29 +161,33 @@ class Event extends Object
 
     /**判断某一个类级别的事件，是否有绑定的事件处理者
      * Returns a value indicating whether there is any handler attached to the specified class-level event.
+	 * 不但查$class指定的类，而且还检查$class的父类里有没有绑定过$name事件的事件处理者
      * Note that this method will also check all parent classes to see if there is any handler attached
      * to the named event.
+	 * $class可以是一个类名，或者是一个对象
      * @param string|object $class the object or the fully qualified class name specifying the class-level event.
      * @param string $name the event name.
      * @return bool whether there is any handler attached to the event.
      */
     public static function hasHandlers($class, $name)
     {
+		//事件都没有呢，直接走人
         if (empty(self::$_events[$name])) {
             return false;
         }
+		//是个对象，就找到它所属的类
         if (is_object($class)) {
             $class = get_class($class);
         } else {
             $class = ltrim($class, '\\');
         }
-
+		//把类，父类，接口一并都拿来
         $classes = array_merge(
             [$class],
             class_parents($class, true),
             class_implements($class, true)
         );
-
+		//来遍历吧，三维数组，$name,$class,[]=[$handler,$data]
         foreach ($classes as $class) {
             if (!empty(self::$_events[$name][$class])) {
                 return true;
