@@ -450,29 +450,33 @@ class Component extends Object
 
     /**
      * Attaches an event handler to an event.
-     *
+     * 把一个事件处理者绑定到一个事件上
      * The event handler must be a valid PHP callback. The following are
+	 * 事件处理者必须是一个PHP 函数（方法）
      * some examples:
      *
      * ```
-     * function ($event) { ... }         // anonymous function
-     * [$object, 'handleClick']          // $object->handleClick()
-     * ['Page', 'handleClick']           // Page::handleClick()
-     * 'handleClick'                     // global function handleClick()
+     * function ($event) { ... }         // anonymous function   匿名函数
+     * [$object, 'handleClick']          // $object->handleClick()  对象方法
+     * ['Page', 'handleClick']           // Page::handleClick()		静态方法
+     * 'handleClick'                     // global function handleClick()	普通全局函数
      * ```
      *
      * The event handler must be defined with the following signature,
-     *
+     * 这些函数不是随便定义的，必须符合如下的签名
      * ```
      * function ($event)
      * ```
-     *
+     * $event是一个对象，它有一些关联当前事件的属性，方便事件处理者获取该事件的一些信息进行处理
      * where `$event` is an [[Event]] object which includes parameters associated with the event.
      *
-     * @param string $name the event name
-     * @param callable $handler the event handler
+     * @param string $name the event name  事件名，自己随便定义
+     * @param callable $handler the event handler  事件处理者
      * @param mixed $data the data to be passed to the event handler when the event is triggered.
+	 * 事件处理者参数，在事件处理者中通过Event::data访问
      * When the event handler is invoked, this data can be accessed via [[Event::data]].
+	 * booleam类型，默认是true,即一个事件可以绑定多个事件处理者，多个事件处理者按照绑定顺序依次触发处理
+	 * 如果该参数设置是false,那么新的事件处理者就会绑定到事件处理者队列的最前面。
      * @param bool $append whether to append new event handler to the end of the existing
      * handler list. If false, the new handler will be inserted at the beginning of the existing
      * handler list.
