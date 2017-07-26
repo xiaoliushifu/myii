@@ -106,9 +106,9 @@ class Event extends Object
 
     /**
      * Detaches an event handler from a class-level event.
-     *
+     *  
      * This method is the opposite of [[on()]].
-     *
+     * 既然是类级别的事件，得提供类的名字，全名
      * @param string $class the fully qualified class name from which the event handler needs to be detached.
      * @param string $name the event name.
      * @param callable $handler the event handler to be removed.
@@ -119,21 +119,25 @@ class Event extends Object
     public static function off($class, $name, $handler = null)
     {
         $class = ltrim($class, '\\');
+		//这个类上跟本没有绑定事件处理者呢，直接走人！
         if (empty(self::$_events[$name][$class])) {
             return false;
         }
+		//没有事件处理者，那就是这个类的这个事件的事件处理者队列全部解绑
         if ($handler === null) {
             unset(self::$_events[$name][$class]);
             return true;
         }
 
         $removed = false;
+		//还是遍历，解绑这个事件处理者，注意用的是全等
         foreach (self::$_events[$name][$class] as $i => $event) {
             if ($event[0] === $handler) {
                 unset(self::$_events[$name][$class][$i]);
                 $removed = true;
             }
         }
+		//重新索引一下下标
         if ($removed) {
             self::$_events[$name][$class] = array_values(self::$_events[$name][$class]);
         }
