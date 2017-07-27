@@ -24,4 +24,5 @@ class Yii extends \yii\BaseYii
 
 spl_autoload_register(['Yii', 'autoload'], true, true);
 Yii::$classMap = require(__DIR__ . '/classes.php');
+//这一句不但把Container引入，而且还把其父类Component,Object,Configurable都引入了进来到内存中
 Yii::$container = new yii\di\Container();

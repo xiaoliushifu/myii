@@ -303,9 +303,9 @@ abstract class Application extends Module
         foreach ($this->bootstrap as $class) {
             $component = null;
             if (is_string($class)) {
-                if ($this->has($class)) {
+                if ($this->has($class)) {//启动时，先看看是否Component中是否有
                     $component = $this->get($class);
-                } elseif ($this->hasModule($class)) {
+                } elseif ($this->hasModule($class)) {//再看Module中是否有
                     $component = $this->getModule($class);
                 } elseif (strpos($class, '\\') === false) {
                     throw new InvalidConfigException("Unknown bootstrapping component ID: $class");

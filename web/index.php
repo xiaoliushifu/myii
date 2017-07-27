@@ -15,5 +15,5 @@ $config = yii\helpers\ArrayHelper::merge(
 );
 
 
-
+//这一行代码，把它的父类base\Application\,base\Module,Servicelocator也都引入到了内存中
 (new yii\web\Application($config))->run();
