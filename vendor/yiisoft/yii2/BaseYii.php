@@ -19,10 +19,15 @@ use yii\di\Container;
 defined('YII_BEGIN_TIME') or define('YII_BEGIN_TIME', microtime(true));
 /**
  * This constant defines the framework installation directory.
+ * Yii2_PATH是指Yii框架的目录,是具体的一个目录，不是应用程序目录。
+ * 是yii2,也就是当前目录。注意区分框架与应用这两个概念的区别
  */
 defined('YII2_PATH') or define('YII2_PATH', __DIR__);
 /**
  * This constant defines whether the application should be in debug mode or not. Defaults to false.
+ * YII_DEBUG经全局搜索，主要是if(YII_DEBUG)的方式应用在代码中，
+ * 1：打trace级别的日志
+ * 2：错误的输出格式更全面简易，
  */
 defined('YII_DEBUG') or define('YII_DEBUG', false);
 /**
