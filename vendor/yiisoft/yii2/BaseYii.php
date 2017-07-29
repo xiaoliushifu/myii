@@ -15,6 +15,9 @@ use yii\di\Container;
 
 /**
  * Gets the application start timestamp.
+ * 系统启动时间，代码需要使用的地方microtime(true)-YII_BEGIN_TIME即可：主要用于
+ * 日志里打印时间统计
+ * debug模块里统计时间
  */
 defined('YII_BEGIN_TIME') or define('YII_BEGIN_TIME', microtime(true));
 /**
@@ -26,13 +29,18 @@ defined('YII2_PATH') or define('YII2_PATH', __DIR__);
 /**
  * This constant defines whether the application should be in debug mode or not. Defaults to false.
  * YII_DEBUG经全局搜索，主要是if(YII_DEBUG)的方式应用在代码中，
- * 1：打trace级别的日志
+ * 1：打trace级别的日志，系统中用trace级别的log打印某些配置项，或者运行组件等。在该常量为true时会打印出来。
  * 2：错误的输出格式更全面简易，
  */
 defined('YII_DEBUG') or define('YII_DEBUG', false);
 /**
  * This constant defines in which environment the application is running. Defaults to 'prod', meaning production environment.
  * You may define this constant in the bootstrap script. The value could be 'prod' (production), 'dev' (development), 'test', 'staging', etc.
+ * YII_ENV是个开关常量，不在代码中具体使用，主要影响如下布尔常量的定义：
+ * YII_ENV_PROD  原生代码里没有用到，估计留给开发者使用
+ * YII_ENV_DEV  影响一些组件或模块的引入，如debug模块，gii模块；还有一些模块是否预先加载，如gii模块提前加载
+ * YII_ENV_TEST 暂不详
+ * 如上的常量，会在代码中具体使用
  */
 defined('YII_ENV') or define('YII_ENV', 'prod');
 /**
@@ -50,6 +58,8 @@ defined('YII_ENV_TEST') or define('YII_ENV_TEST', YII_ENV === 'test');
 
 /**
  * This constant defines whether error handling should be enabled. Defaults to true.
+ * 目前来看，该常量仅仅影响是否使用配置文件中的errHandler组件，加载到Yii::$app中。
+ * 可以置为false，看看少了errHandler组件会有啥不同
  */
 defined('YII_ENABLE_ERROR_HANDLER') or define('YII_ENABLE_ERROR_HANDLER', true);
 
