@@ -30,7 +30,7 @@ defined('YII2_PATH') or define('YII2_PATH', __DIR__);
 /**
  * This constant defines whether the application should be in debug mode or not. Defaults to false.
  * YII_DEBUG经全局搜索，主要是if(YII_DEBUG)的方式应用在代码中，
- * 1：打trace级别的日志，系统中用trace级别的log打印某些配置项，或者运行组件等。在该常量为true时会打印出来。
+ * 1：打trace级别的日志，系统中用trace级别的log打印某些配置项，或者运行组件等。在该常量为true时才会打印出来。
  * 2：错误的输出格式更全面简易，
  */
 defined('YII_DEBUG') or define('YII_DEBUG', false);
