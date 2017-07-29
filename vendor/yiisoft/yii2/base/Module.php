@@ -237,6 +237,9 @@ class Module extends ServiceLocator
     public function setBasePath($path)
     {
         $path = Yii::getAlias($path);
+        //奇怪吗，phar://是啥玩意？一搜吓一跳，原来它是PHP 5.3引入的，类似于java的jar打包程序，用C写的。
+        //phar可以把一个php应用程序或php模块打包为一个.phar的文件，方便转移和被其他php应用程序引入，还可以引入phar文件里的php文件
+        //详情请查看php手册
         $p = strncmp($path, 'phar://', 7) === 0 ? $path : realpath($path);
         if ($p !== false && is_dir($p)) {
             $this->_basePath = $p;
