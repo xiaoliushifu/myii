@@ -50,10 +50,31 @@ class ActionFilter extends Behavior
 
     /**
      * @inheritdoc
+	 * ActionFilter是过滤器不错，但是更大的概念，它还是行为类，所以它有绑定到应用组件类的attach方法
+	 * 该方法覆盖了父类Component的attach()方法
+	 * 这种行为类的目的比较一致，都是冲着Controller::EVENT_BEFORE_ACTION的事件来的，想在这里发挥点作用。
+	 * 根据作用的不同（访问控制，页面缓存，请求host过滤，客户端缓存等）写了多个行为类，都是ActionFilter的子类。
+	 * 具体如何实现各自的作用呢？
+	 * 目前来看，这些行为子类都没有attach方法，只有ActionFilter父类有，attach方法是行为类绑定到应用组件的方式之一
+	 * 绑定到应用组件不重要，重要的是它绑定了控制器类的Controller::EVENT_BEFORE_ACTION事件，事件处理者是
+	 * ActionFilter::beforeFilter。我们去看beforeFilter方法，发现它在内部会执行beforeAction方法。这个beforeAction
+	 * 方法不得了，目前来看它就是行为子类扩展自己功能的关键。也就是说任何ActionFilter行为子类只要实现了
+	 * beforeAction方法，在该方法里写自己的逻辑就是了，不信？去看看filter目录下的类就更清楚了。
+
+	 * 最后总结：
+		从ActionFilter类的功能上来说，它是过滤器，因为它都是在真正执行控制器动作之前发挥作用。
+		如何确保在控制器动作执行之前？绑定Controller::EVENT_BEFORE_ACTION事件即可
+		何时绑定？在触发Controller::EVENT_BEFORE_ACTION事件的最后关头的ensureBehaviors()方法完成绑定。
+		这是Yii的机制，在触发任何事件之前的最后一刻都会执行ensureBehaviors()为行为类提供机会完成绑定。
+		为什么不直接通过on绑定呢？当然，如果过滤器类不是行为类，那肯定必须有一套自己的机制完成
+		Controller::EVENT_BEFORE_ACTION事件的绑定，进而发挥自己的作用。这里为啥把ActionFilter写成行为类。
+		我猜应该是绑定方便，不用单独写on。或者估计作者有一套自己的想法吧。
+		ActionFilter即是过滤器，又是行为类，同一个东西有两个名称，前因后果明白了吧？
      */
     public function attach($owner)
     {
         $this->owner = $owner;
+		//只绑定beforeFilter方法就行了
         $owner->on(Controller::EVENT_BEFORE_ACTION, [$this, 'beforeFilter']);
     }
 

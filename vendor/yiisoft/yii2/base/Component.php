@@ -599,6 +599,11 @@ class Component extends Object
      */
     public function trigger($name, Event $event = null)
     {
+		//这个ensureBehaviors()的作用非常明显，举例来说，Controller::EVENT_BEFORE_ACTION事件，将被触发的最后一刻
+		//完成事件处理者的绑定，因为在这之前，Yii框架没有明显的Controller::EVENT_BEFORE_ACTION事件的on绑定，类似这样的有好多(触发事件之前根本就没有绑定handler），当时我还纳闷呢：触发之前至少得绑定一个事件处理者，触发时才会调用事件处理者，否则都是空的事件处理者,岂不白白浪费了。
+		//而下面的ensureBehaviors恰恰就是在最后关头，完成行为类的绑定，进而完成事件的绑定。
+		//可以说立即绑定，然后就立即触发执行了。
+		//阅读过滤器行为类ActionFilter的实现机制有感
         $this->ensureBehaviors();
 		//这个事件有事件处理者绑定者
         if (!empty($this->_events[$name])) {
