@@ -24,6 +24,7 @@ defined('YII_BEGIN_TIME') or define('YII_BEGIN_TIME', microtime(true));
  * This constant defines the framework installation directory.
  * Yii2_PATH是指Yii框架的目录,是具体的一个目录，不是应用程序目录。
  * 是yii2,也就是当前目录。注意区分框架与应用这两个概念的区别
+ * 在自动加载时，装填映射文件（classes.php）时有使用
  */
 defined('YII2_PATH') or define('YII2_PATH', __DIR__);
 /**
