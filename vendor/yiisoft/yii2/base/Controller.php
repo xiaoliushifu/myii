@@ -140,6 +140,7 @@ class Controller extends Component implements ViewContextInterface
         $runAction = true;
 
         // call beforeAction on modules  beforeAction也分级别哟。module级别的。下面是Controller级别的
+        //无论哪一级别，因为它们都是Component的子类，所以共用一套事件代码
         foreach ($this->getModules() as $module) {
             if ($module->beforeAction($action)) {
                 array_unshift($modules, $module);

@@ -221,11 +221,13 @@ class Object implements Configurable
     }
 
     /**
+	 * 检测某个对象的属性是否已定义
      * Returns a value indicating whether a property is defined.
      * A property is defined if:
-     *
+     * 对象有这个属性的getter或者setter方法
      * - the class has a getter or setter method associated with the specified name
      *   (in this case, property name is case-insensitive);
+	 * 这个对象本身就有这个属性
      * - the class has a member variable with the specified name (when `$checkVars` is true);
      *
      * @param string $name the property name
@@ -239,12 +241,13 @@ class Object implements Configurable
         return $this->canGetProperty($name, $checkVars) || $this->canSetProperty($name, false);
     }
 
-    /**
+    /**检测某个对象的属性是否可读，可读的情况有两种：
      * Returns a value indicating whether a property can be read.
      * A property is readable if:
-     *
+     * 这个对象有getter方法，这时的属性不区分大小写（这是php函数名决定的）
      * - the class has a getter method associated with the specified name
      *   (in this case, property name is case-insensitive);
+	 * 对象本身就有这个属性
      * - the class has a member variable with the specified name (when `$checkVars` is true);
      *
      * @param string $name the property name
@@ -258,11 +261,13 @@ class Object implements Configurable
     }
 
     /**
+	 * 检测一个对象的属性是否可写，有两种情况：
      * Returns a value indicating whether a property can be set.
      * A property is writable if:
-     *
+     * 当对象有这个属性的setter方法时
      * - the class has a setter method associated with the specified name
      *   (in this case, property name is case-insensitive);
+	 * 对象本身就有这个属性（不关心它的修饰符是public,protected或者private）
      * - the class has a member variable with the specified name (when `$checkVars` is true);
      *
      * @param string $name the property name
@@ -275,9 +280,9 @@ class Object implements Configurable
         return method_exists($this, 'set' . $name) || $checkVars && property_exists($this, $name);
     }
 
-    /**
+    /**检测对象是否有某个方法
      * Returns a value indicating whether a method is defined.
-     *
+     * 子类可以覆盖这个方法
      * The default implementation is a call to php function `method_exists()`.
      * You may override this method when you implemented the php magic method `__call()`.
      * @param string $name the method name
