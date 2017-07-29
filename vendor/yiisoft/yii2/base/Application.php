@@ -245,9 +245,13 @@ abstract class Application extends Module
     }
 
     /**
+     * 预初始应用，注意此时“应用”是个名词
      * Pre-initializes the application.
+     * 这个方法在构造方法里的开始
      * This method is called at the beginning of the application constructor.
+     * 它初始化了几个重要的应用属性
      * It initializes several important application properties.
+     * 子类如果覆盖这个方法时，请记得调用父类的方法
      * If you override this method, please make sure you call the parent implementation.
      * @param array $config the application configuration
      * @throws InvalidConfigException if either [[id]] or [[basePath]] configuration is missing.
