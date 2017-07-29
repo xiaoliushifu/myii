@@ -236,11 +236,13 @@ abstract class Application extends Module
         static::setInstance($this);//把自己$this放到自己的静态属性中
 
         $this->state = self::STATE_BEGIN;
-        //设置路径，路径别名，加载核心组件到$config中，$config是引用传参
+        //设置路径，路径别名，配置容器类container属性，
+        //加载核心组件到$config中，$config是引用传参
         $this->preInit($config);
         //反射ErrorHandler，并注册它全权处理异常，错误，shutdown,$config还是引用传参
         $this->registerErrorHandler($config);
-
+        //设置模块和应用组件（利用__set()魔术方法），并在init方法里bootsrap，
+        //应用组件放到了服务定位器里，模块放到了Module的数组里
         Component::__construct($config);
     }
 
@@ -330,22 +332,27 @@ abstract class Application extends Module
     }
 
     /**
+     * 初始化扩展，并执行bootstrap里的组件
      * Initializes extensions and executes bootstrap components.
      * This method is called by [[init()]] after the application has been fully configured.
      * If you override this method, make sure you also call the parent implementation.
      */
     protected function bootstrap()
     {
+        //读取组件
         if ($this->extensions === null) {
             $file = Yii::getAlias('@vendor/yiisoft/extensions.php');
             $this->extensions = is_file($file) ? include($file) : [];
         }
+        //遍历扩展
         foreach ($this->extensions as $extension) {
+            //当前扩展可以有别名
             if (!empty($extension['alias'])) {
                 foreach ($extension['alias'] as $name => $path) {
                     Yii::setAlias($name, $path);
                 }
             }
+            //当前扩展是否有自己的bootstrap,经查看最初的Yii框架里自带的每个扩展都没有bootstrap
             if (isset($extension['bootstrap'])) {
                 $component = Yii::createObject($extension['bootstrap']);
                 if ($component instanceof BootstrapInterface) {
@@ -356,22 +363,23 @@ abstract class Application extends Module
                 }
             }
         }
-
+        //开始配置文件里的bootstrap
         foreach ($this->bootstrap as $class) {
             $component = null;
             if (is_string($class)) {
-                if ($this->has($class)) {//启动时，先看看是否Component中是否有
-                    $component = $this->get($class);
+                if ($this->has($class)) {//服务定位器中是否已注册
+                    $component = $this->get($class);//得到这个实例化的组件（其中有服务定位器模式的实现）
                 } elseif ($this->hasModule($class)) {//再看Module中是否有
                     $component = $this->getModule($class);
                 } elseif (strpos($class, '\\') === false) {
                     throw new InvalidConfigException("Unknown bootstrapping component ID: $class");
                 }
             }
+            //如果上面的步骤没有实例化某一个组件，那就在这里补充实例化一下
             if (!isset($component)) {
                 $component = Yii::createObject($class);
             }
-
+            //如果实现了BootstrapInterface接口的话，就去执行这个方法
             if ($component instanceof BootstrapInterface) {
                 Yii::trace('Bootstrap with ' . get_class($component) . '::bootstrap()', __METHOD__);
                 $component->bootstrap($this);

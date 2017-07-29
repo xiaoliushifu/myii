@@ -61,7 +61,7 @@ class Application extends \yii\base\Application
      * @inheritdoc
      */
     protected function bootstrap()
-    {//引导时，单独把request组件取出来
+    {//把request组件取出来，就为了设置两个别名吗，是的，这是web\application,不是console\application？
         $request = $this->getRequest();
         Yii::setAlias('@webroot', dirname($request->getScriptFile()));
         Yii::setAlias('@web', $request->getBaseUrl());
