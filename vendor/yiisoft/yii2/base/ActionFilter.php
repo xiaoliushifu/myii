@@ -70,6 +70,9 @@ class ActionFilter extends Behavior
 		Controller::EVENT_BEFORE_ACTION事件的绑定，进而发挥自己的作用。这里为啥把ActionFilter写成行为类。
 		我猜应该是绑定方便，不用单独写on。或者估计作者有一套自己的想法吧。
 		ActionFilter即是过滤器，又是行为类，同一个东西有两个名称，前因后果明白了吧？
+		下面还有两句话：
+		ActionFilter叫过滤器，是因为它通过响应Controller::EVENT_BEFORE_ACTION事件发挥作用。
+		ActionFilter叫行为类，是从它如何绑定事件，何时绑定事件上来说的。
      */
     public function attach($owner)
     {
