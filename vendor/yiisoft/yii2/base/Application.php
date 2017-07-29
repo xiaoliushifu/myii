@@ -255,6 +255,11 @@ abstract class Application extends Module
      * If you override this method, please make sure you call the parent implementation.
      * @param array $config the application configuration
      * @throws InvalidConfigException if either [[id]] or [[basePath]] configuration is missing.
+     * 注意，设置的三个路径都不是application而是其父类Module的，比如_basePath,_vendorPath,_runtimePath
+     * 还确定了时区，利用date_default_timezone_set()
+     * 设置了容器静态类的属性（如果有的话）
+     * 以上的设置都是设置完之后unset
+     * populate(填充了)几个核心组件（写死在base\Application基类里的）
      */
     public function preInit(&$config)
     {
@@ -262,6 +267,7 @@ abstract class Application extends Module
             throw new InvalidConfigException('The "id" configuration for the Application is required.');
         }
         if (isset($config['basePath'])) {
+            //设置根路径，但是设置父类_basePath属性，不是$basePath。然后设置了@app别名
             $this->setBasePath($config['basePath']);
             unset($config['basePath']);
         } else {
@@ -269,28 +275,36 @@ abstract class Application extends Module
         }
 
         if (isset($config['vendorPath'])) {
+            //不但设置vendorPath
+            //还会设置@vendor,@bower,@npm别名
             $this->setVendorPath($config['vendorPath']);
             unset($config['vendorPath']);
         } else {
             // set "@vendor"
+            //仅仅设置vendorPath
             $this->getVendorPath();
         }
         if (isset($config['runtimePath'])) {
+            //按照参数指定，设置根目录
             $this->setRuntimePath($config['runtimePath']);
             unset($config['runtimePath']);
         } else {
             // set "@runtime"
+            //根据当前应用（basic)设置根目录
             $this->getRuntimePath();
         }
 
+        //优先配置文件中的时区设置
         if (isset($config['timeZone'])) {
             $this->setTimeZone($config['timeZone']);
             unset($config['timeZone']);
+        //或者php.ini里的时区设置
         } elseif (!ini_get('date.timezone')) {
             $this->setTimeZone('UTC');
         }
 
         if (isset($config['container'])) {
+            //设置容器container的属性，而非设置容器container对象
             $this->setContainer($config['container']);
 
             unset($config['container']);

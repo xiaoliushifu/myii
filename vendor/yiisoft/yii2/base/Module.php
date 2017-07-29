@@ -113,6 +113,7 @@ class Module extends ServiceLocator
 
     /**
      * @var string the root directory of the module.
+     * 区别于应用程序application的$basePath,有啥区别？
      */
     private $_basePath;
     /**
@@ -229,17 +230,21 @@ class Module extends ServiceLocator
     }
 
     /**
+     * 设置这个模块（一般是web\application）的根目录
      * Sets the root directory of the module.
+     * 这个方法只能在构造方法的开始处调用，否则就容易坏事
      * This method can only be invoked at the beginning of the constructor.
      * @param string $path the root directory of the module. This can be either a directory name or a path alias.
      * @throws InvalidParamException if the directory does not exist.
      */
     public function setBasePath($path)
     {
+        //有可能含有别名，获取其最终的不含别名的路径信息
         $path = Yii::getAlias($path);
         //奇怪吗，phar://是啥玩意？一搜吓一跳，原来它是PHP 5.3引入的，类似于java的jar打包程序，用C写的。
         //phar可以把一个php应用程序或php模块打包为一个.phar的文件，方便转移和被其他php应用程序引入，还可以引入phar文件里的php文件
         //详情请查看php手册
+        //获取规范后的路径，realpath
         $p = strncmp($path, 'phar://', 7) === 0 ? $path : realpath($path);
         if ($p !== false && is_dir($p)) {
             $this->_basePath = $p;

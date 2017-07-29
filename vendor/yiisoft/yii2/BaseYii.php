@@ -150,7 +150,7 @@ class BaseYii
      * would replace the part '@foo/bar' (instead of '@foo') with the corresponding registered path.
      * This is because the longest alias takes precedence.
      *如果出现了@foo/barbar/config的话，那就得解析@foo（而不是@foo/bar）了，因为我们不能拆分@foo/barbar/config为
-	 * @foo/bar。barbar是不能拆的，你说呢？‘/'字符是分割符，注意。
+	 * @foo/bar和bar/config。barbar是不能拆的，你说呢？‘/'字符才算是分割符，注意。
      * However, if the alias to be translated is '@foo/barbar/config', then '@foo' will be replaced
      * instead of '@foo/bar', because '/' serves as the boundary character.
      *
@@ -164,7 +164,8 @@ class BaseYii
      * @throws InvalidParamException if the alias is invalid while $throwException is true.
      * @see setAlias()
 
-	 *这个方法叫getAlias，我觉得不太好，听名字好像是要获得别名（那个@开头的东西），而不是别名对应的文件系统路径。我觉得应该叫resolveAlias,或者getPathFromAlias更好一点
+	 *这个方法叫getAlias，我觉得不太好，听名字好像是要获得别名（那个@开头的东西），
+	 *而不是别名对应的文件系统路径。我觉得应该叫resolveAlias,或者getPathFromAlias更好一点
      */
     public static function getAlias($alias, $throwException = true)
     {
