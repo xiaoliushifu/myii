@@ -156,6 +156,7 @@
     };
 
     // NOTE: If you change any of these defaults, make sure you update yii\widgets\ActiveField::getClientOptions() as well
+	//下面的一些默认配置和服务端yii\widgets\ActiveField是一致的，最好都不要修改
     var attributeDefaults = {
         // a unique ID identifying an attribute (e.g. "loginform-username") in a form
         id: undefined,
@@ -311,15 +312,16 @@
 
         // validate all applicable inputs in the form
 		//开始验证，这个方法是真正验证的核心，维度最低，无论各种触发验证的事件（submit,blur,change等）都会
-		//执行到这里
+		//由validateattribute的定时器函数执行到这里
         validate: function () {
             var $form = $(this),
                 data = $form.data('yiiActiveForm'),
                 needAjaxValidation = false,
                 messages = {},
                 deferreds = deferredArray(),
+				//这个变量在发挥什么样的作用呢？在Blur触发验证的情况下，submitting是false。
                 submitting = data.submitting;
-			//每个验证开始之前都会触发这个事件
+			//每个验证开始之前都会触发beforeValidate这个事件
             var event = $.Event(events.beforeValidate);
             $form.trigger(event, [messages, deferreds]);
 			//应该是说这是在点击submit按钮执行的，并不是孤立地执行
@@ -542,12 +544,15 @@
     };
 
 	//这个是Yii提供的验证某个属性的方法，无需手动调用，由其他方法调用
+	//一般是表单项的change事件，blur事件，还有提交事件都会执行到这里
     var validateAttribute = function ($form, attribute, forceValidate, validationDelay) {
         var data = $form.data('yiiActiveForm');
 
         if (forceValidate) {
             attribute.status = 2;
         }
+		//依次遍历每个attribute。要问每个attribute都有什么，是个对象，对象有哪些属性呢？看attributeDefaults可见一斑
+		//其余的
         $.each(data.attributes, function () {
             if (this.value !== getValue($form, this)) {
                 this.status = 2;
@@ -573,7 +578,7 @@
                     $form.find(this.container).addClass(data.settings.validatingCssClass);
                 }
             });
-			//执行验证，用$form对象调用validate方法
+			//执行验证，用$form对象调用methods对象的validate方法，可见validate方法又底层了一些
             methods.validate.call($form);
         }, validationDelay ? validationDelay : 200);
     };
@@ -763,3 +768,9 @@
     };
 
 })(window.jQuery);
+
+
+/*
+每个attribute的数据格式
+
+*/
