@@ -245,12 +245,25 @@
                     return;
                 }
 				//组装数据，使用了上文的defaults对象。extend方法什么意思，看看Jquery手册吧
+				//不看不知道，看了涨知识。extend是Jquery可重载的方法。类似于数组合并的方法，extend实现了对象成员的合并。
+				//从这里看出settings的来源：1上文的defaults
+				//							2 options（yiiActiveForm方法的第二个参数）
+				//settting就是在前端组装了ActiveForm的设置选项，对比服务端的ActiveForm就明白了
                 var settings = $.extend({}, defaults, options || {});
-                if (settings.validationUrl === undefined) {
+                if (settings.validationUrl === undefined) {//合并后，validationUrl成员怎么丢失了呢？
+					//这是Ajax提交地址的初始化
                     settings.validationUrl = $form.attr('action');
                 }
-
+				
+				//遍历表单项，继续为每个表单项组装选项（最初6个，经extend后变为16个)，
                 $.each(attributes, function (i) {
+					//添加了三个成员：
+					/*
+					value:getValue($form,this),
+					attributeDefault,
+					this
+					把自身this作为最后一个参数，在extend中是为了避免某些成员被覆盖掉
+					*/
                     attributes[i] = $.extend({value: getValue($form, this)}, attributeDefaults, this);
                     watchAttribute($form, attributes[i]);
                 });
@@ -267,14 +280,24 @@
                  * Clean up error status when the form is reset.
                  * Note that $form.on('reset', ...) does work because the "reset" event does not bubble on IE.
                  */
+				 //绑定一个reset事件，事件自定义，事件处理者也是自定义
                 $form.bind('reset.yiiActiveForm', methods.resetForm);
 
+				/*
+				重点：为啥表单提交时触发验证呢？代码就在这里了
+				*/
                 if (settings.validateOnSubmit) {
+					//看，人家绑定的是什么事件
                     $form.on('mouseup.yiiActiveForm keyup.yiiActiveForm', ':submit', function () {
                         $form.data('yiiActiveForm').submitObject = $(this);
                     });
+					//这里绑定了submit事件
                     $form.on('submit.yiiActiveForm', methods.submitForm);
                 }
+				//这里竟然少了两行代码呀
+				var event = $.Event(events.afterInit);
+				$form.trigger(event);
+
             });
         },
 
@@ -539,6 +562,8 @@
 
     };
 
+	//为指定的attribute有选择的设置三种监听事件，使用Jquery的on方法，
+	//值得注意的是，事件名都是自定义的
     var watchAttribute = function ($form, attribute) {
         var $input = findInput($form, attribute);
 		//是否监听change验证
