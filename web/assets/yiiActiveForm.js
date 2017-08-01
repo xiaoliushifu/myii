@@ -44,6 +44,9 @@
 		每个表单项对象里除了上述列出的6个属性外，还有一些默认的属性的配置，都在下面的defaults对象中
 		*/
         } else if (typeof method === 'object' || !method) {
+			//this在这里指的是form的Jquery对象
+			//arguments是两个数组。第一个数组的元素都是表单项对象，上面已经给出了格式。
+			//第二个数组是个空数组，暂不知有何用
             return methods.init.apply(this, arguments);
 		//最后就报错
         } else {
@@ -226,13 +229,22 @@
 
 
     var methods = {
+		/*
+		init方法在视图页面初始化时调用执行，视图页面的底部Jquery加载函数中$('#form-id').yiiActiveForm([{}],[])代码
+		attributes是表单项对象数组，options是空数组
+		*/
         init: function (attributes, options) {
+			//这里的this是form的Jquery对象
             return this.each(function () {
+				//这里的this是正在循环的DOM对象。因为外层的each方法的对象this是单一个Jquery对象，非数组，
+				//所以凑巧each里的this和each外的this都是一样的。
+
                 var $form = $(this);
+				//有数据就不再保存，直接退出
                 if ($form.data('yiiActiveForm')) {
                     return;
                 }
-
+				//组装数据，使用了上文的defaults对象。extend方法什么意思，看看Jquery手册吧
                 var settings = $.extend({}, defaults, options || {});
                 if (settings.validationUrl === undefined) {
                     settings.validationUrl = $form.attr('action');
@@ -242,7 +254,7 @@
                     attributes[i] = $.extend({value: getValue($form, this)}, attributeDefaults, this);
                     watchAttribute($form, attributes[i]);
                 });
-
+				//临时存储数据，注意存储的是什么？怎么存储的，这对后期的验证理解非常关键
                 $form.data('yiiActiveForm', {
                     settings: settings,
                     attributes: attributes,
