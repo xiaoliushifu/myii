@@ -26,6 +26,23 @@
             return methods[method].apply(this, Array.prototype.slice.call(arguments, 1));
 
 		//或者是一个js对象，或者是一个非假的js其他对象（0,0.0,"",'',NaN,undefined,NULL,false,八个都是假）
+		//页面初始化时，AF生成的每个表单项都是一个个js对象。格式如下：
+		/*
+		{
+			"id":"loginform-password",
+			"name":"password",
+			"container":".field-loginform-password",
+			"input":"#loginform-password",
+			"error":".help-block.help-block-error",
+			"validate":function (attribute, value, messages, deferred, $form) {
+				yii.validation.required(value, messages, {"message":"Password cannot be blank."});
+				yii.validation.string(value, messages, {"message":"Username must be a string.","max":"5","tooLong":"Username should contain at most 5 characters.","skipOnEmpty":1});
+			}
+		}
+		一个表单项可能有多个规则的验证，上例的validate属性指定的验证函数里，就有required，string两个rule，
+		这两个rule都是针对password这一个表单项的验证
+		每个表单项对象里除了上述列出的6个属性外，还有一些默认的属性的配置，都在下面的defaults对象中
+		*/
         } else if (typeof method === 'object' || !method) {
             return methods.init.apply(this, arguments);
 		//最后就报错
