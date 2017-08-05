@@ -142,9 +142,9 @@
     };
 
     // NOTE: If you change any of these defaults, make sure you update yii\widgets\ActiveForm::getClientOptions() as well
-	//一些默认配置项
+	//yiiActiveForm表单的一些默认配置项
 	//注意，这些默认配置项和服务端ActiveForm是一致的，所以修改时要两个都修改，保持一致
-	//服务端是yii\widgets\ActiveForm。该类也有下面的一些属性，且有一样的默认配置
+	//服务端是yii\widgets\ActiveForm，该类也有下面的一些属性，且有一样的默认配置
     var defaults = {
         // whether to encode the error summary
         encodeErrorSummary: true,
@@ -176,7 +176,7 @@
     };
 
     // NOTE: If you change any of these defaults, make sure you update yii\widgets\ActiveField::getClientOptions() as well
-	//下面的一些默认配置和服务端yii\widgets\ActiveField是一致的，最好都不要修改
+	//下面是每个表单项的一些默认配置，和服务端yii\widgets\ActiveField是一致的，最好都不要修改
     var attributeDefaults = {
         // a unique ID identifying an attribute (e.g. "loginform-username") in a form
         id: undefined,
@@ -236,7 +236,7 @@
         init: function (attributes, options) {
 			//这里的this是form的Jquery对象
             return this.each(function () {
-				//这里的this是正在循环的DOM对象。因为外层的each方法的对象this是单一个Jquery对象，非数组，
+				//这里的this是正在循环的DOM对象。因为外层调用each方法的对象this是单一的一个Jquery对象，非数组，
 				//所以凑巧each里的this和each外的this都是一样的。
 
                 var $form = $(this);
@@ -257,12 +257,12 @@
 				
 				//遍历表单项，继续为每个表单项组装选项（最初6个，经extend后变为16个)，
                 $.each(attributes, function (i) {
-					//添加了三个成员：
+					//添加了如下的三个成员：
 					/*
 					value:getValue($form,this),
 					attributeDefault,
 					this
-					把自身this作为最后一个参数，在extend中是为了避免某些成员被覆盖掉
+					把自身this作为最后一个参数，在extend中是为了避免某些成员被attributeDefaults中的同名成员覆盖掉
 					*/
                     attributes[i] = $.extend({value: getValue($form, this)}, attributeDefaults, this);
                     watchAttribute($form, attributes[i]);
@@ -562,8 +562,9 @@
 
     };
 
-	//为指定的attribute有选择的设置三种监听事件，使用Jquery的on方法，
-	//值得注意的是，事件名都是自定义的
+	//为指定的attribute有选择的设置三种监听事件，watch就是观察，就是监听。使用Jquery的on方法，
+	//值得注意的是，事件名带有命名空间yiiActiveForm（由此学习了Jquery事件的命名空间知识）
+	//初次理解，加入命名空间的事件，是可以为事件归类，方便后续的触发及解绑。
     var watchAttribute = function ($form, attribute) {
         var $input = findInput($form, attribute);
 		//是否监听change验证
@@ -811,7 +812,18 @@
         }
     };
 
+	//找到当前表单项的具体input对象，还记得一个表单项都包含什么吗？{label}{input}{error}
+	/*<div>
+		<label></label>
+		<div>
+			<input>
+		</div>
+		<div class="error-summary">
+		</div>
+	</div>	
+	*/
     var findInput = function ($form, attribute) {
+		//attribute对象的input成员是什么呢？，现在回去看看。是"#loginform-username"
         var $input = $form.find(attribute.input);
         if ($input.length && $input[0].tagName.toLowerCase() === 'div') {
             // checkbox list or radio list
