@@ -265,6 +265,7 @@
 					把自身this作为最后一个参数，在extend中是为了避免某些成员被attributeDefaults中的同名成员覆盖掉
 					*/
                     attributes[i] = $.extend({value: getValue($form, this)}, attributeDefaults, this);
+					//为之绑定监听事件
                     watchAttribute($form, attributes[i]);
                 });
 				//临时存储数据，注意存储的是什么？怎么存储的，这对后期的验证理解非常关键
@@ -280,26 +281,32 @@
                  * Clean up error status when the form is reset.
                  * Note that $form.on('reset', ...) does work because the "reset" event does not bubble on IE.
                  */
-				 //绑定一个reset事件，事件自定义，事件处理者也是自定义
+				 //绑定一个reset，使用命名空间yiiActiveForm，使用methods对象的resetForm成员方法作为事件处理者
+				 //当点击reset按钮时触发
                 $form.bind('reset.yiiActiveForm', methods.resetForm);
 
 				/*
 				重点：为啥表单提交时触发验证呢？代码就在这里了
+				它是form对象的成员settings的子成员validateOnSubmit控制的，初始时就是true
+				也就是说，我们可以设置为false，使得点击submit按钮时不触发
 				*/
                 if (settings.validateOnSubmit) {
-					//看，人家绑定的是什么事件
+					//看，人家一次绑定两个事件（空格隔开）；问题来了，是keyup先触发还是mouseup先触发？
+					//keyup是键盘按键抬起触发，mouseup是鼠标键抬起触发
+					//第二个参数是':submit'字符串参数吗？在事件处理者中如何访问呢？
                     $form.on('mouseup.yiiActiveForm keyup.yiiActiveForm', ':submit', function () {
                         $form.data('yiiActiveForm').submitObject = $(this);
                     });
 					//这里绑定了submit事件
                     $form.on('submit.yiiActiveForm', methods.submitForm);
                 }
-				//这里竟然少了两行代码呀
+				//这是什么?
 				var event = $.Event(events.afterInit);
+				//触发事件
 				$form.trigger(event);
 
-            });
-        },
+            });//each方法到此结束
+        },//init方法到此结束
 
         // add a new attribute to the form dynamically.
         // please refer to attributeDefaults for the structure of attribute
@@ -473,6 +480,7 @@
             });
         },
 
+		//该方法在init方法的末尾由$form对象使用on绑定
         submitForm: function () {
             var $form = $(this),
                 data = $form.data('yiiActiveForm');
@@ -505,6 +513,7 @@
             }
         },
 
+	//该方法在init方法的末尾由$form对象使用on绑定reset
         resetForm: function () {
             var $form = $(this);
             var data = $form.data('yiiActiveForm');
@@ -598,7 +607,8 @@
         findInput($form, attribute).off('.yiiActiveForm');
     };
 
-	//这个是Yii提供的验证某个属性的方法，无需手动调用，由其他方法调用
+	//这个是Yii提供的验证某个属性的方法，无需手动调用，是由watchAttribute中用on绑定的事件处理者
+	//故应该由事件触发调用，而非直接调用
 	//一般是表单项的change事件，blur事件，还有提交事件都会执行到这里
     var validateAttribute = function ($form, attribute, forceValidate, validationDelay) {
         var data = $form.data('yiiActiveForm');
