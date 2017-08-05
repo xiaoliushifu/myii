@@ -590,12 +590,14 @@
                 }
             });
         }
-		//是否监听键入验证
+		//是否监听键入验证,注意，此时的参数e已经不是原始的JS事件对象了，而是Jquery封装过的事件对象
+		//e.which  1鼠标左键 2鼠标中键  3鼠标右键  37左  38上 39右  40下  16Shift  17Ctrl  18Alt
         if (attribute.validateOnType) {
             $input.on('keyup.yiiActiveForm', function (e) {
                 if ($.inArray(e.which, [16, 17, 18, 37, 38, 39, 40]) !== -1 ) {
                     return;
                 }
+				//这是啥意思
                 if (attribute.value !== getValue($form, attribute)) {
                     validateAttribute($form, attribute, false, attribute.validationDelay);
                 }
@@ -805,12 +807,14 @@
 
 	/**
 	*获得某个表单项的值
+	*注意，这个掺杂了对checkbox和radio的判断
 	$form Jquery Form 对象
 	attribute是DOM对象，某个表单项
 	*/
     var getValue = function ($form, attribute) {
         var $input = findInput($form, attribute);
         var type = $input.attr('type');
+		//这俩种类型的表单项特殊？
         if (type === 'checkbox' || type === 'radio') {
             var $realInput = $input.filter(':checked');
             if (!$realInput.length) {
