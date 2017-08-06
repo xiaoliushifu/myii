@@ -277,7 +277,7 @@
 					把自身this作为最后一个参数，在extend中是为了避免某些成员被attributeDefaults中的同名成员覆盖掉
 					*/
                     attributes[i] = $.extend({value: getValue($form, this)}, attributeDefaults, this);
-					//为之绑定监听事件
+					//添加完选项后，立即为之绑定三种事件类型的监听事件
                     watchAttribute($form, attributes[i]);
                 });
 				//临时存储数据，注意存储的是什么？怎么存储的，这对后期的验证理解非常关键
@@ -286,6 +286,7 @@
                     attributes: attributes,
                     submitting: false,
                     validated: false,
+					//返回<form>对象的四个属性（数据类型是js原生对象）
                     options: getFormOptions($form)
                 });
 
@@ -681,7 +682,8 @@
 
     var buttonOptions = ['action', 'target', 'method', 'enctype'];
 
-    /**
+    /**返回form对象的四个属性，四个成员的对象（类似于php的关联数组）
+	 * action属性，target属性，method属性，enctype属性
      * Returns current form options
      * @param $form
      * @returns object Object with button of form options
