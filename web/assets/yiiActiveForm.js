@@ -167,7 +167,7 @@
 		//验证通过时，添加has-success的css类
         successCssClass: 'has-success',
         // the container CSS class representing the corresponding attribute is being validated
-		//验证只能一个个去验证，用Css类validating表示当前正在验证的表单项
+		//验证只能一个个去验证，用Css类validating表示当前正在验证的表单项，以示区别，此时表单项的status=3
         validatingCssClass: 'validating',
         // the GET parameter name indicating an AJAX-based validation
 		//当开启前端异步ajax验证时，为区别是ajax验证而非真正post数据到服务端，特增加一个GET参数
@@ -213,6 +213,7 @@
         // function (attribute, value, messages, deferred, $form), the client-side validation function.
         validate: undefined,
         // status of the input field, 0: empty, not entered before, 1: validated, 2: pending validation, 3: validating
+		//3表示验证中
         status: 0,
         // whether the validation is cancelled by beforeValidateAttribute event handler
         cancelled: false,
@@ -385,6 +386,8 @@
         },
 
         // validate all applicable inputs in the form
+		//该验证方法非手动调用，而是在事件监听者里调用（change,blur,type事件的监听者），属于底层，由$form对象调用
+		//故方法里的this指向$form对象
         validate: function (forceValidate) {
             if (forceValidate) {
                 $(this).data('yiiActiveForm').submitting = true;
@@ -409,8 +412,10 @@
             }
 
             // client-side validation，遍历表单对象的各个表单项进行验证
+			//其中的this指的是每个表单项（Jquery对象）
             $.each(data.attributes, function () {
                 this.$form = $form;
+				//disabled的表单项不验证
                 if (!$(this.input).is(":disabled")) {
                     this.cancelled = false;
                     // perform validation only if the form is being submitted or if an attribute is pending validation
@@ -424,6 +429,7 @@
 						//又一个事件触发，这个维度更低，针对每个属性
                         var event = $.Event(events.beforeValidateAttribute);
                         $form.trigger(event, [this, msg, deferreds]);
+						//如果该事件的result是false，则不再往下验证
                         if (event.result !== false) {
                             if (this.validate) {
                                 this.validate(this, getValue($form, this), msg, deferreds, $form);
@@ -628,7 +634,7 @@
 
 	//这个是Yii提供的验证某个属性的方法，无需手动调用，是由watchAttribute中用on绑定的事件处理者
 	//故应该由事件触发调用，而非直接调用
-	//一般是表单项的change事件，blur事件，还有提交事件都会执行到这里
+	//一般是表单项的change事件，blur事件，type事件，还可能是表单提交事件。
     var validateAttribute = function ($form, attribute, forceValidate, validationDelay) {
         var data = $form.data('yiiActiveForm');
 
@@ -650,13 +656,15 @@
         if (data.settings.timer !== undefined) {
             clearTimeout(data.settings.timer);
         }
-		//这是validationDelay配置项发挥作用的地方，有些验证并不是马上就调用validate方法
+		//这是validationDelay配置项发挥作用的地方，所有验证并不是马上就调用validate方法
 		//而是利用javascript的setTimeout设定一个毫秒级的延迟.
         data.settings.timer = setTimeout(function () {
             if (data.submitting || $form.is(':hidden')) {
                 return;
             }
             $.each(data.attributes, function () {
+				//虽然each会遍历所有的表单项，但其中只有一个表单项是待验证的，也就是status=2
+				//此时会把它的status置为3，表示要开始它的验证了，以示区别（加个css类validating）
                 if (this.status === 2) {
                     this.status = 3;
                     $form.find(this.container).addClass(data.settings.validatingCssClass);
