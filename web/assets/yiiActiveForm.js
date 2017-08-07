@@ -314,8 +314,8 @@
 					//这里绑定了submit事件
                     $form.on('submit.yiiActiveForm', methods.submitForm);
                 }
-				//这是什么?$.Event是根据参数afterInit产生一个Jquery的事件对象（是JS原生事件对象的封装)
-				//但并未找到afterInit事件处理者在哪
+				//这是什么?$.Event是一个包裹器，根据参数afterInit产生一个Jquery的事件对象（是JS原生事件对象的封装)
+				//返回事件对象，用$form触发目前暂无发现afterInit函数的具体实现
 				var event = $.Event(events.afterInit);
 				//既然是Jquery的event事件对象，就用Jquery对象触发
 				$form.trigger(event);
@@ -420,18 +420,28 @@
                     this.cancelled = false;
                     // perform validation only if the form is being submitted or if an attribute is pending validation
                     if (data.submitting || this.status === 2 || this.status === 3) {
-						//去出msg,然后再放回，这是要干嘛？
+						//取出msg,然后再放回，这是要干嘛？因为beforeValidate事件处理者中有可能有该表单
+						//项的错误信息
                         var msg = messages[this.id];
+						//undefined说明没有该表单项的错误信息
                         if (msg === undefined) {
                             msg = [];
+							//初始化为空数组
                             messages[this.id] = msg;
                         }
 						//又一个事件触发，这个维度更低，针对每个属性
                         var event = $.Event(events.beforeValidateAttribute);
+						//触发事件时，注意传递的参数是什么
+						/**
+						this，就是当前表单项对象
+						msg,当前表单项的错误信息，数组形式
+						deferreds 不太懂，是deferreds对象
+						*/
                         $form.trigger(event, [this, msg, deferreds]);
 						//如果该事件的result是false，则不再往下验证
                         if (event.result !== false) {
                             if (this.validate) {
+								//调用自己的validate属性（validate是方法，都是yii.validation.js中定义的各种验证方法）
                                 this.validate(this, getValue($form, this), msg, deferreds, $form);
                             }
 							//可见，ajax验证是在这里打开的，也就是说，ajax是后续验证的
