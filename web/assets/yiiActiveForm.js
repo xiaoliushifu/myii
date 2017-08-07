@@ -442,6 +442,13 @@
                         if (event.result !== false) {
                             if (this.validate) {
 								//调用自己的validate属性（validate是方法，都是yii.validation.js中定义的各种验证方法）
+								/*
+								this 代表当前表单项
+								getValue($form,this)是当前表单项input的value
+								msg是错误信息数组
+								deferreds不太懂
+								$form表单对象，个人感觉有点重复了，因为this.$form就是$form
+								*/
                                 this.validate(this, getValue($form, this), msg, deferreds, $form);
                             }
 							//可见，ajax验证是在这里打开的，也就是说，ajax是后续验证的
