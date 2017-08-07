@@ -21,8 +21,10 @@ $this->registerJs("console.log('this is registerJs')",$this::POS_HEAD, $key = nu
     <p>Please fill out the following fields to login:</p>
 
     <?php $form = ActiveForm::begin([
-        //设置yiiActiveForm.js中不对表单的submit事件进行绑定，如何传递给客户端呢？就是yiiActiveForm()方法的第二个参数
-        'validateOnSubmit'=>false,
+		//下述对AF的参数的配置，也会实际反映到前端yiiActiveForm中
+        //不对表单的submit事件进行绑定。
+		//如何传递给客户端呢？就是yiiActiveForm()方法的第二个参数
+        //'validateOnSubmit'=>false,
         /**
          * 这个数组里总共有多少个元素，各个元素都是干啥的，其实它都是ActiveForm类的属性映射，
          * 也就是说，我们直接阅读ActiveForm类的属性，就知道这个数组里能有哪些配置了
