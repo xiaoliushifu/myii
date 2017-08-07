@@ -32,6 +32,7 @@ class LoginForm extends Model
             // rememberMe must be a boolean value
             ['rememberMe', 'boolean'],
             // password is validated by validatePassword()
+			//使用行内验证器，验证逻辑写在当前model的一个方法里
             ['password', 'validatePassword'],
         ];
     }
@@ -49,6 +50,7 @@ class LoginForm extends Model
             $user = $this->getUser();
 
             if (!$user || !$user->validatePassword($this->password)) {
+				//注意学习AR对象错误信息是如何保存的，是以字段名为下标
                 $this->addError($attribute, 'Incorrect username or password.');
             }
         }
