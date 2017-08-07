@@ -251,8 +251,9 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
         return $reflector->getShortName();
     }
 
-    /**
+    /**返回一系列的属性名
      * Returns the list of attribute names.
+	 *默认返回模型类的公共非静态属性，可以覆盖
      * By default, this method returns all public non-static properties of the class.
      * You may override this method to change the default behavior.
      * @return array list of attribute names.
@@ -261,7 +262,9 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
     {
         $class = new ReflectionClass($this);
         $names = [];
+		//应用PHP反射类方法，获得反射类的所有public属性
         foreach ($class->getProperties(\ReflectionProperty::IS_PUBLIC) as $property) {
+			//public属性里再排除静态属性
             if (!$property->isStatic()) {
                 $names[] = $property->getName();
             }
@@ -688,9 +691,11 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
         return $values;
     }
 
-    /**
+    /**批量设置model类的属性值
      * Sets the attribute values in a massive way.
+	 * 数组，键值对形式，要设置的属性及属性值对，来源于客户端
      * @param array $values attribute values (name => value) to be assigned to the model.
+	 * 布尔值，是否仅仅设置安全属性，安全属性？什么意思？什么是安全属性？默认仅仅设置安全属性。
      * @param bool $safeOnly whether the assignments should only be done to the safe attributes.
      * A safe attribute is one that is associated with a validation rule in the current [[scenario]].
      * @see safeAttributes()
@@ -699,12 +704,16 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
     public function setAttributes($values, $safeOnly = true)
     {
         if (is_array($values)) {
-			//获得当前场景下所有的属性
+			//获得当前场景下所有的属性,所谓的激活属性
+			//model有很多属性，但不是每次都会设置所有属性，而是会针对每个场景设置具体的属性们
+			//对应当前场景下的属性，即为激活属性，不在当前场景下的属性就是非激活属性。
+			//如果safeOnly不为true,则调用attribute方法，获取model的public非static属性
             $attributes = array_flip($safeOnly ? $this->safeAttributes() : $this->attributes());
-			//遍历本次要处理的属性 是否在该场景要求的属性中
+			//遍历来自客户端的属性=》属性值对儿 只设置$attributes中存在的属性
             foreach ($values as $name => $value) {
                 if (isset($attributes[$name])) {
                     $this->$name = $value;
+				//如果外来键值对中出现了非安全属性，就去打个日志而已。
                 } elseif ($safeOnly) {
                     $this->onUnsafeAttribute($name, $value);
                 }
@@ -712,8 +721,9 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
         }
     }
 
-    /**
+    /**当在安全属性机制中发现非安全属性时，调用这个方法
      * This method is invoked when an unsafe attribute is being massively assigned.
+	 * 默认的实现是打个日志而已。
      * The default implementation will log a warning message if YII_DEBUG is on.
      * It does nothing otherwise.
      * @param string $name the unsafe attribute name
@@ -752,7 +762,8 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
         $this->_scenario = $value;
     }
 
-    /**
+    /**返回安全属性集合(应用到load方法时，load方法就是所谓的批量赋值），massively assigned
+	* 返回所谓的激活属性集合
      * Returns the attribute names that are safe to be massively assigned in the current scenario.
      * @return string[] safe attribute names
      */
@@ -763,15 +774,16 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
 		//整理不同场景下要处理的属性  $scenarios是二维数组
         $scenarios = $this->scenarios();
 
-		//当前场景有了，每个场景下的属性也有了，那接下来就该比对了。
-		//场景不对，那直接退出就行
+		//当前场景应该属于总场景中的一员，不是的话就直接退出
         if (!isset($scenarios[$scenario])) {
             return [];
         }
-		//场景合适的话，那就把这个场景下的属性都返回去吧。但是还有一个小微调
+		//场景合格的话，那就把这个场景下的属性都返回去吧。但是还有一个小微调
+		//以进一步缩小范围
         $attributes = [];
         foreach ($scenarios[$scenario] as $attribute) {
-			//如果属性名是类似'!storage_name'这样有'!'前缀的，也排除
+			//如果属性名是类似'!storage_name'这样有’!'前缀的排除;
+			//
             if ($attribute[0] !== '!' && !in_array('!' . $attribute, $scenarios[$scenario])) {
                 $attributes[] = $attribute;
             }
@@ -803,8 +815,9 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
     }
 
     /**
+	 * 根据客户端传入的数据，填充model对象
      * Populates the model with input data.
-     *
+     *这个方法其实是$model->attributes=$_POST['FormName']的快捷方式
      * This method provides a convenient shortcut for:
      *
      * ```php
@@ -823,17 +836,25 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
      *     // handle success
      * }
      * ```
-     *
+     *因为Yii框架所有含有表单的视图页，所有表单项默认都是以模型名为下标的二维数组，如果load时没有给出第二个参数，Yii自动通过模型的formName()获取。如果第二个参数是空字符串，则从$_POST一维数组填充model对象。
+	 *
      * `load()` gets the `'FormName'` from the model's [[formName()]] method (which you may override), unless the
      * `$formName` parameter is given. If the form name is empty, `load()` populates the model with the whole of `$data`,
      * instead of `$data['FormName']`.
-     *
+     *注意，load虽说是填充，但不是单纯地$this->attributes=$_POST。而是内部调用setAttributes()方法完成填充功能。
      * Note, that the data being populated is subject to the safety check by [[setAttributes()]].
-     *
+     * 数组参数，典型的是$_POST,$_GET
      * @param array $data the data array to load, typically `$_POST` or `$_GET`.
+	 * 字符串，表单名，为null时内部调用$this->formName()获取
      * @param string $formName the form name to use to load the data into the model.
      * If not set, [[formName()]] is used.
+	 * 能填充就返回true,不能填充就返回false。并不验证，仅仅判断能否填充
+	 * 能填充和填充了哪些属性是两个概念，填充一个可以说能填充，填充10个也可以说能填充。
+	 * 只要最初的数据来源格式合适就认为可以填充（格式以form名为下标的二维数组，一维数组也可），除这两种
+	 * 情况外都返回false
      * @return bool whether `load()` found the expected form in `$data`.
+	 * setAttribute有可能是当前场景的激活属性们（默认），也可能是当前模型的public非static属性
+	 * 总结一句话：Yii框架通过load方法，默认是为当前场景的激活属性们填充属性值
      */
     public function load($data, $formName = null)
     {
