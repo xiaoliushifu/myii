@@ -2,6 +2,11 @@
 
 namespace app\models;
 
+/**
+ * 看到没，User模型虽然在app\models命名空间下，但是并没有继承base\Model，而是直接继承Object
+ * @author Administrator
+ *
+ */
 class User extends \yii\base\Object implements \yii\web\IdentityInterface
 {
     public $id;
