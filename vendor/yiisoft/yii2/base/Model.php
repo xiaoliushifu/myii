@@ -402,7 +402,8 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
      * You may override this method to do preliminary checks before validation.
      * Make sure the parent implementation is invoked so that the event can be raised.
      * @return bool whether the validation should be executed. Defaults to true.
-     * 注意，这个before类的事件，都会有返回值，且返回值影响程序后续的执行
+     * 注意，这个before类的事件，在事件执行中可以修改事件对象ModelEvent，$event的isValid属性值影响程序后续的执行
+     * 默认这个isValid是true
      * If false is returned, the validation will stop and the model is considered invalid.
      */
     public function beforeValidate()
@@ -454,7 +455,9 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
 
     /**返回当前场景下涉及的验证器，激活的验证器
      * Returns the validators applicable to the current [[scenario]].
+     * 属性名参数有的话，就获得与这个属性相关的激活验证器
      * @param string $attribute the name of the attribute whose applicable validators should be returned.
+     * 如果没有参数的话，所有属性的验证器都会返回
      * If this is null, the validators for ALL attributes in the model will be returned.
      * @return \yii\validators\Validator[] the validators applicable to the current [[scenario]].
      */
@@ -463,6 +466,7 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
         $validators = [];
         $scenario = $this->getScenario();
         foreach ($this->getValidators() as $validator) {
+            //如何判断一个验证器是激活的，好好研究一番
             if ($validator->isActive($scenario) && ($attribute === null || in_array($attribute, $validator->attributes, true))) {
                 $validators[] = $validator;
             }
@@ -472,11 +476,12 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
 
     /**根据rules创建涉及的验证对象，返回一个集合对象（集合类？这个概念好像java中的集合类）
      * Creates validator objects based on the validation rules specified in [[rules()]].
-     * 不像getValidators(),每次调用这个方法都会生成一个大对象，这个对象以数组形式那样包含各个验证对象
+     * 不像getValidators(),每次调用这个方法都会生成一个大对象，这个对象以数组那样包含各个验证对象
      * 因为看过append就知道了
      * Unlike [[getValidators()]], each time this method is called, a new list of validators will be returned.
      * @return ArrayObject validators
      * @throws InvalidConfigException if any validation rule configuration is invalid
+     * 注意验证器是如何实例化的，实例化时传入了哪些参数。有空看看validator类吧
      */
     public function createValidators()
     {
@@ -487,6 +492,7 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
                 $validators->append($rule);
                 //正如注释所说，rule[0]是当前rule涉及的属性，rule[1]是当前rule的验证类型
             } elseif (is_array($rule) && isset($rule[0], $rule[1])) { // attributes, validator type
+                //创建验证对象时传递4个参数
                 $validator = Validator::createValidator($rule[1], $this, (array) $rule[0], array_slice($rule, 2));
                 $validators->append($validator);
             } else {

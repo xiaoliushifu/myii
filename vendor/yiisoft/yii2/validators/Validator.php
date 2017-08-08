@@ -190,15 +190,20 @@ class Validator extends Component
 
 
     /**
+     * 创建一个验证器对象
      * Creates a validator object.
+     * 参数1是验证器类型（required,string等这些）
      * @param string|\Closure $type the validator type. This can be either:
      *  * a built-in validator name listed in [[builtInValidators]];
      *  * a method name of the model class;
      *  * an anonymous function;
      *  * a validator class name.
+     *  参数2，数据模型对象
      * @param \yii\base\Model $model the data model to be validated.
+     * 参数3，当前要验证的属性
      * @param array|string $attributes list of attributes to be validated. This can be either an array of
      * the attribute names or a string of comma-separated attribute names.
+     * 参数4 初始化这个验证器对象的属性
      * @param array $params initial values to be applied to the validator properties.
      * @return Validator the validator
      */
@@ -220,7 +225,7 @@ class Validator extends Component
                 $params['class'] = $type;
             }
         }
-
+        //底层还是使用Yii助手的反射快捷方式实例化验证器
         return Yii::createObject($params);
     }
 
@@ -379,10 +384,11 @@ class Validator extends Component
 
     /**
      * Returns a value indicating whether the validator is active for the given scenario and attribute.
-     *
+     *如何认定一个验证器是否是激活的呢？两个条件
      * A validator is active if
-     *
+     *它的on属性是空的
      * - the validator's `on` property is empty, or
+     * 它的on属性中的场景，包含当前的场景
      * - the validator's `on` property contains the specified scenario
      *
      * @param string $scenario scenario name
