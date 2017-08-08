@@ -700,14 +700,17 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
      * A safe attribute is one that is associated with a validation rule in the current [[scenario]].
      * @see safeAttributes()
      * @see attributes()
+     * 注意，按照Yii官方的推荐，默认该方法在load()内部调用，所以第二个参数永远默认是true
+     * 可是我们也看到setAttributes是public,故其实我们可以绕过load方法直接使用。
      */
     public function setAttributes($values, $safeOnly = true)
     {
         if (is_array($values)) {
-			//获得当前场景下所有的属性,所谓的激活属性
-			//model有很多属性，但不是每次都会设置所有属性，而是会针对每个场景设置具体的属性们
+			//获得当前场景下所有的属性,即所谓的激活属性
+			//model有很多属性，但不是每次都会设置所有属性，而是会针对每个场景设置跟场景相关的属性们
 			//对应当前场景下的属性，即为激活属性，不在当前场景下的属性就是非激活属性。
 			//如果safeOnly不为true,则调用attribute方法，获取model的public非static属性
+			//使用php内置函数array_flip是键值对互换的数组函数，因为safeAttributes，attributes方法返回的数组，元素值是属性名
             $attributes = array_flip($safeOnly ? $this->safeAttributes() : $this->attributes());
 			//遍历来自客户端的属性=》属性值对儿 只设置$attributes中存在的属性
             foreach ($values as $name => $value) {
@@ -723,11 +726,12 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
 
     /**当在安全属性机制中发现非安全属性时，调用这个方法
      * This method is invoked when an unsafe attribute is being massively assigned.
-	 * 默认的实现是打个日志而已。
+	 * 默认的实现是打个warning级别的日志而已。其他没啥。
      * The default implementation will log a warning message if YII_DEBUG is on.
      * It does nothing otherwise.
      * @param string $name the unsafe attribute name
      * @param mixed $value the attribute value
+     * 这个方法也是public，故我们也可以覆盖之
      */
     public function onUnsafeAttribute($name, $value)
     {
@@ -763,7 +767,7 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
     }
 
     /**返回安全属性集合(应用到load方法时，load方法就是所谓的批量赋值），massively assigned
-	* 返回所谓的激活属性集合
+	* 返回所谓的激活属性集合，激活属性这个词来自官网
      * Returns the attribute names that are safe to be massively assigned in the current scenario.
      * @return string[] safe attribute names
      */
