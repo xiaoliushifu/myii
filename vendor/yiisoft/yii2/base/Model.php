@@ -384,11 +384,22 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
             $attributeNames = $this->activeAttributes();
         }
 
-		//遍历活跃的验证对象（rules里的一行行），进行验证。这是该方法的核心
+		//遍历激活的验证对象（rules里的一行行），进行验证。这是validate()方法的核心
+		//其实是经过了两层过滤：
+		//1 首先获得所有验证器
+		//2 再获得激活的验证器
+		//我们看到验证的核心，交给了验证器的validateAttributes方法。
+		//通过查看源码知道，每个验证器都有自己的一套规范，每个验证器内部
+		//都要实现验证逻辑，且在验证出错误时，把其内部把错误信息填充到model的_errors里
+		//且验证器执行完内部的验证后不应有返回值
+		//所以要想了解具体的20多个验证器都是如何千姿百态的实现个性验证，花点时间看看它们吧。
         foreach ($this->getActiveValidators() as $validator) {
+			//看来，validateAttributes
             $validator->validateAttributes($this, $attributeNames);
         }
-		//验证过还有动作，类似于切面编程，也是一种编程思想与机制，类似于事件
+		//验证过还有动作，留给开发人员发挥自己特长的地方
+		//只是不像beforeValidate,会影响后续代码的执行，after没有那么大的权力而已。
+		//可以做一点收尾工作
         $this->afterValidate();
 
         return !$this->hasErrors();
@@ -453,11 +464,11 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
         return $this->_validators;
     }
 
-    /**返回当前场景下涉及的验证器，激活的验证器
+    /**返回当前场景下激活的验证器
      * Returns the validators applicable to the current [[scenario]].
      * 属性名参数有的话，就获得与这个属性相关的激活验证器
      * @param string $attribute the name of the attribute whose applicable validators should be returned.
-     * 如果没有参数的话，所有属性的验证器都会返回
+     * 如果没有参数的话，所有属性的激活验证器都会返回
      * If this is null, the validators for ALL attributes in the model will be returned.
      * @return \yii\validators\Validator[] the validators applicable to the current [[scenario]].
      */
@@ -466,7 +477,8 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
         $validators = [];
         $scenario = $this->getScenario();
         foreach ($this->getValidators() as $validator) {
-            //如何判断一个验证器是激活的，好好研究一番
+            //首先验证器是激活的，然后要验证的属性也在当前验证器将要验证的属性列表里。
+			//每个验证器要验证哪些属性，在其实例化时就已经确定了
             if ($validator->isActive($scenario) && ($attribute === null || in_array($attribute, $validator->attributes, true))) {
                 $validators[] = $validator;
             }
@@ -492,7 +504,8 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
                 $validators->append($rule);
                 //正如注释所说，rule[0]是当前rule涉及的属性，rule[1]是当前rule的验证类型
             } elseif (is_array($rule) && isset($rule[0], $rule[1])) { // attributes, validator type
-                //创建验证对象时传递4个参数
+                //创建验证对象时传递4个参数(通过查看createValidator方法可知：
+				//其实是根据传入的这四个参数，组装好定义验证器的数组，进而使用Yii::createObject()方法创建验证器
                 $validator = Validator::createValidator($rule[1], $this, (array) $rule[0], array_slice($rule, 2));
                 $validators->append($validator);
             } else {
