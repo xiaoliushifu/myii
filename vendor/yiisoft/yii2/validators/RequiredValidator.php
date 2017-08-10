@@ -65,8 +65,10 @@ class RequiredValidator extends Validator
      */
     public function init()
     {
+		//调用父类的init方法，为三个属性初始化
         parent::init();
         if ($this->message === null) {
+			//初始化信息格式，待验证错误时赋值给model的addErrors()
             $this->message = $this->requiredValue === null ? Yii::t('yii', '{attribute} cannot be blank.')
                 : Yii::t('yii', '{attribute} must be "{requiredValue}".');
         }
@@ -74,12 +76,15 @@ class RequiredValidator extends Validator
 
     /**
 	* 这个方法是必须的，它实现了自己（必填验证器）的验证逻辑
+	* 几乎每个验证器都会覆盖这个方法，来实现自己特有的逻辑
      * @inheritdoc
      */
     protected function validateValue($value)
     {
+		//一个小if的括号里写了那么多，真是逻辑深啊
         if ($this->requiredValue === null) {
             if ($this->strict && $value !== null || !$this->strict && !$this->isEmpty(is_string($value) ? trim($value) : $value)) {
+				//返回null说明验证没有问题
                 return null;
             }
         } elseif (!$this->strict && $value == $this->requiredValue || $this->strict && $value === $this->requiredValue) {
@@ -96,6 +101,7 @@ class RequiredValidator extends Validator
 
     /**
      * @inheritdoc
+	 * 看到了没？在服务端实现客户端的验证，其实就是返回一段JS函数的调用字符串而已
      */
     public function clientValidateAttribute($model, $attribute, $view)
     {

@@ -28,12 +28,13 @@ class NumberValidator extends Validator
      * @var bool whether the attribute value can only be an integer. Defaults to false.
      */
     public $integerOnly = false;
-    /**
+    /** 
+	*  整型或浮点，数字的上限
      * @var int|float upper limit of the number. Defaults to null, meaning no upper limit.
      * @see tooBig for the customized message used when the number is too big.
      */
     public $max;
-    /**
+    /**整型或浮点，数字的下限
      * @var int|float lower limit of the number. Defaults to null, meaning no lower limit.
      * @see tooSmall for the customized message used when the number is too small.
      */
@@ -46,11 +47,12 @@ class NumberValidator extends Validator
      * @var string user-defined error message used when the value is smaller than [[min]].
      */
     public $tooSmall;
-    /**
+    /**怎么算整数呢？还是得靠正则呀，哈哈，
+	*  任意的空白，正负号（+-），一个数字以上，任意空白
      * @var string the regular expression for matching integers.
      */
     public $integerPattern = '/^\s*[+-]?\d+\s*$/';
-    /**
+    /**怎么算数字呢？这个正则好好研究一下吧
      * @var string the regular expression for matching numbers. It defaults to a pattern
      * that matches floating numbers with optional exponential part (e.g. -1.23e-10).
      */
@@ -62,7 +64,9 @@ class NumberValidator extends Validator
      */
     public function init()
     {
+		//借用父类的方法，初始化继承而来的三个属性
         parent::init();
+		//然后初始化当前验证器特有的属性
         if ($this->message === null) {
             $this->message = $this->integerOnly ? Yii::t('yii', '{attribute} must be an integer.')
                 : Yii::t('yii', '{attribute} must be a number.');
