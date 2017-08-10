@@ -19,17 +19,23 @@ use Yii;
  */
 class StringValidator extends Validator
 {
-    /**
+    /** 整数或者数组，指定被验证属性的长度限制
      * @var int|array specifies the length limit of the value to be validated.
      * This can be specified in one of the following forms:
-     *
+     * 一个整数时，确切地限制属性的值长度
      * - an integer: the exact length that the value should be of;
+	 * 一个元素的数组，限制属性的最小长度，将会覆盖min
      * - an array of one element: the minimum length that the value should be of. For example, `[8]`.
      *   This will overwrite [[min]].
+	 * 两个元素的数组，限制属性的最小和最大长度
      * - an array of two elements: the minimum and maximum lengths that the value should be of.
+	 * 比如 [8,128]，表示限制属性在8--128之间
      *   For example, `[8, 128]`. This will overwrite both [[min]] and [[max]].
+	 * 太短，自定义过短时的报错信息
      * @see tooShort for the customized message for a too short string.
+	 * 太长，自定义过长时的报错信息
      * @see tooLong for the customized message for a too long string.
+	 * 不等，不是指定长度时自定义的报错信息
      * @see notEqual for the customized message for a string that does not match desired length.
      */
     public $length;
@@ -43,7 +49,7 @@ class StringValidator extends Validator
      * @see tooShort for the customized message for a too short string.
      */
     public $min;
-    /**
+    /**当属性值不是字符串时，自定义报错信息
      * @var string user-defined error message used when the value is not a string.
      */
     public $message;
@@ -59,7 +65,7 @@ class StringValidator extends Validator
      * @var string user-defined error message used when the length of the value is not equal to [[length]].
      */
     public $notEqual;
-    /**
+    /**指定验证属性的字符编码,比如utf-8,gbk等（默认是$app::charset)
      * @var string the encoding of the string value to be validated (e.g. 'UTF-8').
      * If this property is not set, [[\yii\base\Application::charset]] will be used.
      */
@@ -71,7 +77,13 @@ class StringValidator extends Validator
      */
     public function init()
     {
+		//子类都要借用父类的init方法，达到为自己初始化所有验证器的那三个公共属性的功能。
+		//哪三个公共属性？
+		//attributes
+		//on
+		//except
         parent::init();
+		//然后下面是子验证器特有的属性的初始化，比如min,max,tooShort,message等
         if (is_array($this->length)) {
             if (isset($this->length[0])) {
                 $this->min = $this->length[0];
@@ -99,6 +111,7 @@ class StringValidator extends Validator
     }
 
     /**
+	* 这个验证器，权限大一点，多覆盖了这个方法
      * @inheritdoc
      */
     public function validateAttribute($model, $attribute)

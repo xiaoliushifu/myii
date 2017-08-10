@@ -263,6 +263,7 @@ class Validator extends Component
     /**
 	 * init方法我们已经知道，所有Object子类实例化时，在构造函数内部会调用init方法初始化属性
 	 * 而且一般会先执行parent::init()
+	 * 所以，实例化验证器时，就确定了这个验证器将来能验证哪些属性，适用哪些场景，排除哪些场景
      * @inheritdoc
      */
     public function init()
@@ -289,7 +290,7 @@ class Validator extends Component
     {
         if (is_array($attributes)) {
             $newAttributes = [];
-			//筛选车当前验证器关联的属性，包含!前缀的
+			//筛选与当前验证器关联的属性，包含!前缀的也算
             foreach ($attributes as $attribute) {
                 if (in_array($attribute, $this->attributes) || in_array('!' . $attribute, $this->attributes)) {
                     $newAttributes[] = $attribute;
@@ -299,7 +300,7 @@ class Validator extends Component
 		
         } else {
             $attributes = [];
-			//从当前验证器的属性列表里，进行过滤，且去掉前缀的'!'
+			//从当前验证器的属性列表里，进行过滤，若某些属性前带有前缀的'!'，则去掉这个前缀继续包含使用
             foreach ($this->attributes as $attribute) {
                 $attributes[] = $attribute[0] === '!' ? substr($attribute, 1) : $attribute;
             }
@@ -374,6 +375,7 @@ class Validator extends Component
 	 * 如果验证无误的话，应该返回null
      * Null should be returned if the data is valid.
 	 * 如果当前验证器不支持验证这个$value值，抛出异常
+	 * 从Model里看出来，调用栈是validateAttributes--->validateAttribute----->validateValue
      * @throws NotSupportedException if the validator does not supporting data validation without a model
      */
     protected function validateValue($value)

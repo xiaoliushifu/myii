@@ -387,7 +387,7 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
 		//遍历激活的验证对象（rules里的一行行），进行验证。这是validate()方法的核心
 		//其实是经过了两层过滤：
 		//1 首先获得所有验证器
-		//2 再获得激活的验证器
+		//2 再获得激活的验证器(正如函数名所写：get——Active--Validators
 		//我们看到验证的核心，交给了验证器的validateAttributes方法。
 		//通过查看源码知道，每个验证器都有自己的一套规范，每个验证器内部
 		//都要实现验证逻辑，且在验证出错误时，把其内部把错误信息填充到model的_errors里
