@@ -10,8 +10,9 @@ namespace yii\validators;
 use Yii;
 
 /**
+ * StringValidator验证器验证什么的？验证属性值是否是某个长度
  * StringValidator validates that the attribute value is of certain length.
- *
+ * 注意，这个验证器应该针对字符串类型的属性使用
  * Note, this validator should only be used with string-typed attributes.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
@@ -111,7 +112,7 @@ class StringValidator extends Validator
     }
 
     /**
-	* 这个验证器，权限大一点，多覆盖了这个方法
+	* 这个验证器，针对自己独有的验证逻辑，应该覆盖基类的validateAttribute()方法
      * @inheritdoc
      */
     public function validateAttribute($model, $attribute)
@@ -139,9 +140,11 @@ class StringValidator extends Validator
 
     /**
      * @inheritdoc
+	 * 具体的验证逻辑的实现，是子类验证器应该覆盖基类验证器的方法之一
      */
     protected function validateValue($value)
     {
+		//字符串验证器，就得属性值是字符串时才能进行后续的验证
         if (!is_string($value)) {
             return [$this->message, []];
         }
@@ -162,10 +165,18 @@ class StringValidator extends Validator
     }
 
     /**
+	* 客户端验证逻辑的实现
+	* 第三个参数是视图对象，\yii\web\View
+
+	* 我们看到，返回的是yii.validation.string(aaa,bbb,ccc)
+	* 明显是一个JS函数的调用语句，也就是说实际的JS方法已经提前写好了，是在yii.validation.js里的
+	* 里面有string,required,Number等方法
      * @inheritdoc
      */
     public function clientValidateAttribute($model, $attribute, $view)
     {
+		//这是什么呢？看到没有Asset，就是前端资源（js,css)呗，实现客户端验证必须加载的前端验证资源，
+		//其中最重要的就是yii.validation.js文件了
         ValidationAsset::register($view);
         $options = $this->getClientOptions($model, $attribute);
 
