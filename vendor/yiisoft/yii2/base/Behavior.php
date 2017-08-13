@@ -70,9 +70,10 @@ class Behavior extends Object
     }
 
     /**把behavior绑定到$owner类上，是通过设置behavior的owner属性完成的
+	 * 这就是attach方法的本意。可是，还没完。
      * Attaches the behavior object to the component.
      * The default implementation will set the [[owner]] property
-	 * 还要把behavior里声明的事件也绑定到owner的类上
+	 * 这里要注意的是，绑定behavior之后，还要把behavior里声明的事件也绑定到owner的类上（这里反应了事件与行为的关系）
      * and attach event handlers as declared in [[events]].
 	 * 如果子类覆盖了这个方法，请确保parent::attach($owner)
      * Make sure you call the parent implementation if you override this method.
