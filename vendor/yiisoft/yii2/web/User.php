@@ -13,27 +13,33 @@ use yii\base\InvalidConfigException;
 use yii\base\InvalidValueException;
 use yii\rbac\CheckAccessInterface;
 
-/**
+/**User类是应用组件之一，用来管理用户认证的状态（登录？退出？）
  * User is the class for the `user` application component that manages the user authentication status.
- *
+ *可以使用isGuest来判断当前用户是否是登录状态或者是登出状态（访客状态）
  * You may use [[isGuest]] to determine whether the current user is a guest or not.
+ * 如果当前用户是访客，identity属性返回null，否则返回identity实例
  * If the user is a guest, the [[identity]] property would return `null`. Otherwise, it would
  * be an instance of [[IdentityInterface]].
  *
+ * 可以通过下述的几个方法来改变用户的认证状态
  * You may call various methods to change the user authentication status:
- *
+ * login方法，设置指定的认证类并存储认证状态在session和cookie中
  * - [[login()]]: sets the specified identity and remembers the authentication status in session and cookie;
+ * logout方法，标记一个用户为访客并清除相关的session和cookie信息
  * - [[logout()]]: marks the user as a guest and clears the relevant information from session and cookie;
+ *setIdentity方法，修改认证用户实例而无需触及session和cookie
  * - [[setIdentity()]]: changes the user identity without touching session or cookie
+ *  在RESTful API方式中，setIdentity是最好用的认证方式
  *   (this is best used in stateless RESTful API implementation).
- *
+ *注意，User组件仅仅维护用户的认证状态，并不管如何认证用户
  * Note that User only maintains the user authentication status. It does NOT handle how to authenticate
+ * 如何认证一个用户的逻辑，应该在认证类中实现，identityClass是必须要有的
  * a user. The logic of how to authenticate a user should be done in the class implementing [[IdentityInterface]].
  * You are also required to set [[identityClass]] with the name of this class.
- *
+ *User默认配置为Web应用的默认组件，我们可以通过Yii::$app->user来访问这个user组件
  * User is configured as an application component in [[\yii\web\Application]] by default.
  * You can access that instance via `Yii::$app->user`.
- *
+ *开发人员可以通过添加数组来更新User组件的配置信息，比如下面的例子：
  * You can modify its configuration by adding an array to your application config under `components`
  * as it is shown in the following example:
  *
@@ -45,13 +51,18 @@ use yii\rbac\CheckAccessInterface;
  *     // ...
  * ]
  * ```
- *
+ * $id,用户唯一标识符，如果是null，表名当前用户是访客，该属性只读
  * @property string|int $id The unique identifier for the user. If `null`, it means the user is a guest. This
  * property is read-only.
+ * $identity是有关当前登录用户的认证对象，当用户未登录时（未认证）返回null
  * @property IdentityInterface|null $identity The identity object associated with the currently logged-in
  * user. `null` is returned if the user is not logged in (not authenticated).
+ * $isGuest,是否当前用户是访客，只读属性
  * @property bool $isGuest Whether the current user is a guest. This property is read-only.
+ * $returnUrl 当用户从未认证（未登录）到认证登录后，用户应该跳转到的url
  * @property string $returnUrl The URL that the user should be redirected to after login. Note that the type
+ * 这个属性有set和get方法，但绝不是getter和setter（只是名字重复了而已）
+ * 看看setReturnUrl()和getReturnUrl()方法可以了解具体情况
  * of this property differs in getter and setter. See [[getReturnUrl()]] and [[setReturnUrl()]] for details.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
@@ -255,10 +266,12 @@ class User extends Component
         return !$this->getIsGuest();
     }
 
-    /**
+    /** 通过令牌认证并登录（注意，认证和登录是两回事呀）
      * Logs in a user by the given access token.
      * This method will first authenticate the user by calling [[IdentityInterface::findIdentityByAccessToken()]]
+	 * 成功之后，就用login方法登录为认证用户
      * with the provided access token. If successful, it will call [[login()]] to log in the authenticated user.
+	 * 认证失败，或登录失败，就返回null
      * If authentication fails or [[login()]] is unsuccessful, it will return null.
      * @param string $token the access token
      * @param mixed $type the type of the token. The value of this parameter depends on the implementation.
@@ -280,7 +293,7 @@ class User extends Component
 
     /**
      * Logs in a user by cookie.
-     *
+     *通过cookie认证并登录
      * This method attempts to log in a user using the ID and authKey information
      * provided by the [[identityCookie|identity cookie]].
      */
@@ -325,7 +338,7 @@ class User extends Component
         return $this->getIsGuest();
     }
 
-    /**
+    /**检测应用当前是否有人是登录状态，本质上是看有没有Identity来判断的
      * Returns a value indicating whether the user is a guest (not authenticated).
      * @return bool whether the current user is a guest.
      * @see getIdentity()
@@ -336,6 +349,7 @@ class User extends Component
     }
 
     /**
+	 * getId就是获得认证用户类的getId()方法 
      * Returns a value that uniquely represents the user.
      * @return string|int the unique identifier for the user. If `null`, it means the user is a guest.
      * @see getIdentity()
