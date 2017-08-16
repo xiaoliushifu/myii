@@ -12,9 +12,9 @@ use ArrayIterator;
 use yii\base\InvalidCallException;
 use yii\base\Object;
 
-/**
+/**CookieCollection维护了当前请求中可以获得的cookie
  * CookieCollection maintains the cookies available in the current request.
- *
+ * 详情请查看官网guide
  * For more details and usage information on CookieCollection, see the [guide article on handling cookies](guide:runtime-sessions-cookies).
  *
  * @property int $count The number of cookies in the collection. This property is read-only.

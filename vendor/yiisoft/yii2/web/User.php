@@ -93,6 +93,8 @@ class User extends Component
 	 * 如果你的应用是无状态的，那么可以设置这个属性是false,这在RESTful API时经常使用
      * You set this property to be `false` if your application is stateless, which is often the case
      * for RESTful APIs.
+	 * 默认启用session,且使用文件session方式，保存sessionID的cookie名没有特别配置，就是
+	 *使用php的PHPSESSID，session文件的存储位置也由php.ini来配置的。
      */
     public $enableSession = true;
     /**
@@ -257,7 +259,7 @@ class User extends Component
         }
     }
 
-    /**
+    /**登录一个用户，注意认证逻辑已经在validate()中完成
      * Logs in a user.
      *
      * After logging in a user:
@@ -413,7 +415,7 @@ class User extends Component
                 $url = null;
             }
         }
-
+        //没有returnUrl就返回到主页
         return $url === null ? Yii::$app->getHomeUrl() : $url;
     }
 
@@ -623,7 +625,10 @@ class User extends Component
     }
 
     /**
+	 * 清除identityCookie指明的cookie信息
      * Removes the identity cookie.
+	 * 该方法在enableAutoLogin为true时才使用
+	 * cookie属于response组件
      * This method is used when [[enableAutoLogin]] is true.
      * @since 2.0.9
      */
@@ -633,23 +638,25 @@ class User extends Component
     }
 
     /**
+	 * 用新的认证实例，替换掉已经认证的旧实例
      * Switches to a new identity for the current user.
-     *
+     * 当enableSession为true时，该方法将使用session或cookie来存储用户认证实例
      * When [[enableSession]] is true, this method may use session and/or cookie to store the user identity information,
      * according to the value of `$duration`. Please refer to [[login()]] for more details.
-     *
+     * 该方法一般不会直接调用，而是在login(),logout()和loginByCookie()内调用
      * This method is mainly called by [[login()]], [[logout()]] and [[loginByCookie()]]
      * when the current user needs to be associated with the corresponding identity information.
-     *
+     * $IdentityInterfase是有关当前用户的认证实例，如果是null，则代表把当前用户登出（置为访客）
      * @param IdentityInterface|null $identity the identity information to be associated with the current user.
      * If null, it means switching the current user to be a guest.
+	 * 整数，$duration登录用户能够保持登录状态的持续时间（秒），当$identity不是null时$duration才有用
      * @param int $duration number of seconds that the user can remain in logged-in status.
      * This parameter is used only when `$identity` is not null.
      */
     public function switchIdentity($identity, $duration = 0)
     {
         $this->setIdentity($identity);
-
+		//不启用session时，直接退出
         if (!$this->enableSession) {
             return;
         }
