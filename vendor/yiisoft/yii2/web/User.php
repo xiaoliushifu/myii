@@ -23,23 +23,22 @@ use yii\rbac\CheckAccessInterface;
  *
  * 可以通过下述的几个方法来改变用户的认证状态
  * You may call various methods to change the user authentication status:
- * login方法，设置指定的认证类并存储认证状态在session和cookie中
+ * login方法，设置指定的认证实例identity并存储认证状态在session和cookie中
  * - [[login()]]: sets the specified identity and remembers the authentication status in session and cookie;
- * logout方法，标记一个用户为访客并清除相关的session和cookie信息
+ * logout方法，标记一个用户为访客（退出登录状态）并清除相关的session和cookie信息
  * - [[logout()]]: marks the user as a guest and clears the relevant information from session and cookie;
- *setIdentity方法，修改认证用户实例而无需触及session和cookie
+ * setIdentity方法，修改认证用户实例而无需触及session和cookie（在无状态的RESTful API方式中，setIdentity是最好用的认证方式）
  * - [[setIdentity()]]: changes the user identity without touching session or cookie
- *  在RESTful API方式中，setIdentity是最好用的认证方式
  *   (this is best used in stateless RESTful API implementation).
  *注意，User组件仅仅维护用户的认证状态，并不管如何认证用户
  * Note that User only maintains the user authentication status. It does NOT handle how to authenticate
- * 如何认证一个用户的逻辑，应该在认证类中实现，identityClass是必须要有的
+ * 如何认证一个用户的逻辑，应该在认证类中实现，故identityClass是必须要有的
  * a user. The logic of how to authenticate a user should be done in the class implementing [[IdentityInterface]].
  * You are also required to set [[identityClass]] with the name of this class.
- *User默认配置为Web应用的默认组件，我们可以通过Yii::$app->user来访问这个user组件
+ *User默认配置为Web应用的组件（非console应用），我们可以通过Yii::$app->user来访问这个user组件
  * User is configured as an application component in [[\yii\web\Application]] by default.
  * You can access that instance via `Yii::$app->user`.
- *开发人员可以通过添加数组来更新User组件的配置信息，比如下面的例子：
+ *开发人员可以通过添加数组元素来更新User组件的配置信息，比如下面的例子：
  * You can modify its configuration by adding an array to your application config under `components`
  * as it is shown in the following example:
  *
@@ -75,91 +74,120 @@ class User extends Component
     const EVENT_BEFORE_LOGOUT = 'beforeLogout';
     const EVENT_AFTER_LOGOUT = 'afterLogout';
 
-    /**
+    /** 
+	 * 字符串，存储认证实例的类名（一般在User组件的配置数组里，必填项）
      * @var string the class name of the [[identity]] object.
      */
     public $identityClass;
     /**
+	* bool 是否开启基于cookie的登录，默认false不开启
      * @var bool whether to enable cookie-based login. Defaults to `false`.
+	 * 当enableSession设置为false时，这个属性将被忽略（强制开启）
      * Note that this property will be ignored if [[enableSession]] is `false`.
      */
     public $enableAutoLogin = false;
     /**
+	 * bool 是否使用Session来持久化认证状态
      * @var bool whether to use session to persist authentication status across multiple requests.
+	 * 如果你的应用是无状态的，那么可以设置这个属性是false,这在RESTful API时经常使用
      * You set this property to be `false` if your application is stateless, which is often the case
      * for RESTful APIs.
      */
     public $enableSession = true;
     /**
+	 * 字符串或数组，当loginRequired()调用时，用于给终端用户生成跳转的url
      * @var string|array the URL for login when [[loginRequired()]] is called.
+	 * 如果是个数组，使用[[UrlManager::createUrl()]]处理之；
      * If an array is given, [[UrlManager::createUrl()]] will be called to create the corresponding URL.
+	 * 数组的第一个元素必须是登录动作的路由，其他的元素则以键值对的形式给出组装登录动作URL的get参数
      * The first element of the array should be the route to the login action, and the rest of
      * the name-value pairs are GET parameters used to construct the login URL. For example,
      *
      * ```php
      * ['site/login', 'ref' => 1]
      * ```
-     *
+     * 如果这个属性是null,那么将返回403 http异常
      * If this property is `null`, a 403 HTTP exception will be raised when [[loginRequired()]] is called.
      */
     public $loginUrl = ['site/login'];
     /**
+	 * 数组，认证方式为cookie时，cookie的配置，仅在enableAutoLogin设置为true时才有用
      * @var array the configuration of the identity cookie. This property is used only when [[enableAutoLogin]] is `true`.
      * @see Cookie
      */
     public $identityCookie = ['name' => '_identity', 'httpOnly' => true];
-    /**
+    /**认证超时的秒数，在用户保持未激活状态持续这些秒数后，将会自动的登出
      * @var int the number of seconds in which the user will be logged out automatically if he
+	 * 如果这个属性没有设置，当session过期时就会登出
      * remains inactive. If this property is not set, the user will be logged out after
      * the current session expires (c.f. [[Session::timeout]]).
+	 * 注意，当enableAutologin为true时，这个属性将不起作用
      * Note that this will not work if [[enableAutoLogin]] is `true`.
      */
     public $authTimeout;
     /**
+	 * 访问检测实例（实现CheckAccessInterfase接口）用来检测访问权限的
      * @var CheckAccessInterface The access checker to use for checking access.
+	 * 如果没有设置这个属性，则使用auth manager。
      * If not set the application auth manager will be used.
      * @since 2.0.9
      */
     public $accessChecker;
     /**
+	 * 绝对登出超时秒数，无论用户的活跃性，只要达到这个秒数用户就一定自动登出
      * @var int the number of seconds in which the user will be logged out automatically
      * regardless of activity.
+	 * 注意，当enableAutologin为true时，这个属性将不起作用
      * Note that this will not work if [[enableAutoLogin]] is `true`.
      */
     public $absoluteAuthTimeout;
     /**
+	 * 布尔类型，当每次请求一个页面时，是否自动刷新认证cookie
      * @var bool whether to automatically renew the identity cookie each time a page is requested.
+	 * 当enableAutologin为true时，这个属性才有用。
      * This property is effective only when [[enableAutoLogin]] is `true`.
+	 * 当设置为false时，认证cookie将会按照用户登录之初设置的cookie过期时间来决定是否过期。
      * When this is `false`, the identity cookie will expire after the specified duration since the user
+	 * 当设置为true时，当用户距离最近的一次请求的持续时间超时后，认证cookie将会过期。（没明白）
      * is initially logged in. When this is `true`, the identity cookie will expire after the specified duration
      * since the user visits the site the last time.
      * @see enableAutoLogin
      */
     public $autoRenewCookie = true;
     /**
+	 * 字符串，会话变量名，用来指明会话id
      * @var string the session variable name used to store the value of [[id]].
      */
     public $idParam = '__id';
     /**
+	 * 字符串，会话变量名，用来指明认证状态的过期时间戳
      * @var string the session variable name used to store the value of expiration timestamp of the authenticated state.
+	 * 当authTimeout属性设置时有用
      * This is used when [[authTimeout]] is set.
      */
     public $authTimeoutParam = '__expire';
     /**
+	 * 字符串，会话变量名，用来指明认证状态绝对超时时间戳
      * @var string the session variable name used to store the value of absolute expiration timestamp of the authenticated state.
+	 * 当absoluteAuthTimeout属性设置时才有用
      * This is used when [[absoluteAuthTimeout]] is set.
      */
     public $absoluteAuthTimeoutParam = '__absoluteExpire';
     /**
+	 * 字符串，会话变量名，用来指明returnUrl的值
      * @var string the session variable name used to store the value of [[returnUrl]].
      */
     public $returnUrlParam = '__returnUrl';
     /**
+	 * 数组，在跳转到登录的url时，应该给出的MIME
      * @var array MIME types for which this component should redirect to the [[loginUrl]].
      * @since 2.0.8
      */
     public $acceptableRedirectTypes = ['text/html', 'application/xhtml+xml'];
 
+	/**
+	* 私有，暂不知
+	*/
     private $_access = [];
 
 
