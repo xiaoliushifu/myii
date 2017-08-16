@@ -7,9 +7,9 @@
 
 namespace yii\validators;
 
-/**
+/**行内验证器也表示一种验证器，但它的验证逻辑（函数体）是由被验证对象（一般是模型对象）中定义的
  * InlineValidator represents a validator which is defined as a method in the object being validated.
- *
+ *验证方法的签名如下：
  * The validation method must have the following signature:
  *
  * ```php
@@ -65,8 +65,10 @@ class InlineValidator extends Validator
      */
     public function validateAttribute($model, $attribute)
     {
+        //对于行内验证器，它的method属性仅仅存储方法名
         $method = $this->method;
         if (is_string($method)) {
+            //方法的定义，还是属于模型对象的
             $method = [$model, $method];
         }
         call_user_func($method, $attribute, $this->params, $this);

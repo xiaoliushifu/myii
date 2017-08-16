@@ -43,7 +43,7 @@ $this->registerJs("console.log('this is registerJs')",$this::POS_HEAD, $key = nu
              * \n是换行符，不会替换为html的<br/>。在真正替换时绝对换行动作，在响应的html原文中可以看到效果，
              * 通过F12--->network-->第一个请求url-----response可以查看出效果。
              */
-            'template' => "{label}\n<div class=\"col-lg-3\">{input}</div>\n<div class=\"col-lg-8\">{error}</div>aaa\nbbb",
+            'template' => "{label}\n<div class=\"col-lg-3\">{input}</div>\n<div class=\"col-lg-8\">{error}</div>",
             //针对{label}标签具体属性的配置
             'labelOptions' => ['class' => 'col-lg-1 control-label'],
             //针对{input}标签具体属性的配置

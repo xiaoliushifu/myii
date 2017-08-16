@@ -140,6 +140,7 @@ class SiteController extends Controller
             return $this->goHome();
         }
 
+        //不是我们想到的使用认证User，而是用LoginForm模型，作为中间件和认证User关联
         $model = new LoginForm();
         if ($model->load(Yii::$app->request->post()) && $model->login()) {
             return $this->goBack();
