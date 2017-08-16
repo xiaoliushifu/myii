@@ -392,7 +392,7 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
 		//通过查看源码知道，每个验证器都有自己的一套规范，每个验证器内部
 		//都要实现验证逻辑，且在验证出错误时，把其内部把错误信息填充到model的_errors里
 		//且验证器执行完内部的验证后不应有返回值
-		//所以要想了解具体的20多个验证器都是如何千姿百态的实现个性验证，花点时间看看它们吧。
+		//所以要想了解具体的20多个验证器都是如何千姿百态地实现个性验证，花点时间看看它们吧。
         foreach ($this->getActiveValidators() as $validator) {
 			//看来，validateAttributes
             $validator->validateAttributes($this, $attributeNames);
@@ -842,7 +842,8 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
     }
 
     /**返回安全属性集合(应用到load方法时，load方法就是所谓的批量赋值），massively assigned
-	* 返回所谓的激活属性集合，激活属性这个词来自官网
+	* 所谓的安全属性集合，安全属性指的是属于当前场景的，但是又排除那些有"!"前缀的属性们
+	* 注意与激活属性概念的区分
      * Returns the attribute names that are safe to be massively assigned in the current scenario.
      * @return string[] safe attribute names
      */
@@ -870,7 +871,7 @@ class Model extends Component implements IteratorAggregate, ArrayAccess, Arrayab
         return $attributes;
     }
 
-    /**返回当前场景下的激活属性
+    /**返回当前场景下的激活属性（注意与safeAttributes()方法的区别）
      * 对比上述safeAttributes()方法的异同，激活属性是当前场景下的全部属性，带有'!'前缀的也返回
      * 但是safeAttributes()就会排除带有'!'前缀的
      * Returns the attribute names that are subject to validation in the current scenario.

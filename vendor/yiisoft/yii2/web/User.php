@@ -69,6 +69,7 @@ use yii\rbac\CheckAccessInterface;
  */
 class User extends Component
 {
+	//初始化了四个事件
     const EVENT_BEFORE_LOGIN = 'beforeLogin';
     const EVENT_AFTER_LOGIN = 'afterLogin';
     const EVENT_BEFORE_LOGOUT = 'beforeLogout';
@@ -192,12 +193,13 @@ class User extends Component
 
 
     /**
+	 * 初始化应用组件（User组件），所谓初始化，就是设置User组件类的属性。
      * Initializes the application component.
      */
     public function init()
     {
         parent::init();
-
+		//没有identityClass属性就抛异常，可见这个属性是必须的哟，必须指明认证类
         if ($this->identityClass === null) {
             throw new InvalidConfigException('User::identityClass must be set.');
         }

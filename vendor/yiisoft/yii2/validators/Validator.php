@@ -323,7 +323,7 @@ class Validator extends Component
         foreach ($attributes as $attribute) {
             $skip = $this->skipOnError && $model->hasErrors($attribute)
                 || $this->skipOnEmpty && $this->isEmpty($model->$attribute);
-			//在不略过时下，是否有条件验证
+			//在不略过的前提下，是否有条件验证（利用了短路原理哟）
             if (!$skip) {
                 if ($this->when === null || call_user_func($this->when, $model, $attribute)) {
 					//层层过滤后，这才去执行验证
