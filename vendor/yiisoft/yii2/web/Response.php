@@ -865,7 +865,9 @@ class Response extends \yii\base\Response
     private $_cookies;
 
     /**
+	 * 返回cookie集合
      * Returns the cookie collection.
+	 * 通过返回的cookie集合，开发人员可以添加或删除cookie,如下：
      * Through the returned cookie collection, you add or remove cookies as follows,
      *
      * ```php
@@ -880,7 +882,7 @@ class Response extends \yii\base\Response
      * // alternatively
      * unset($response->cookies['name']);
      * ```
-     *
+     * CookieCollection类并没有在当前文件里引入（use进来），但是却可以通过自动加载机制加载进来
      * @return CookieCollection the cookie collection.
      */
     public function getCookies()
