@@ -218,16 +218,16 @@ class User extends Component
             throw new InvalidConfigException('User::identityCookie must contain the "name" element.');
         }
     }
-
+    //默认是false,不是null
     private $_identity = false;
 
     /**
      * 返回关联当前登录用户的认证对象
      * Returns the identity object associated with the currently logged-in user.
-     * 当enableSession是true的话，该方法会尝试从session中读取用户的认证信息并重组响应的认证对象
+     * 如果最初认证对象为空时，那么当enableSession是true的话，该方法会尝试从session中读取用户的认证信息并重组相应的认证对象
      * When [[enableSession]] is true, this method may attempt to read the user's authentication data
      * stored in session and reconstruct the corresponding identity object, if it has not done so before.
-     * 
+     * 参数$autoRenew默认是true,也就是说，当尚无认证对象时，会自动取回认证对象，从哪里取回？从session,或者cookie
      * @param bool $autoRenew whether to automatically renew authentication status if it has not been done so before.
      * This is only useful when [[enableSession]] is true.
      * @return IdentityInterface|null the identity object associated with the currently logged-in user.
@@ -237,7 +237,8 @@ class User extends Component
      */
     public function getIdentity($autoRenew = true)
     {
-        if ($this->_identity === false) {//注意，nulll和false在全等符（===）比较时是不等的
+        //注意，nulll和false在全等符（===）比较时是不等的
+        if ($this->_identity === false) {
             if ($this->enableSession && $autoRenew) {
                 $this->_identity = null;
                 $this->renewAuthStatus();
@@ -686,7 +687,6 @@ class User extends Component
 
         //获得session对象
         $session = Yii::$app->getSession();
-        error_log(var_export($session,true),3,'E:/YiiLog.log');
         if (!YII_ENV_TEST) {
             //不是TEST环境，就清除旧的session文件，生成新的session文件。不是刷新session文件，因为session ID肯定不一样了
             $session->regenerateID(true);
@@ -718,21 +718,22 @@ class User extends Component
      * Updates the authentication status using the information from session and cookie.
      *该方法尝试通过__id会话变量来决定用户实例（确切的来说，判断用户是否是登录状态）
      *只要我们在session文件中把“__id|s:3:"100";”删除掉，则刷新页面就能看到当前用户并未登录；而只要我们把“__id|s:3:"100";“这个session变量
-     *加入到session文件时，则服务端就认为当前用户是登录着的状态(手动修改session文件有难度）。
+     *加入到session文件时，则服务端就认为当前用户是登录着的状态(手动修改session文件有难度,但也可尝试）。
+     *一句话，不使用cookie而使用session保存会话信息时，本质上就是通过session文件里的__id|s:3:"100"来决定当前100用户是否是登录着的
+     *但我们知道这仅仅是个ID而已，所以每次还得实例化，才能在本次请求中使用。
      * This method will try to determine the user identity using the [[idParam]] session variable.
      *如果authTimeout设置的话，还要刷新这个时间戳（表示最新的访问时间，为后续的超时判断做新的起始点）
      * If [[authTimeout]] is set, this method will refresh the timer.
      *如果用户是否登录不能通过session变量判断的话，将会使用loginByCookie()来登录
      * If the user identity cannot be determined by session, this method will try to [[loginByCookie()|login by cookie]]
      * if [[enableAutoLogin]] is true.
-     * 这个方法很重要，当用户访问任何页面的时候，都会调用这个方法用来判断当前请求的用户是否是登录状态,虽然不知在从哪里开始调用的
+     * 这个方法很重要，我们看到它是protected，可见应该有其他方法来内部调用而不是直接在外部调用。在什么时候调用呢？
+     * 目前来看，啥时候需要认证对象时，才会判断是否已经登录，也就是getIdentity()方法里，调用的renewAuthStatus()
      */
     protected function renewAuthStatus()
     {
         $session = Yii::$app->getSession();
-        error_log(print_r($session,true),3,'E:/YiiLog.log');
         $id = $session->getHasSessionId() || $session->getIsActive() ? $session->get($this->idParam) : null;
-        yii::error($id);
         if ($id === null) {
             $identity = null;
         } else {
