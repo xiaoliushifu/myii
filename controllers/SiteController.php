@@ -187,12 +187,6 @@ class SiteController extends Controller
      */
     public function actionAbout()
     {
-        $this->on(self::EVENT_TEST,function($e){
-            yii::error('hello');
-            var_dump($e);
-        });
-        
-        $this->trigger(self::EVENT_TEST);
         return $this->render('about');
     }
     

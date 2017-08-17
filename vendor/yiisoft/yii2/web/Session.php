@@ -13,13 +13,15 @@ use yii\base\InvalidConfigException;
 use yii\base\InvalidParamException;
 
 /**
+ * Session提供了会话数据管理及相关的配置
  * Session provides session data management and the related configurations.
- *
+ *Session是一个Web应用的组件，它可以通过`Yii::$app->session`来访问
  * Session is a Web application component that can be accessed via `Yii::$app->session`.
- *
+ *开启会话，就调用open()方法即可，结束和发送会话数据就调用close(),销毁会话数据，就用destroy()方法
  * To start the session, call [[open()]]; To complete and send out session data, call [[close()]];
  * To destroy the session, call [[destroy()]].
  *
+ *Session的使用就像一个数组一样，例如：
  * Session can be used like an array to set and get session data. For example,
  *
  * ```php
@@ -30,8 +32,9 @@ use yii\base\InvalidParamException;
  * foreach ($session as $name => $value) // traverse all session variables
  * $session['name3'] = $value3;  // set session variable 'name3'
  * ```
- *
+ *Session可以扩展支持其他的存储引擎
  * Session can be extended to support customized session storage.
+ * 想扩展的话，就覆盖useCustomStorage方法，其中就是要覆盖那六个方法
  * To do so, override [[useCustomStorage]] so that it returns true, and
  * override these methods with the actual logic about using custom storage:
  * [[openSession()]], [[closeSession()]], [[readSession()]], [[writeSession()]],
@@ -116,7 +119,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
         return false;
     }
 
-    /**
+    /**开启session,所谓开启session，就是session_start(),一旦开启后，可以通过session_status()来查看当前是否已开启
      * Starts the session.
      */
     public function open()
@@ -204,7 +207,11 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
         }
     }
 
-    /**
+    /**查看当前的session状态
+     * 有三个状态：
+     * PHP_SESSION_ACTIVE   会话是启用的，而且存在当前会话（session_start()之后是这个状态）。
+     * PHP_SESSION_NONE     会话是启用的，但不存在当前会话（没有session_start(),或者session关闭了又）
+     * 还有一个是PHP_SESSION_DISABLED，暂不清楚
      * @return bool whether the session has started
      */
     public function getIsActive()
@@ -214,10 +221,13 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
 
     private $_hasSessionId;
 
-    /**
+    /**返回值，表明当前请求是否发送来了sessionID
      * Returns a value indicating whether the current request has sent the session ID.
+     * 默认通过session名从cookie和$_GET中检查
      * The default implementation will check cookie and $_GET using the session name.
+     * 如果通过其他方式的话，请覆盖该方法自行实现
      * If you send session ID via other ways, you may need to override this method
+     * 或者，通过调用setHasSessionId来明确是否有Session ID发送过来
      * or call [[setHasSessionId()]] to explicitly set whether the session ID is sent.
      * @return bool whether the current request has sent the session ID.
      */
@@ -269,9 +279,10 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
         session_id($value);
     }
 
-    /**
+    /**替换当前的SessionID，在处理Web应用的时候，理解这个PHP函数很重要
      * Updates the current session ID with a newly generated one .
      * Please refer to <http://php.net/session_regenerate_id> for more details.
+     * 当参数为true时，会删除旧的session文件
      * @param bool $deleteOldSession Whether to delete the old associated session file or not.
      */
     public function regenerateID($deleteOldSession = false)
@@ -288,6 +299,9 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     }
 
     /**
+     * 获得当前的session 名字，什么是session 名字，就是那个PHPSESSID.熟悉了吧？其实是一个cookie名字而已，
+     * 只不过这个cookie的值是服务端session文件的名字，也就是所谓的session ID.
+     * session名字存储session ID
      * Gets the name of the current session.
      * This is a wrapper for [PHP session_name()](http://php.net/manual/en/function.session-name.php).
      * @return string the current session name
@@ -298,6 +312,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     }
 
     /**
+     * 设置session名字，默认就是PHPSESSID
      * Sets the name for the current session.
      * This is a wrapper for [PHP session_name()](http://php.net/manual/en/function.session-name.php).
      * @param string $value the session name for the current session, must be an alphanumeric string.
@@ -586,7 +601,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     }
 
     /**
-     * Adds a session variable.
+     * Adds a session variable. 设置session变量，会覆盖旧的变量
      * If the specified name already exists, the old value will be overwritten.
      * @param string $key session variable name
      * @param mixed $value session variable value
@@ -598,7 +613,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     }
 
     /**
-     * Removes a session variable.
+     * Removes a session variable.用unset($_SESSION['xxx'])方式删除某个session变量
      * @param string $key the name of the session variable to be removed
      * @return mixed the removed value, null if no such session variable.
      */
@@ -615,7 +630,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
         }
     }
 
-    /**
+    /**删除所有的session变量，注意是遍历一个个的unset($_SESSION['xxx']),而不是unset($_SESSION)
      * Removes all session variables
      */
     public function removeAll()

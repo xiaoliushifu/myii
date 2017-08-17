@@ -76,25 +76,30 @@ class User extends Component
     const EVENT_AFTER_LOGOUT = 'afterLogout';
 
     /** 
-	 * 字符串，存储认证实例的类名（一般在User组件的配置数组里，必填项）
+	 * 字符串，认证对象（认证实例）的类名（一般在User组件的配置数组里配置，必填项）
      * @var string the class name of the [[identity]] object.
      */
     public $identityClass;
     /**
 	* bool 是否开启基于cookie的登录，默认false不开启
      * @var bool whether to enable cookie-based login. Defaults to `false`.
-	 * 当enableSession设置为false时，这个属性将被忽略（强制开启）
+	 * 当enableSession设置为false时，这个属性将被忽略
+	 * 这里所谓基于cookie登录，是说使用cookie保存登录信息（认证信息），
      * Note that this property will be ignored if [[enableSession]] is `false`.
      */
     public $enableAutoLogin = false;
     /**
 	 * bool 是否使用Session来持久化认证状态
      * @var bool whether to use session to persist authentication status across multiple requests.
-	 * 如果你的应用是无状态的，那么可以设置这个属性是false,这在RESTful API时经常使用
+	 * 如果你的应用是无状态的，那么可以设置这个属性是false（想想哪些应用是无状态的？思来想去，估计就是RESTful API时了吧？）
+	 * 其实没有哪个应用是无状态的，只是实现状态控制的方式不同而已。比如我们平常所说的Session就是一种会话机制
+	 * 在服务端保存（文件，redis，memcache都行），还有一种是用于手机端请求的API应用，这种也有会话机制，那就是通过令牌方式，并不是Session机制
+	 * 所以，这里所说的无状态应用，应该就是指手机端访问的API应用了。（令牌方式认证）
      * You set this property to be `false` if your application is stateless, which is often the case
      * for RESTful APIs.
-	 * 默认启用session,且使用文件session方式，保存sessionID的cookie名没有特别配置，就是
-	 *使用php的PHPSESSID，session文件的存储位置也由php.ini来配置的。
+     * 所以只要是用电脑来访问的还是得启用Session。
+	 * 默认启用session。但session的存储引擎是什么，请看yii\web\session。默认是File存储，保存sessionID的cookie名没有特别配置，就是
+	 * 使用php的PHPSESSID，session文件的存储位置也由php.ini来配置的。
      */
     public $enableSession = true;
     /**
@@ -119,13 +124,15 @@ class User extends Component
      * @see Cookie
      */
     public $identityCookie = ['name' => '_identity', 'httpOnly' => true];
-    /**认证超时的秒数，在用户保持未激活状态持续这些秒数后，将会自动的登出
+    /**认证超时的秒数，在用户保持未激活状态持续这些秒数（发呆时间）后，将会自动的登出
      * @var int the number of seconds in which the user will be logged out automatically if he
 	 * 如果这个属性没有设置，当session过期时就会登出
      * remains inactive. If this property is not set, the user will be logged out after
      * the current session expires (c.f. [[Session::timeout]]).
 	 * 注意，当enableAutologin为true时，这个属性将不起作用
      * Note that this will not work if [[enableAutoLogin]] is `true`.
+     * 如何记录用户未激活状态持续的秒数？这个简单，只需在session中保存这个用户上次访问某个页面的时间戳，两次访问的时间差超过
+     * authTimeout的值时，就是认证超时了，此时服务端就强制登出这个用户。
      */
     public $authTimeout;
     /**
@@ -142,6 +149,8 @@ class User extends Component
      * regardless of activity.
 	 * 注意，当enableAutologin为true时，这个属性将不起作用
      * Note that this will not work if [[enableAutoLogin]] is `true`.
+     * 仍然在session中保存用户初次登录的时间戳，每次用户访问页面时都检测当前时间戳和初次登录的时间戳
+     * 这两者的时间差大于absoluteAuthTimeout就强制退出当前用户（删除认证信息呗）
      */
     public $absoluteAuthTimeout;
     /**
@@ -213,9 +222,12 @@ class User extends Component
     private $_identity = false;
 
     /**
+     * 返回关联当前登录用户的认证对象
      * Returns the identity object associated with the currently logged-in user.
+     * 当enableSession是true的话，该方法会尝试从session中读取用户的认证信息并重组响应的认证对象
      * When [[enableSession]] is true, this method may attempt to read the user's authentication data
      * stored in session and reconstruct the corresponding identity object, if it has not done so before.
+     * 
      * @param bool $autoRenew whether to automatically renew authentication status if it has not been done so before.
      * This is only useful when [[enableSession]] is true.
      * @return IdentityInterface|null the identity object associated with the currently logged-in user.
@@ -225,7 +237,7 @@ class User extends Component
      */
     public function getIdentity($autoRenew = true)
     {
-        if ($this->_identity === false) {
+        if ($this->_identity === false) {//注意，nulll和false在全等符（===）比较时是不等的
             if ($this->enableSession && $autoRenew) {
                 $this->_identity = null;
                 $this->renewAuthStatus();
@@ -238,8 +250,9 @@ class User extends Component
     }
 
     /**
+     * 设置认证实例
      * Sets the user identity object.
-     *
+     *注意这个方法不涉及session或者cookie,如果涉及session或cookie处理，请使用switchIdentity方法
      * Note that this method does not deal with session or cookie. You should usually use [[switchIdentity()]]
      * to change the identity of the current user.
      *
@@ -570,6 +583,7 @@ class User extends Component
     }
 
     /**
+     * 发送一个实例cookie
      * Sends an identity cookie.
      * This method is used when [[enableAutoLogin]] is true.
      * It saves [[id]], [[IdentityInterface::getAuthKey()|auth key]], and the duration of cookie-based login
@@ -580,13 +594,16 @@ class User extends Component
      */
     protected function sendIdentityCookie($identity, $duration)
     {
+        //实例化cookie对象(一个cookie对象包括：name，value，domain,path,expire,size,httponly,secure八个字段）
         $cookie = new Cookie($this->identityCookie);
+        //cookie值是怎么回事，请看看
         $cookie->value = json_encode([
             $identity->getId(),
             $identity->getAuthKey(),
             $duration,
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         $cookie->expire = time() + $duration;
+        //把当前的cookie对象添加到Response对象中
         Yii::$app->getResponse()->getCookies()->add($cookie);
     }
 
@@ -600,6 +617,7 @@ class User extends Component
      */
     protected function getIdentityAndDurationFromCookie()
     {
+        //由Request组件获得http请求中带来的cookie
         $value = Yii::$app->getRequest()->getCookies()->getValue($this->identityCookie['name']);
         if ($value === null) {
             return null;
@@ -640,10 +658,10 @@ class User extends Component
     /**
 	 * 用新的认证实例，替换掉已经认证的旧实例
      * Switches to a new identity for the current user.
-     * 当enableSession为true时，该方法将使用session或cookie来存储用户认证实例
+     * 当enableSession为true时，该方法将根据$duration的情况使用session或cookie来存储用户认证信息
      * When [[enableSession]] is true, this method may use session and/or cookie to store the user identity information,
      * according to the value of `$duration`. Please refer to [[login()]] for more details.
-     * 该方法一般不会直接调用，而是在login(),logout()和loginByCookie()内调用
+     * 当当前用户需要关联相关的认证信息时，会使用该方法，但该方法一般不会直接调用，而是在login(),logout()和loginByCookie()内调用，
      * This method is mainly called by [[login()]], [[logout()]] and [[loginByCookie()]]
      * when the current user needs to be associated with the corresponding identity information.
      * $IdentityInterfase是有关当前用户的认证实例，如果是null，则代表把当前用户登出（置为访客）
@@ -666,42 +684,55 @@ class User extends Component
             $this->removeIdentityCookie();
         }
 
+        //获得session对象
         $session = Yii::$app->getSession();
+        error_log(var_export($session,true),3,'E:/YiiLog.log');
         if (!YII_ENV_TEST) {
+            //不是TEST环境，就清除旧的session文件，生成新的session文件。不是刷新session文件，因为session ID肯定不一样了
             $session->regenerateID(true);
         }
+        //删除session变量__id
         $session->remove($this->idParam);
+        //删除session变量__expire
         $session->remove($this->authTimeoutParam);
 
         if ($identity) {
+            //设置一个session变量__id
             $session->set($this->idParam, $identity->getId());
+            //当authTimeout有值时，就设置cookie变量__expire
             if ($this->authTimeout !== null) {
                 $session->set($this->authTimeoutParam, time() + $this->authTimeout);
             }
+            //当authTimeout有值时，就设置cookie变量__absoluteExpire
             if ($this->absoluteAuthTimeout !== null) {
                 $session->set($this->absoluteAuthTimeoutParam, time() + $this->absoluteAuthTimeout);
             }
+            //当$duration大于0时，且enableAutoLogin为true,那么就把认证信息存储到Cookie里
             if ($duration > 0 && $this->enableAutoLogin) {
                 $this->sendIdentityCookie($identity, $duration);
             }
         }
     }
 
-    /**
+    /**通过session和cookie来更新认证状态（一般由用户访问页面时从session文件中读取，一般用__id参数）
      * Updates the authentication status using the information from session and cookie.
-     *
+     *该方法尝试通过__id会话变量来决定用户实例（确切的来说，判断用户是否是登录状态）
+     *只要我们在session文件中把“__id|s:3:"100";”删除掉，则刷新页面就能看到当前用户并未登录；而只要我们把“__id|s:3:"100";“这个session变量
+     *加入到session文件时，则服务端就认为当前用户是登录着的状态(手动修改session文件有难度）。
      * This method will try to determine the user identity using the [[idParam]] session variable.
-     *
+     *如果authTimeout设置的话，还要刷新这个时间戳（表示最新的访问时间，为后续的超时判断做新的起始点）
      * If [[authTimeout]] is set, this method will refresh the timer.
-     *
+     *如果用户是否登录不能通过session变量判断的话，将会使用loginByCookie()来登录
      * If the user identity cannot be determined by session, this method will try to [[loginByCookie()|login by cookie]]
      * if [[enableAutoLogin]] is true.
+     * 这个方法很重要，当用户访问任何页面的时候，都会调用这个方法用来判断当前请求的用户是否是登录状态,虽然不知在从哪里开始调用的
      */
     protected function renewAuthStatus()
     {
         $session = Yii::$app->getSession();
+        error_log(print_r($session,true),3,'E:/YiiLog.log');
         $id = $session->getHasSessionId() || $session->getIsActive() ? $session->get($this->idParam) : null;
-
+        yii::error($id);
         if ($id === null) {
             $identity = null;
         } else {

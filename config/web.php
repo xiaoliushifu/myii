@@ -20,7 +20,10 @@ $config = [
         ],
         'user' => [
             'identityClass' => 'app\models\User',
-            'enableAutoLogin' => true,
+            //'enableAutoLogin' => true,
+            //'enableSession' => false,
+            //'authTimeout'=>20,
+            'absoluteAuthTimeout'=>300,
         ],
 		//错误处理器组件必须有
         'errorHandler' => [
