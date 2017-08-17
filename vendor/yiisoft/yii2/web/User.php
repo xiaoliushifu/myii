@@ -222,12 +222,13 @@ class User extends Component
     private $_identity = false;
 
     /**
-     * 返回关联当前登录用户的认证对象
+     * 返回关联当前登录用户的认证对象(能取回说明是登录状态，返回null则是访客，即非登录状态）
      * Returns the identity object associated with the currently logged-in user.
      * 如果最初认证对象为空时，那么当enableSession是true的话，该方法会尝试从session中读取用户的认证信息并重组相应的认证对象
      * When [[enableSession]] is true, this method may attempt to read the user's authentication data
      * stored in session and reconstruct the corresponding identity object, if it has not done so before.
      * 参数$autoRenew默认是true,也就是说，当尚无认证对象时，会自动取回认证对象，从哪里取回？从session,或者cookie
+     * 如果session或cookie中也没有，则可以肯定当前用户是访客，尚未登录。
      * @param bool $autoRenew whether to automatically renew authentication status if it has not been done so before.
      * This is only useful when [[enableSession]] is true.
      * @return IdentityInterface|null the identity object associated with the currently logged-in user.
