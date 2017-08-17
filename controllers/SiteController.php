@@ -94,7 +94,6 @@ class SiteController extends Controller
      */
     public function actionIndex()
     {
-       // var_dump(Yii::$app->user);
         return $this->render('index');
     }
     
@@ -131,7 +130,6 @@ class SiteController extends Controller
 
     /**
      * Login action.
-     *
      * @return string
      */
     public function actionLogin()
@@ -212,5 +210,9 @@ class SiteController extends Controller
         } else {
             return $this->render('entry',['model'=>$m]);
         }
+    }
+    public function actionMsg()
+    {
+            return $this->render('/Message/msg');
     }
 }

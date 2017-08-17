@@ -371,7 +371,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
         $this->_cookieParams = $value;
     }
 
-    /**
+    /**启动session之前设置cookie对象的某些字段
      * Sets the session cookie parameters.
      * This method is called by [[open()]] when it is about to open the session.
      * @throws InvalidParamException if the parameters are incomplete.
@@ -587,8 +587,9 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
         return $this->getCount();
     }
 
-    /**
+    /**根据session变量名获取session变量的值
      * Returns the session variable value with the session variable name.
+     * 当session变量不存在时，返回第二个参数$defaultValue
      * If the session variable does not exist, the `$defaultValue` will be returned.
      * @param string $key the session variable name
      * @param mixed $defaultValue the default value to be returned when the session variable does not exist.
