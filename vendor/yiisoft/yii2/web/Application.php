@@ -142,6 +142,7 @@ class Application extends \yii\base\Application
     }
 
     /**
+     * 同理都是为__get魔术方法而用:Yii::$app->errorHandler
      * Returns the error handler component.
      * @return ErrorHandler the error handler application component.
      */
@@ -151,6 +152,7 @@ class Application extends \yii\base\Application
     }
 
     /**
+     * 同理都是为__get魔术方法而用:Yii::$app->request
      * Returns the request component.
      * @return Request the request component.
      */
@@ -160,6 +162,7 @@ class Application extends \yii\base\Application
     }
 
     /**
+     * 同理都是为__get魔术方法而用:Yii::$app->response
      * Returns the response component.
      * @return Response the response component.
      */
@@ -169,6 +172,7 @@ class Application extends \yii\base\Application
     }
 
     /**
+     * 同理都是为__get魔术方法而用:Yii::$app->session
      * Returns the session component.
      * @return Session the session component.
      */
@@ -178,6 +182,7 @@ class Application extends \yii\base\Application
     }
 
     /**
+     * 一般由Yii::$app->user开始的get魔术方法调用，但该方法既然是public，那我们既然知道了就可以提供效率地直接Yii::$app->getUser()
      * Returns the user component.
      * @return User the user component.
      */
