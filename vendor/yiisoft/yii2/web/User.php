@@ -709,6 +709,7 @@ class User extends Component
                 $session->set($this->absoluteAuthTimeoutParam, time() + $this->absoluteAuthTimeout);
             }
             //当$duration大于0时，且enableAutoLogin为true,那么就把认证信息存储到Cookie里
+            //可见，在enableAutoLogin为false的情况下（只使用session），$duration是没有用的（rememberMe表单项是无用的，它是配合cookie方式的）
             if ($duration > 0 && $this->enableAutoLogin) {
                 $this->sendIdentityCookie($identity, $duration);
             }
