@@ -119,7 +119,8 @@ class User extends Component
      */
     public $loginUrl = ['site/login'];
     /**
-	 * 数组，认证方式为cookie时，cookie的配置，仅在enableAutoLogin设置为true时才有用
+	 * 数组，认证cookie的配置，仅在enableAutoLogin设置为true时才有用
+	 * 认证cookie也是一个cookie而已
      * @var array the configuration of the identity cookie. This property is used only when [[enableAutoLogin]] is `true`.
      * @see Cookie
      */
@@ -565,14 +566,14 @@ class User extends Component
     }
 
     /**
-     * Renews the identity cookie.
+     * Renews the identity cookie. 刷新认证cookie,也就是_identity这个cookie
      * This method will set the expiration time of the identity cookie to be the current time
      * plus the originally specified cookie duration.
      */
     protected function renewIdentityCookie()
     {
         $name = $this->identityCookie['name'];
-        $value = Yii::$app->getRequest()->getCookies()->getValue($name);
+        $value = Yii::$app->getRequest()->getCookies()->getValue($name);//获得的cookie是解密过的
         if ($value !== null) {
             $data = json_decode($value, true);
             if (is_array($data) && isset($data[2])) {
@@ -609,9 +610,11 @@ class User extends Component
         Yii::$app->getResponse()->getCookies()->add($cookie);
     }
 
-    /**
+    /** 检测认证cookie是否是有效的格式，且包含有有效的认证key
      * Determines if an identity cookie has a valid format and contains a valid auth key.
+     * 当enableAutoLogin为true时才会用这个方法来判断（一般优先是session)
      * This method is used when [[enableAutoLogin]] is true.
+     * 该方法尝试从cookie中读取认证信息
      * This method attempts to authenticate a user using the information in the identity cookie.
      * @return array|null Returns an array of 'identity' and 'duration' if valid, otherwise null.
      * @see loginByCookie()
@@ -710,6 +713,11 @@ class User extends Component
             }
             //当$duration大于0时，且enableAutoLogin为true,那么就把认证信息存储到Cookie里
             //可见，在enableAutoLogin为false的情况下（只使用session），$duration是没有用的（rememberMe表单项是无用的，它是配合cookie方式的）
+            //当只开启enableAutoLogin但又不设置$duration时，还是和enableAutoLogin没有什么区别
+            //因为这两种情况下，都会在session文件中存储登录用户的id。最终还是通过这个来判断是否登录，获得认证信息的
+            //只要用户退出或者关闭浏览器，本次会话就结束了。
+            //只有enableAutoLogin且$duration大于0，才会多给客户端发送一个_identity的cookie，这样用户及时关闭了浏览器
+            //在一定时间内（默认一个月）还是可以免登录的。（有些浏览器设置是无论如何，只要关闭浏览器就清除所有的cookie；有些是支持）
             if ($duration > 0 && $this->enableAutoLogin) {
                 $this->sendIdentityCookie($identity, $duration);
             }
@@ -735,6 +743,7 @@ class User extends Component
     protected function renewAuthStatus()
     {
         $session = Yii::$app->getSession();
+        //优先从Session文件中读取认证信息
         $id = $session->getHasSessionId() || $session->getIsActive() ? $session->get($this->idParam) : null;
         if ($id === null) {
             $identity = null;
@@ -755,7 +764,7 @@ class User extends Component
                 $session->set($this->authTimeoutParam, time() + $this->authTimeout);
             }
         }
-
+        //优先使用Session登录，当session中没有的时候，若开启enableAutoLogin，则从cookie中尝试登录
         if ($this->enableAutoLogin) {
             if ($this->getIsGuest()) {
                 $this->loginByCookie();
