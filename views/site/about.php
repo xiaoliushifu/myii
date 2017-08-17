@@ -15,4 +15,5 @@ $this->params['breadcrumbs'][] = $this->title;
     </p>
 
     <code><?= __FILE__ ?></code>
+    <code><?= Yii::$app->user->identity->username ?></code>
 </div>
