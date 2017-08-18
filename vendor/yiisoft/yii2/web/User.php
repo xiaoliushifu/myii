@@ -566,7 +566,7 @@ class User extends Component
     }
 
     /**
-     * Renews the identity cookie. 刷新认证cookie,也就是_identity这个cookie
+     * Renews the identity cookie. 刷新认证cookie,也就是_identity这个cookie,也不是整个cookie,而是仅仅更新了这个cookie的expire字段而已
      * This method will set the expiration time of the identity cookie to be the current time
      * plus the originally specified cookie duration.
      */
@@ -579,7 +579,7 @@ class User extends Component
             if (is_array($data) && isset($data[2])) {
                 $cookie = new Cookie($this->identityCookie);
                 $cookie->value = $value;
-                $cookie->expire = time() + (int) $data[2];
+                $cookie->expire = time() + (int) $data[2];//其实仅仅更新了cookie的expire字段而已
                 Yii::$app->getResponse()->getCookies()->add($cookie);
             }
         }
@@ -717,7 +717,7 @@ class User extends Component
             //因为这两种情况下，都会在session文件中存储登录用户的id。最终还是通过这个来判断是否登录，获得认证信息的
             //只要用户退出或者关闭浏览器，本次会话就结束了。
             //只有enableAutoLogin且$duration大于0，才会多给客户端发送一个_identity的cookie，这样用户及时关闭了浏览器
-            //在一定时间内（默认一个月）还是可以免登录的。（有些浏览器设置是无论如何，只要关闭浏览器就清除所有的cookie；有些是支持）
+            //在一定时间内（默认一个月）还是可以免登录的。（有些浏览器设置是无论如何，只要关闭浏览器就清除所有的cookie；其他浏览器大部分支持）
             if ($duration > 0 && $this->enableAutoLogin) {
                 $this->sendIdentityCookie($identity, $duration);
             }
@@ -764,7 +764,11 @@ class User extends Component
                 $session->set($this->authTimeoutParam, time() + $this->authTimeout);
             }
         }
-        //优先使用Session登录，当session中没有的时候，若开启enableAutoLogin，则从cookie中尝试登录
+        //若开启enableAutoLogin，则分两种情况：
+        //1 前面session已经登录过了，那就不再登录，则根据autoRenewCookie来判断是否更新_identity这个cookie
+        /*2 前面的session没有登录，则还会从cookie中尝试登录（因为cookie中有可能有_identity这个认证信息。这种场景一般发生在很多天以后打开浏览器
+        再次访问网站，服务端对应的essionID已经不存在了，但浏览器里__identity这个cookie尚未过期（默认一个月），故仍然可以免输入密码登录)
+        */
         if ($this->enableAutoLogin) {
             if ($this->getIsGuest()) {
                 $this->loginByCookie();
