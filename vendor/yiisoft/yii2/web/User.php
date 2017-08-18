@@ -360,7 +360,9 @@ class User extends Component
             $duration = $data['duration'];
             //cookie登录，也是登录，故也得有beforelogin事件
             if ($this->beforeLogin($identity, true, $duration)) {
-                //刷新__identity时，注意$duration是来自cookie的，
+                //刷新__identity时，注意$duration是来自cookie的，而cookie里的duration是
+                //最初用账号密码登录时设置的，后期只要这个__identity存在，$duration就一直是不变的
+                //
                 $this->switchIdentity($identity, $this->autoRenewCookie ? $duration : 0);
                 $id = $identity->getId();
                 $ip = Yii::$app->getRequest()->getUserIP();
@@ -578,8 +580,11 @@ class User extends Component
     }
 
     /**
-     * Renews the identity cookie. 刷新认证cookie,也就是_identity这个cookie,也不是整个cookie,而是仅仅更新了这个cookie的expire字段而已
+     * 刷新认证cookie,也就是_identity这个cookie,
+     * Renews the identity cookie. 
+     * 也不是整个cookie,而是仅仅更新了这个cookie的expire字段而已，当前时间加上duration
      * This method will set the expiration time of the identity cookie to be the current time
+     * 奇怪的是，每次访问页面时，__identity的expire字段却都不变，为啥呢？
      * plus the originally specified cookie duration.
      */
     protected function renewIdentityCookie()

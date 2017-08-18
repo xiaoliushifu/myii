@@ -358,7 +358,8 @@ class Response extends \yii\base\Response
         $this->sendCookies();
     }
 
-    /**
+    /**注意，在response的最后阶段，要从cookie的集合里
+     * 读取cookie往http响应头部里set-cookie了
      * Sends the cookies to the client.
      */
     protected function sendCookies()
@@ -375,9 +376,11 @@ class Response extends \yii\base\Response
         }
         foreach ($this->getCookies() as $cookie) {
             $value = $cookie->value;
+            //不过期，且配置了认证key，则对发送到客户端的cookie进行加密
             if ($cookie->expire != 1  && isset($validationKey)) {
                 $value = Yii::$app->getSecurity()->hashData(serialize([$cookie->name, $value]), $validationKey);
             }
+            //最终再调用php的函数setcookie来设置cookie
             setcookie($cookie->name, $value, $cookie->expire, $cookie->path, $cookie->domain, $cookie->secure, $cookie->httpOnly);
         }
     }
