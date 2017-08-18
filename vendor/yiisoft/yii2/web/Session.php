@@ -129,9 +129,9 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
         }
 
         $this->registerSessionHandler();
-
+        //会话开始之前，设置会话cookie的几个参数
         $this->setCookieParamsInternal();
-
+        //会话开始就是调用session_start()
         @session_start();
 
         if ($this->getIsActive()) {
@@ -145,7 +145,10 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
     }
 
     /**
+     * 注册会话处理器
      * Registers session handler.
+     * handler为空，没有别的，默认就是php.ini里配置的files，否则请自行覆盖handler属性即可，
+     * 比如想配置为redis，memcache都行
      * @throws \yii\base\InvalidConfigException
      */
     protected function registerSessionHandler()
@@ -371,8 +374,10 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
         $this->_cookieParams = $value;
     }
 
-    /**启动session之前设置cookie对象的某些字段
+    /**
+     * 启动session之前设置会话cookie某些字段，会话cookie即session cookie。是特殊的一个cookie。
      * Sets the session cookie parameters.
+     * 在会话开启之前调用
      * This method is called by [[open()]] when it is about to open the session.
      * @throws InvalidParamException if the parameters are incomplete.
      * @see http://us2.php.net/manual/en/function.session-set-cookie-params.php
@@ -652,7 +657,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
         return isset($_SESSION[$key]);
     }
 
-    /**
+    /**更新闪存信息，删除过时的闪存信息，暂不明
      * Updates the counters for flash messages and removes outdated flash messages.
      * This method should only be called once in [[init()]].
      */
