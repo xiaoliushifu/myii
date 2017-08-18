@@ -255,7 +255,12 @@ class User extends Component
     /**
      * 设置认证实例
      * Sets the user identity object.
-     *注意这个方法不涉及session或者cookie,如果涉及session或cookie处理，请使用switchIdentity方法
+     *注意这个方法不涉及session或者cookie信息的处理
+     *,如果涉及session或cookie处理，请使用switchIdentity方法
+     *因为我们知道一般情况下identity和session或cookie是对应的，比如一般identity是id为100的用户实例
+     *那么session中就会有__id|s:3:"100",而__identity有的话，这个cookie中也有_id:"100"这样的信息
+     *但是，我们通过setIdentity这个方法仅仅修改了identity这个服务端的实例，session和__identity中还是存储旧的信息，
+     *这下明白了吧？
      * Note that this method does not deal with session or cookie. You should usually use [[switchIdentity()]]
      * to change the identity of the current user.
      *
@@ -340,8 +345,10 @@ class User extends Component
     }
 
     /**
+     * 通过cookie认证并登录，
      * Logs in a user by cookie.
-     *通过cookie认证并登录
+     *一般是第一次打开浏览器，使用__identity这个cookie里所含的认证信息，
+     * 来实例化服务端的认证实例，进而完成cookie登录
      * This method attempts to log in a user using the ID and authKey information
      * provided by the [[identityCookie|identity cookie]].
      */
@@ -351,7 +358,9 @@ class User extends Component
         if (isset($data['identity'], $data['duration'])) {
             $identity = $data['identity'];
             $duration = $data['duration'];
+            //cookie登录，也是登录，故也得有beforelogin事件
             if ($this->beforeLogin($identity, true, $duration)) {
+                //刷新__identity时，注意$duration是来自cookie的，
                 $this->switchIdentity($identity, $this->autoRenewCookie ? $duration : 0);
                 $id = $identity->getId();
                 $ip = Yii::$app->getRequest()->getUserIP();
@@ -491,14 +500,17 @@ class User extends Component
         throw new ForbiddenHttpException(Yii::t('yii', 'Login Required'));
     }
 
-    /**
+    /**在登录前发生的事件，EVENT_BEFORE_LOGIN,
+     * 有基于用户名密码的，也有基于持久化免密码的cookie方式登录
      * This method is called before logging in a user.
      * The default implementation will trigger the [[EVENT_BEFORE_LOGIN]] event.
      * If you override this method, make sure you call the parent implementation
      * so that the event is triggered.
      * @param IdentityInterface $identity the user identity information
      * @param bool $cookieBased whether the login is cookie-based
+     * 第三个参数，用户能维持登录状态的秒数
      * @param int $duration number of seconds that the user can remain in logged-in status.
+     * 如果是0，则代表会话cookie,关闭浏览器就删除cookie;或者手动删除session文件
      * If 0, it means login till the user closes the browser or the session is manually destroyed.
      * @return bool whether the user should continue to be logged in
      */
@@ -605,8 +617,9 @@ class User extends Component
             $identity->getAuthKey(),
             $duration,
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        //刷新这个cookie的expire字段为$duration
         $cookie->expire = time() + $duration;
-        //把当前的cookie对象添加到Response对象中
+        //把当前的cookie对象添加到Response对象的cookie集合中待定
         Yii::$app->getResponse()->getCookies()->add($cookie);
     }
 
@@ -692,14 +705,16 @@ class User extends Component
         //获得session对象
         $session = Yii::$app->getSession();
         if (!YII_ENV_TEST) {
-            //不是TEST环境，就清除旧的session文件，生成新的session文件。不是刷新session文件，因为session ID肯定不一样了
+            //不是TEST环境，就清除旧的session文件，生成新的session文件。
+            //不是刷新session文件，因为session ID肯定不一样了
             $session->regenerateID(true);
         }
-        //删除session变量__id
+        //删除session变量__id，注意删除cookie一般是设置一个过期的expire，
+        //让客户端浏览器去删除cookie，而删除session的话就直接unset($_SESSION['xxx'])这样的
         $session->remove($this->idParam);
         //删除session变量__expire
         $session->remove($this->authTimeoutParam);
-
+        //下面开始设置会话session数据
         if ($identity) {
             //设置一个session变量__id
             $session->set($this->idParam, $identity->getId());
@@ -744,6 +759,8 @@ class User extends Component
     {
         $session = Yii::$app->getSession();
         //优先从Session文件中读取认证信息
+        //本次请求是否有Session ID?session是否已开启？是否能获得SessionID？
+        //（初次打开网站时一般没有PHPSESSID）
         $id = $session->getHasSessionId() || $session->getIsActive() ? $session->get($this->idParam) : null;
         if ($id === null) {
             $identity = null;

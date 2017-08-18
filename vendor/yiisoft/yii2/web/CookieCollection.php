@@ -117,7 +117,9 @@ class CookieCollection extends Object implements \IteratorAggregate, \ArrayAcces
     }
 
     /**
+     * 为cookie集合里添加一个cookie对象暂存，待最终响应给客户端时再加入到http中
      * Adds a cookie to the collection.
+     * 如果cookie同名的话会覆盖之前的
      * If there is already a cookie with the same name in the collection, it will be removed first.
      * @param Cookie $cookie the cookie to be added
      * @throws InvalidCallException if the cookie collection is read only
@@ -131,9 +133,13 @@ class CookieCollection extends Object implements \IteratorAggregate, \ArrayAcces
     }
 
     /**
-     * Removes a cookie.
+     * 删除一个cookie。
+     * Removes a cookie. 
+     * 如果$removeFromBrowser是true，则这个cookie交给浏览器来删除
      * If `$removeFromBrowser` is true, the cookie will be removed from the browser.
+     * 一般第二个参数是true,代表从浏览器端删除。那么浏览器端如何删除呢？就是设置过期的expire即可，
      * In this case, a cookie with outdated expiry will be added to the collection.
+     * 比如本例把expire字段设置为1
      * @param Cookie|string $cookie the cookie object or the name of the cookie to be removed.
      * @param bool $removeFromBrowser whether to remove the cookie from browser
      * @throws InvalidCallException if the cookie collection is read only
@@ -152,14 +158,17 @@ class CookieCollection extends Object implements \IteratorAggregate, \ArrayAcces
                 'expire' => 1,
             ]);
         }
+        //交给浏览器删除这个cookie
         if ($removeFromBrowser) {
             $this->_cookies[$cookie->name] = $cookie;
+        //删除本次请求中带过来的cookie,有可能客户端还有
         } else {
             unset($this->_cookies[$cookie->name]);
         }
     }
 
     /**
+     * 删除所有cookie，就是把cookie集合清空，本次http响应中不会再向浏览器种植cookie
      * Removes all cookies.
      * @throws InvalidCallException if the cookie collection is read only
      */
