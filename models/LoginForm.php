@@ -67,6 +67,7 @@ class LoginForm extends Model
         //在validate()验证里，其实就已经比对了用户名和密码，
         if ($this->validate()) {
             //在验证成功后直接login这个user即可，可见认证逻辑（在validate()中）和登录逻辑（Yii::$app->user->login)是两回事
+            //通过设置rememberMe还能控制cookie保存identity信息，默认是30天有效期免输入用户名密码登录
             return Yii::$app->user->login($this->getUser(), $this->rememberMe ? 3600*24*30 : 0);
         }
         return false;

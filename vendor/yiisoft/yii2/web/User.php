@@ -155,13 +155,15 @@ class User extends Component
      */
     public $absoluteAuthTimeout;
     /**
-	 * 布尔类型，当每次请求一个页面时，是否自动刷新认证cookie
+	 * 布尔类型，当每次请求一个页面时（涉及认证信息时），是否自动刷新认证cookie
      * @var bool whether to automatically renew the identity cookie each time a page is requested.
 	 * 当enableAutologin为true时，这个属性才有用。
      * This property is effective only when [[enableAutoLogin]] is `true`.
-	 * 当设置为false时，认证cookie将会按照用户登录之初设置的cookie过期时间来决定是否过期。
+	 * 当设置为false时，认证cookie将会按照用户登录之初（第一次输入用户名密码）设置的cookie过期时间来决定是否过期。
      * When this is `false`, the identity cookie will expire after the specified duration since the user
-	 * 当设置为true时，当用户距离最近的一次请求的持续时间超时后，认证cookie将会过期。（没明白）
+	 * 当设置为true时，则用户距离最近的一次请求的持续时间超时后，认证cookie将会过期。
+	 * 但一般不会过期，autoRenewCookie就是自动刷新cookie。意味着每次请求页面都会重新刷新cookie有效期
+	 * 只有紧邻的两次请求超过有效期才会超时
      * is initially logged in. When this is `true`, the identity cookie will expire after the specified duration
      * since the user visits the site the last time.
      * @see enableAutoLogin
@@ -290,15 +292,20 @@ class User extends Component
     /**登录一个用户，注意认证逻辑已经在validate()中完成
      * Logs in a user.
      *
+     *在登录一个用户后
      * After logging in a user:
+     * 用户的认证信息是可以通过identity属性获得的
      * - the user's identity information is obtainable from the [[identity]] property
-     *
+     *在enableSession为true的情况下
      * If [[enableSession]] is `true`:
+     * identity信息将会存储在session中，下次请求时就可以使用
      * - the identity information will be stored in session and be available in the next requests
+     * 如果$duration等于0，只要用户保持会话状态直到用户关闭浏览器即退出登录
      * - in case of `$duration == 0`: as long as the session remains active or till the user closes the browser
+     * $duration大于0，用户保持会话状态，或者__identity这个cookie一直处于有效期
      * - in case of `$duration > 0`: as long as the session remains active or as long as the cookie
      *   remains valid by it's `$duration` in seconds when [[enableAutoLogin]] is set `true`.
-     *
+     *如果enableSession是false的话，$duration没有用
      * If [[enableSession]] is `false`:
      * - the `$duration` parameter will be ignored
      *
@@ -380,7 +387,10 @@ class User extends Component
     }
 
     /**
+     * 登出当前用户
      * Logs out the current user.
+     * 强制登出当前用户，是通过设置identity=null来实现的。
+     * 如果参数$destroySession为true的话，还会强制删除对应的session文件
      * This will remove authentication-related session data.
      * If `$destroySession` is true, all session data will be removed.
      * @param bool $destroySession whether to destroy the whole session. Defaults to true.
@@ -801,13 +811,19 @@ class User extends Component
         }
 
         $this->setIdentity($identity);
-
+        
+        //如果本次处于登录状态，且在session变量里设置了authTimeout和absoluteAuthTimeout两个变量
+        //则会触发判断逻辑
         if ($identity !== null && ($this->authTimeout !== null || $this->absoluteAuthTimeout !== null)) {
             $expire = $this->authTimeout !== null ? $session->get($this->authTimeoutParam) : null;
             $expireAbsolute = $this->absoluteAuthTimeout !== null ? $session->get($this->absoluteAuthTimeoutParam) : null;
             if ($expire !== null && $expire < time() || $expireAbsolute !== null && $expireAbsolute < time()) {
+                //当这两者之一超时时，就强制退出。（但只要__identity这个cookie存在，就没有问题，下面紧接着就会再次登录）
+                //所以authTimeout和absoluteAuthTimeout两个变量是通过控制session来强制结束当前会话。
+                //如果不设置这俩变量，那就是通过session ID来控制（那个cookie的expire来控制）
                 $this->logout(false);
             } elseif ($this->authTimeout !== null) {
+                //如果没有超时，还得刷新authTimeout的超时时间，从当前时间开始算起
                 $session->set($this->authTimeoutParam, time() + $this->authTimeout);
             }
         }

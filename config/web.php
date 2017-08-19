@@ -23,7 +23,7 @@ $config = [
             //是否使用cookie方式保存认证信息（默认false,即使用session来保存认证信息）
             'enableAutoLogin' => true,
             //'enableSession' => false,
-            //'authTimeout'=>20,
+            'authTimeout'=>20,
             //'absoluteAuthTimeout'=>100,
         ],
 		//错误处理器组件必须有
