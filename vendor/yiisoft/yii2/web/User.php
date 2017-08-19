@@ -81,7 +81,7 @@ class User extends Component
      */
     public $identityClass;
     /**
-	* bool 是否开启基于cookie的登录，默认false不开启
+	* bool 是否开启基于cookie的登录，默认false不开启(即使设置true，还得在登录时给出cookie的超时时间才能真正开启）
      * @var bool whether to enable cookie-based login. Defaults to `false`.
 	 * 当enableSession设置为false时，这个属性将被忽略
 	 * 这里所谓基于cookie登录，是说使用cookie保存登录信息（认证信息），
@@ -91,15 +91,15 @@ class User extends Component
     /**
 	 * bool 是否使用Session来持久化认证状态
      * @var bool whether to use session to persist authentication status across multiple requests.
-	 * 如果你的应用是无状态的，那么可以设置这个属性是false（想想哪些应用是无状态的？思来想去，估计就是RESTful API时了吧？）
+	 * 如果你的应用是无状态的，那么可以设置这个属性是false（想想哪些应用是无状态的？思来想去，估计就是RESTful API了吧？）
 	 * 其实没有哪个应用是无状态的，只是实现状态控制的方式不同而已。比如我们平常所说的Session就是一种会话机制
-	 * 在服务端保存（文件，redis，memcache都行），还有一种是用于手机端请求的API应用，这种也有会话机制，那就是通过令牌方式，并不是Session机制
-	 * 所以，这里所说的无状态应用，应该就是指手机端访问的API应用了。（令牌方式认证）
+	 * 在服务端保存（文件，redis，memcache都行），还有一种是用于手机端请求的API应用，这种也有会话机制，那就是通过令牌方式，
+	 * 并不是Session机制， 所以，这里所说的无状态应用，应该就是指手机端访问的API应用了。（令牌方式认证）
      * You set this property to be `false` if your application is stateless, which is often the case
      * for RESTful APIs.
-     * 所以只要是用电脑来访问的还是得启用Session。
-	 * 默认启用session。但session的存储引擎是什么，请看yii\web\session。默认是File存储，保存sessionID的cookie名没有特别配置，就是
-	 * 使用php的PHPSESSID，session文件的存储位置也由php.ini来配置的。
+     * 所以，不考虑手机端访问的情况下，只要是用电脑来访问的还是得启用Session。
+	 * 默认启用session。但session的存储引擎是什么，请看yii\web\session。默认是File存储（交给php.ini管理），
+	 * 保存sessionID的cookie名也没有特别配置，就是使用php的PHPSESSID，session文件的存储位置也由php.ini来配置的。
      */
     public $enableSession = true;
     /**
@@ -119,21 +119,26 @@ class User extends Component
      */
     public $loginUrl = ['site/login'];
     /**
-	 * 数组，认证cookie的配置，仅在enableAutoLogin设置为true时才有用
+	 * 数组，认证cookie的配置，仅在enableAutoLogin设置为true时才有用（需要在登录时给出超时时间）
 	 * 认证cookie也是一个cookie而已
+	 * 在生成认证cookie时，根据下述的配置将会生成名为__identity的cookie
      * @var array the configuration of the identity cookie. This property is used only when [[enableAutoLogin]] is `true`.
      * @see Cookie
      */
     public $identityCookie = ['name' => '_identity', 'httpOnly' => true];
-    /**认证超时的秒数，在用户保持未激活状态持续这些秒数（发呆时间）后，将会自动的登出
+    /**
+     * 认证超时的秒数，在用户保持未激活状态持续这些秒数（发呆时间）后，将会自动的登出
      * @var int the number of seconds in which the user will be logged out automatically if he
-	 * 如果这个属性没有设置，当session过期时就会登出
+	 * 如果这个属性没有设置，当session过期时就会登出（session如何过期？那自然是session ID超时，或者关闭浏览器呗
+	 * 注意，是关闭浏览器，不是关闭浏览器的选项卡）
      * remains inactive. If this property is not set, the user will be logged out after
      * the current session expires (c.f. [[Session::timeout]]).
-	 * 注意，当enableAutologin为true时，这个属性将不起作用
+	 * 注意，当enableAutologin为true时，这个属性将不起作用（其实在看了源码才知道，所谓不起作用，是因为$authTimeout的时间超时后
+	 * 会立即根据__identity来再次登录，给终端用户感觉仍然保持登录状态，其实已经更换了session ID）
      * Note that this will not work if [[enableAutoLogin]] is `true`.
      * 如何记录用户未激活状态持续的秒数？这个简单，只需在session中保存这个用户上次访问某个页面的时间戳，两次访问的时间差超过
      * authTimeout的值时，就是认证超时了，此时服务端就强制登出这个用户。
+     * 这是在session文件中控制会话超时的机制。
      */
     public $authTimeout;
     /**
@@ -148,10 +153,11 @@ class User extends Component
 	 * 绝对登出超时秒数，无论用户的活跃性，只要达到这个秒数用户就一定自动登出
      * @var int the number of seconds in which the user will be logged out automatically
      * regardless of activity.
-	 * 注意，当enableAutologin为true时，这个属性将不起作用
+	 * 注意，当enableAutologin为true时，这个属性将不起作用（同$authTimeout属性的说明）
      * Note that this will not work if [[enableAutoLogin]] is `true`.
      * 仍然在session中保存用户初次登录的时间戳，每次用户访问页面时都检测当前时间戳和初次登录的时间戳
      * 这两者的时间差大于absoluteAuthTimeout就强制退出当前用户（删除认证信息呗）
+     * 这是在session文件中控制会话超时的机制。
      */
     public $absoluteAuthTimeout;
     /**
@@ -162,27 +168,32 @@ class User extends Component
 	 * 当设置为false时，认证cookie将会按照用户登录之初（第一次输入用户名密码）设置的cookie过期时间来决定是否过期。
      * When this is `false`, the identity cookie will expire after the specified duration since the user
 	 * 当设置为true时，则用户距离最近的一次请求的持续时间超时后，认证cookie将会过期。
-	 * 但一般不会过期，autoRenewCookie就是自动刷新cookie。意味着每次请求页面都会重新刷新cookie有效期
-	 * 只有紧邻的两次请求超过有效期才会超时
+	 * 不太明白吧？
+	 * autoRenewCookie就是自动刷新cookie。意味着每次请求页面涉及__identity时，都会重新刷新这个cookie有效期，也就是expire字段
+	 * 紧邻的两次请求超过有效期会超时（这种情况一般很少，因为__identity的有效期默认是30天，紧邻的两次请求一般非常短，几秒而已）
+	 * 若设置为false,则每次请求页面涉及__identity时，都不会刷新这个cookie的有效期，仍然保持最初生成这个cookie的expire字段。
+	 * session通过$absoluteAuthTimeout来绝对控制会话周期
+	 * 而__identity这个cookie则key通过$autoRenewCookie=false来绝对控制cookie有效期
+	 * 两种机制的各自实现会话周期的方式而已，这下更清楚了吧？
      * is initially logged in. When this is `true`, the identity cookie will expire after the specified duration
      * since the user visits the site the last time.
      * @see enableAutoLogin
      */
     public $autoRenewCookie = true;
     /**
-	 * 字符串，会话变量名，用来指明会话id
+	 * 字符串，会话变量名，用来指明用户id,存储在session文件中
      * @var string the session variable name used to store the value of [[id]].
      */
     public $idParam = '__id';
     /**
-	 * 字符串，会话变量名，用来指明认证状态的过期时间戳
+	 * 字符串，会话变量名，用来指明认证状态的过期时间戳,存储在session文件中。与$authTimeout是一致的。
      * @var string the session variable name used to store the value of expiration timestamp of the authenticated state.
 	 * 当authTimeout属性设置时有用
      * This is used when [[authTimeout]] is set.
      */
     public $authTimeoutParam = '__expire';
     /**
-	 * 字符串，会话变量名，用来指明认证状态绝对超时时间戳
+	 * 字符串，会话变量名，用来指明认证状态绝对超时时间戳，存储在session文件中。与$absoluteAuthTimeout是一致的。
      * @var string the session variable name used to store the value of absolute expiration timestamp of the authenticated state.
 	 * 当absoluteAuthTimeout属性设置时才有用
      * This is used when [[absoluteAuthTimeout]] is set.
@@ -390,7 +401,7 @@ class User extends Component
      * 登出当前用户
      * Logs out the current user.
      * 强制登出当前用户，是通过设置identity=null来实现的。
-     * 如果参数$destroySession为true的话，还会强制删除对应的session文件
+     * 如果参数$destroySession为true的话，还会强制结束当前session会话（调用session_destroy())
      * This will remove authentication-related session data.
      * If `$destroySession` is true, all session data will be removed.
      * @param bool $destroySession whether to destroy the whole session. Defaults to true.
@@ -819,8 +830,11 @@ class User extends Component
             $expireAbsolute = $this->absoluteAuthTimeout !== null ? $session->get($this->absoluteAuthTimeoutParam) : null;
             if ($expire !== null && $expire < time() || $expireAbsolute !== null && $expireAbsolute < time()) {
                 //当这两者之一超时时，就强制退出。（但只要__identity这个cookie存在，就没有问题，下面紧接着就会再次登录）
-                //所以authTimeout和absoluteAuthTimeout两个变量是通过控制session来强制结束当前会话。
+                //所以authTimeout和absoluteAuthTimeout两个变量是通过控制session变量来强制结束当前会话。
                 //如果不设置这俩变量，那就是通过session ID来控制（那个cookie的expire来控制）
+                
+                //还要说一点，传递的参数false是，控制删除整个session变量并关闭session会话。false则不会停止会话，
+                //保留原始会话状态（可能此时是session_start()后的状态）
                 $this->logout(false);
             } elseif ($this->authTimeout !== null) {
                 //如果没有超时，还得刷新authTimeout的超时时间，从当前时间开始算起
