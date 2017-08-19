@@ -287,6 +287,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * Please refer to <http://php.net/session_regenerate_id> for more details.
      * 当参数为true时，会删除旧的session文件
      * @param bool $deleteOldSession Whether to delete the old associated session file or not.
+     * 注意，在开启session会话时才有必要删除旧的session文件，才能调用session_regenerate_id()，根本没有session_start的话，自然就不必更新服务端的session文件里
      */
     public function regenerateID($deleteOldSession = false)
     {
