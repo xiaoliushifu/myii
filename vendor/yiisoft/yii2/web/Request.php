@@ -95,10 +95,11 @@ class Request extends \yii\base\Request
     const CSRF_MASK_LENGTH = 8;
 
     /**
+     * 是否启用跨站请求伪造验证
      * @var bool whether to enable CSRF (Cross-Site Request Forgery) validation. Defaults to true.
      * When CSRF validation is enabled, forms submitted to an Yii Web application must be originated
      * from the same application. If not, a 400 HTTP exception will be raised.
-     *
+     * 这个机制，需要客户端浏览器开启接收cookie的支持
      * Note, this feature requires that the user client accepts cookie. Also, to use this feature,
      * forms submitted via POST method must contain a hidden input whose name is specified by [[csrfParam]].
      * You may use [[\yii\helpers\Html::beginForm()]] to generate his hidden input.
@@ -112,26 +113,32 @@ class Request extends \yii\base\Request
      */
     public $enableCsrfValidation = true;
     /**
+     * 实现CSRF验证的那个cookie的名字
      * @var string the name of the token used to prevent CSRF. Defaults to '_csrf'.
      * This property is used only when [[enableCsrfValidation]] is true.
      */
     public $csrfParam = '_csrf';
     /**
+     * 为_csrf这个cookie配置httpOnly字段
      * @var array the configuration for creating the CSRF [[Cookie|cookie]]. This property is used only when
+     * 该属性得在enableCsrfValidation和enableCsrfCookie属性都启用时才可生效
      * both [[enableCsrfValidation]] and [[enableCsrfCookie]] are true.
      */
     public $csrfCookie = ['httpOnly' => true];
     /**
+     * 使用cookie方式存储csrf字符串
      * @var bool whether to use cookie to persist CSRF token. If false, CSRF token will be stored
      * in session under the name of [[csrfParam]]. Note that while storing CSRF tokens in session increases
      * security, it requires starting a session for every page, which will degrade your site performance.
      */
     public $enableCsrfCookie = true;
     /**
+     * 为了确保客户端cookie不被篡改，是否应该加密那些种植给客户端的cookie
      * @var bool whether cookies should be validated to ensure they are not tampered. Defaults to true.
      */
     public $enableCookieValidation = true;
     /**
+     * 配合上一个属性，需要给cookie加密时，提供加密的token，这个属性在初始化request组件时设置的
      * @var string a secret key used for cookie validation. This property must be set if [[enableCookieValidation]] is true.
      */
     public $cookieValidationKey;
@@ -1240,7 +1247,9 @@ class Request extends \yii\base\Request
     }
 
     /**
+     * 返回cookie集合对象
      * Returns the cookie collection.
+     * request组件中的cookie集合对象，代表了http请求中,在header部分cookie字段的内容
      * Through the returned cookie collection, you may access a cookie using the following syntax:
      *
      * ```php
@@ -1258,6 +1267,8 @@ class Request extends \yii\base\Request
     public function getCookies()
     {
         if ($this->_cookies === null) {
+            //看到没有，当request实例化cookie集合类时，是只读的。那response组件呢？
+            //在loadCookies()方法里，已经解密了cookie的前缀hash
             $this->_cookies = new CookieCollection($this->loadCookies(), [
                 'readOnly' => true,
             ]);
@@ -1267,7 +1278,11 @@ class Request extends \yii\base\Request
     }
 
     /**
+     * 客户端传来的cookie，都存在PHP超全局数组$_COOKIE
      * Converts `$_COOKIE` into an array of [[Cookie]].
+     * 我们就用$_COOKIE作为cookie集合对象的cookie来源
+     * response中如何加密cookie，这里request就如何对应地解密cookie，两者操作cookie是一致的。
+     * response 设置cookie时要加密；request 接收cookie时就要解密
      * @return array the cookies obtained from request
      * @throws InvalidConfigException if [[cookieValidationKey]] is not set when [[enableCookieValidation]] is true
      */
@@ -1282,10 +1297,13 @@ class Request extends \yii\base\Request
                 if (!is_string($value)) {
                     continue;
                 }
+                //使用security组件验证每个cookie值是否被篡改过，返回去掉hash前缀的原始数据
+                //（原理是找到原始信息再用同样的算法,同样的密钥生成一次，比较两次生成的字符串是否一样）
                 $data = Yii::$app->getSecurity()->validateData($value, $this->cookieValidationKey);
                 if ($data === false) {
                     continue;
                 }
+                //反序列化原始数据
                 $data = @unserialize($data);
                 if (is_array($data) && isset($data[0], $data[1]) && $data[0] === $name) {
                     $cookies[$name] = new Cookie([
@@ -1295,6 +1313,7 @@ class Request extends \yii\base\Request
                     ]);
                 }
             }
+        //没有开启cookie防篡改机制时
         } else {
             foreach ($_COOKIE as $name => $value) {
                 $cookies[$name] = new Cookie([
