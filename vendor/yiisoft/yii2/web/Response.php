@@ -358,12 +358,15 @@ class Response extends \yii\base\Response
         $this->sendCookies();
     }
 
-    /**注意，在response的最后阶段，要从cookie的集合里
-     * 读取cookie往http响应头部里set-cookie了
+    /**
+     * response组件发送cookie给客户端（使用php原生setcookie()函数）
+     * 发送之前肯定早已准备好要种植给客户端的cookie了，都存在response组件的_cookies属性中
+     * 为了安全考虑，防止cookie在客户端被篡改，还使用了安全组件给cookie值进行hash散射
      * Sends the cookies to the client.
      */
     protected function sendCookies()
     {
+        //没有要种植的cookie，那就算了
         if ($this->_cookies === null) {
             return;
         }
@@ -374,10 +377,14 @@ class Response extends \yii\base\Response
             }
             $validationKey = $request->cookieValidationKey;
         }
+        //cookie集合对象可以被遍历，是因为这个对象实现了PHP原生接口IteratorAggregate
         foreach ($this->getCookies() as $cookie) {
             $value = $cookie->value;
             //不过期，且配置了认证key，则对发送到客户端的cookie进行加密
             if ($cookie->expire != 1  && isset($validationKey)) {
+                //使用Security组件为每个cookie值进行加密，加密参数$validationKey由$request组件自行提供
+                //Security组件在哪配置的呢？在Application的核心组件里就有
+                //cookie的hash算法其实是防篡改，意味着你可以截获看到，但你不能更改。
                 $value = Yii::$app->getSecurity()->hashData(serialize([$cookie->name, $value]), $validationKey);
             }
             //最终再调用php的函数setcookie来设置cookie
@@ -865,11 +872,14 @@ class Response extends \yii\base\Response
         return $this->redirect(Yii::$app->getRequest()->getUrl() . $anchor);
     }
 
+    //真怪啊，$_cookies属性不是在类开头，而是穿插在方法里声明。
+    //但也有道理，在需要了解的时候声明出来，都是有关cookie的成员放一块。
     private $_cookies;
 
     /**
 	 * 返回cookie集合
      * Returns the cookie collection.
+     *  response组件中的cookie集合对象，代表了http响应中,在header部分set-cookie字段的内容
 	 * 通过返回的cookie集合，开发人员可以添加或删除cookie,如下：
      * Through the returned cookie collection, you add or remove cookies as follows,
      *
@@ -891,6 +901,8 @@ class Response extends \yii\base\Response
     public function getCookies()
     {
         if ($this->_cookies === null) {
+            //看到没有，实例化cookie集合类时，不必设置readonly为true，
+            //这就是与request组件使用cookie集合对象的区别
             $this->_cookies = new CookieCollection;
         }
         return $this->_cookies;

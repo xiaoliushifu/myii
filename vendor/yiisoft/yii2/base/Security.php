@@ -11,13 +11,17 @@ use yii\helpers\StringHelper;
 use Yii;
 
 /**
+ * Security组件提供了一个方便好用的方法来处理通常的安全相关的任务
  * Security provides a set of methods to handle common security-related tasks.
  *
  * In particular, Security supports the following features:
- *
+ *加密与解密
  * - Encryption/decryption: [[encryptByKey()]], [[decryptByKey()]], [[encryptByPassword()]] and [[decryptByPassword()]]
+ * 密钥导出相关（不明白）
  * - Key derivation using standard algorithms: [[pbkdf2()]] and [[hkdf()]]
+ * 防数据篡改
  * - Data tampering prevention: [[hashData()]] and [[validateData()]]
+ * 密码生成与验证
  * - Password validation: [[generatePasswordHash()]] and [[validatePassword()]]
  *
  * > Note: this class requires 'OpenSSL' PHP extension for random key/string generation on Windows and
@@ -366,10 +370,12 @@ class Security extends Component
     }
 
     /**
+     * 给原始$data一个前缀的字符串（这个字符串用hash算法加密而成),用来检测是否被篡改
      * Prefixes data with a keyed hash value so that it can later be detected if it is tampered.
      * There is no need to hash inputs or outputs of [[encryptByKey()]] or [[encryptByPassword()]]
      * as those methods perform the task.
      * @param string $data the data to be protected
+     * 字符串 $key 生成hash时使用的密钥
      * @param string $key the secret key to be used for generating hash. Should be a secure
      * cryptographic key.
      * @param bool $rawHash whether the generated hash value is in raw binary format. If false, lowercase
@@ -411,11 +417,12 @@ class Security extends Component
         if (!$test) {
             throw new InvalidConfigException('Failed to generate HMAC with hash algorithm: ' . $this->macHash);
         }
+        //首先脱掉hash前缀，找到原始数据$pureData
         $hashLength = StringHelper::byteLength($test);
         if (StringHelper::byteLength($data) >= $hashLength) {
             $hash = StringHelper::byteSubstr($data, 0, $hashLength);
             $pureData = StringHelper::byteSubstr($data, $hashLength, null);
-
+            //用原始数据$pureData再生成一次，与曾经生成的hash前缀进行比较，进而得知是否被篡改过
             $calculatedHash = hash_hmac($this->macHash, $pureData, $key, $rawHash);
 
             if ($this->compareString($hash, $calculatedHash)) {
