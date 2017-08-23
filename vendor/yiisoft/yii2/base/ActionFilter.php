@@ -24,6 +24,7 @@ namespace yii\base;
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
+ 我们看到 动作过滤器继承自行为类Behavior。所以往大了说，过滤器也属于行为类
  */
 class ActionFilter extends Behavior
 {
@@ -77,35 +78,44 @@ class ActionFilter extends Behavior
     public function attach($owner)
     {
         $this->owner = $owner;
-		//只绑定beforeFilter方法就行了
+		//只绑定beforeFilter方法就行了，且只绑定了控制器的EVENT_BEFORE_ACTION事件。
+		//从这里是否又能看出：过滤器是行为类的一个特例而已（绑定了固定的事件与固定的事件处理者）
         $owner->on(Controller::EVENT_BEFORE_ACTION, [$this, 'beforeFilter']);
     }
 
     /**
+	 * 脱离组件类
      * @inheritdoc
      */
     public function detach()
     {
         if ($this->owner) {
+			//这里是把行为类当初绑定到组件类的事件，解绑掉。
             $this->owner->off(Controller::EVENT_BEFORE_ACTION, [$this, 'beforeFilter']);
             $this->owner->off(Controller::EVENT_AFTER_ACTION, [$this, 'afterFilter']);
+			//这句代码很关键，这就使得当前行为脱离了组件类
             $this->owner = null;
         }
     }
 
     /**
+	* 这个方法目前来看，也是父类仅有的，子类无需覆盖这个方法。而是直接写beforeAction即可。
      * @param ActionEvent $event
      */
     public function beforeFilter($event)
     {
+		//首先判断当前的过滤器，是否对这个action有兴趣。
         if (!$this->isActive($event->action)) {
             return;
         }
-
+		//执行一段固定的方法beforeAction。这是所有过滤器子类发挥自己特性的地方。
         $event->isValid = $this->beforeAction($event->action);
+		//beforeAction的返回值影响afterAction的绑定，注意，是绑定，并不是调用执行哟
+		//其实，能绑定就能执行，只是并不是在这里立即执行而已
         if ($event->isValid) {
             // call afterFilter only if beforeFilter succeeds
             // beforeFilter and afterFilter should be properly nested
+			//注意，on方法第四个参数是false，意味着afterFilter注册到事件处理者队列的最前面
             $this->owner->on(Controller::EVENT_AFTER_ACTION, [$this, 'afterFilter'], null, false);
         } else {
             $event->handled = true;
@@ -113,15 +123,18 @@ class ActionFilter extends Behavior
     }
 
     /**
+	 * afterFilter的实质，就是afterAction方法而已
      * @param ActionEvent $event
      */
     public function afterFilter($event)
     {
+		//执行完后就解绑afterFilter。为什么要解绑呢？是怕后患无穷吗？
         $event->result = $this->afterAction($event->action, $event->result);
         $this->owner->off(Controller::EVENT_AFTER_ACTION, [$this, 'afterFilter']);
     }
 
     /**
+	 * 这个方法，就是交给过滤器子类来实现和发挥作用的，所以这里并没有什么实际的逻辑实现
      * This method is invoked right before an action is to be executed (after all possible filters.)
      * You may override this method to do last-minute preparation for the action.
      * @param Action $action the action to be executed.
@@ -133,6 +146,7 @@ class ActionFilter extends Behavior
     }
 
     /**
+	 *  也是留给过滤器子类来实现的
      * This method is invoked right after an action is executed.
      * You may override this method to do some postprocessing for the action.
      * @param Action $action the action just executed.
@@ -145,6 +159,8 @@ class ActionFilter extends Behavior
     }
 
     /**
+	 * 返回一个动作的名称，比如"index","login","list"等，不带有action的方法名
+	 * 目前上不明白ID在控制器，模块，动作这三个概念之间的意思
      * Returns an action ID by converting [[Action::$uniqueId]] into an ID relative to the module
      * @param Action $action
      * @return string
@@ -152,12 +168,14 @@ class ActionFilter extends Behavior
      */
     protected function getActionId($action)
     {
+		//目前看到的owner都是控制器，是属于组件Component而非Module，故都直接返回$action对象的id属性即可。
         if ($this->owner instanceof Module) {
             $mid = $this->owner->getUniqueId();
             $id = $action->getUniqueId();
             if ($mid !== '' && strpos($id, $mid) === 0) {
                 $id = substr($id, strlen($mid) + 1);
             }
+		//目前是走这里
         } else {
             $id = $action->id;
         }
@@ -169,17 +187,23 @@ class ActionFilter extends Behavior
 	 * 判断当前的动作是否受动作过滤器的约束，受约束则是active,不受约束则not active
 	 * 本质上就是通过only数组来判断的。
      * Returns a value indicating whether the filter is active for the given action.
+	 * $action 当前的action对象，
      * @param Action $action the action being filtered
+	 * 返回布尔值，当前的过滤器是否中意这个$action。因为不是哪个过滤器是中意所有$action的
+	 * 它们也是有所选择的。具体就是过滤器的only和except两个成员发挥作用
      * @return bool whether the filter is active for the given action.
      */
     protected function isActive($action)
     {
         $id = $this->getActionId($action);
-
+		//过滤器没有针对哪个action情有独钟，则所有action都行
         if (empty($this->only)) {
             $onlyMatch = true;
         } else {
+
+		
             $onlyMatch = false;
+			//依次遍历自己中意的action模式，用php原生函数fnmatch匹配这个$id是否符合自己中意的action
             foreach ($this->only as $pattern) {
                 if (fnmatch($pattern, $id)) {
                     $onlyMatch = true;
@@ -189,13 +213,14 @@ class ActionFilter extends Behavior
         }
 
         $exceptMatch = false;
+		//依次遍历自己排外的action模式，用php原生函数fnmatch匹配这个$id是否符合自己排外的action
         foreach ($this->except as $pattern) {
             if (fnmatch($pattern, $id)) {
                 $exceptMatch = true;
                 break;
             }
         }
-
+		//不能排外且还得喜欢这个action,才是中意的action
         return !$exceptMatch && $onlyMatch;
     }
 }
