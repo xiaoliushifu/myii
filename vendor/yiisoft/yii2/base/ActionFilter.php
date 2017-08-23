@@ -109,6 +109,11 @@ class ActionFilter extends Behavior
             return;
         }
 		//执行一段固定的方法beforeAction。这是所有过滤器子类发挥自己特性的地方。
+		/**
+		*方法名虽然叫beforeAction，但是同名的方法也很多，
+		我们知道Yii框架中大多事件的触发(trigger)，都是写在代码执行过程的beforeXXXX，afterXXXX方法里的
+		所以，不要和这些混淆了。只是重名了而已。这个beforeAction里没有trigger。
+		*/
         $event->isValid = $this->beforeAction($event->action);
 		//beforeAction的返回值影响afterAction的绑定，注意，是绑定，并不是调用执行哟
 		//其实，能绑定就能执行，只是并不是在这里立即执行而已
