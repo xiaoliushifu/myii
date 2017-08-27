@@ -379,6 +379,7 @@ class User extends Component
      */
     protected function loginByCookie()
     {
+        //去$_COOKIE中读取__identity这个cookie
         $data = $this->getIdentityAndDurationFromCookie();
         if (isset($data['identity'], $data['duration'])) {
             $identity = $data['identity'];
@@ -417,6 +418,7 @@ class User extends Component
             $ip = Yii::$app->getRequest()->getUserIP();
             Yii::info("User '$id' logged out from $ip.", __METHOD__);
             if ($destroySession && $this->enableSession) {
+                //session会话的数据和进程是怎么销毁的，注意学习一下
                 Yii::$app->getSession()->destroy();
             }
             $this->afterLogout($identity);
@@ -449,6 +451,9 @@ class User extends Component
     }
 
     /**
+     * 从Session中读取url,这就是用户登录成功后应该跳转的地址。
+     * 这是因为上次请求中，yii已经把浏览器本该登录后才能访问的url存在里Session里__returnUrl，先让浏览器去登录，待登录成功后，再转接到
+     * 浏览器最初想访问的页面url。这个流程明白不？
      * Returns the URL that the browser should be redirected to after successful login.
      *
      * This method reads the return URL from the session. It is usually used by the login action which
@@ -465,6 +470,7 @@ class User extends Component
         $url = Yii::$app->getSession()->get($this->returnUrlParam, $defaultUrl);
         if (is_array($url)) {
             if (isset($url[0])) {
+                //还需UrlManager来美化之
                 return Yii::$app->getUrlManager()->createUrl($url);
             } else {
                 $url = null;
@@ -475,9 +481,11 @@ class User extends Component
     }
 
     /**
+     * 这里先在Session中设置好Url，好让浏览器成功登录后再通过getReturnUrl()返回
      * Remembers the URL in the session so that it can be retrieved back later by [[getReturnUrl()]].
      * @param string|array $url the URL that the user should be redirected to after login.
      * If an array is given, [[UrlManager::createUrl()]] will be called to create the corresponding URL.
+     * URL第一个参数是路由，其他的参数就是get的键值对参数
      * The first element of the array should be the route, and the rest of
      * the name-value pairs are GET parameters used to construct the URL. For example,
      *
@@ -486,14 +494,17 @@ class User extends Component
      * ```
      */
     public function setReturnUrl($url)
-    {//使用session来保存登录后要跳转到的url地址。一般在重定向之前执行该方法来设置
+    {
+        //使用session来保存登录后要跳转到的url地址。一般在重定向之前执行该方法来设置
         Yii::$app->getSession()->set($this->returnUrlParam, $url);
     }
 
     /**
+     * 把浏览器引导到登录页面
      * Redirects the user browser to the login page.
-     *
+     *在给出浏览器跳转之前，应该会把浏览器最初本想访问的URL在Session中保存起来，待登录成功后再从Session中读取，
      * Before the redirection, the current URL (if it's not an AJAX url) will be kept as [[returnUrl]] so that
+     * 并在此引导它到这个最初就想访问的URL。
      * the user browser may be redirected back to the current page after successful login.
      *
      * Make sure you set [[loginUrl]] so that the user browser can be redirected to the specified login URL after
@@ -513,25 +524,31 @@ class User extends Component
     public function loginRequired($checkAjax = true, $checkAcceptHeader = true)
     {
         $request = Yii::$app->getRequest();
+        //根据浏览器请求header的Accept字段，来判断我们给出的跳转Location的Content-Type是否符合要求
         $canRedirect = !$checkAcceptHeader || $this->checkRedirectAcceptable();
         if ($this->enableSession
             && $request->getIsGet()
             && (!$checkAjax || !$request->getIsAjax())
             && $canRedirect
         ) {
+            //在Session中设置登录成功后要转移的URL,也就是浏览器最初想访问的URL
             $this->setReturnUrl($request->getUrl());
         }
+        //loginUrl成员目前是写死的
         if ($this->loginUrl !== null && $canRedirect) {
             $loginUrl = (array) $this->loginUrl;
             if ($loginUrl[0] !== Yii::$app->requestedRoute) {
+                //注意，这里还并没有真正向客户端发送Location,只是给response组件的_headers设置而已。
+                //真正的发送，还得执行send()方法才行
                 return Yii::$app->getResponse()->redirect($this->loginUrl);
             }
         }
         throw new ForbiddenHttpException(Yii::t('yii', 'Login Required'));
     }
 
-    /**在登录前发生的事件，EVENT_BEFORE_LOGIN,
-     * 有基于用户名密码的，也有基于持久化免密码的cookie方式登录
+    /**
+     * 在登录前发生的事件，EVENT_BEFORE_LOGIN,
+     * 有基于用户名密码的，也有基于持久化免密码的cookie方式登录（都是登录的方式）
      * This method is called before logging in a user.
      * The default implementation will trigger the [[EVENT_BEFORE_LOGIN]] event.
      * If you override this method, make sure you call the parent implementation
@@ -612,7 +629,7 @@ class User extends Component
      * Renews the identity cookie. 
      * 也不是整个cookie,而是仅仅更新了这个cookie的expire字段而已，当前时间加上duration
      * This method will set the expiration time of the identity cookie to be the current time
-     * 奇怪的是，每次访问页面时，__identity的expire字段却都不变，为啥呢？
+     * 所以，执行完该方法后，我们应该能看到__identity这个cookie的expire字段又重新刷新了（默认是未来的30天，精确到秒）
      * plus the originally specified cookie duration.
      */
     protected function renewIdentityCookie()
@@ -624,7 +641,8 @@ class User extends Component
             if (is_array($data) && isset($data[2])) {
                 $cookie = new Cookie($this->identityCookie);
                 $cookie->value = $value;
-                $cookie->expire = time() + (int) $data[2];//其实仅仅更新了cookie的expire字段而已
+                //其实仅仅更新了cookie的expire字段而已
+                $cookie->expire = time() + (int) $data[2];
                 Yii::$app->getResponse()->getCookies()->add($cookie);
             }
         }
@@ -684,8 +702,13 @@ class User extends Component
             $class = $this->identityClass;
             $identity = $class::findIdentity($id);
             if ($identity !== null) {
+                //这个代码写的，非常有意思：
+                //通过if   elseif   else三个分支完成的。
+                //其中if,elseif是验证，else是最终的返回。
+                //要我写的话，就是三个if。这样看起来最直接，总觉得if elseif看着多了不好。
                 if (!$identity instanceof IdentityInterface) {
                     throw new InvalidValueException("$class::findIdentity() must return an object implementing IdentityInterface.");
+                //验证cookie中的AuthKey
                 } elseif (!$identity->validateAuthKey($authKey)) {
                     Yii::warning("Invalid auth key attempted for user '$id': $authKey", __METHOD__);
                 } else {
@@ -699,6 +722,7 @@ class User extends Component
 
     /**
 	 * 清除__identity指明的cookie信息
+	 * 是说在Response组件里删除掉，待程序最终结束时通过php原生函数setCookie()设置，让浏览器来真正的删除
      * Removes the identity cookie.
 	 * 该方法在enableAutoLogin为true时才使用
 	 * cookie我们知道，在request中有，在response中也有
@@ -823,7 +847,7 @@ class User extends Component
 
         $this->setIdentity($identity);
         
-        //如果本次处于登录状态，且在session变量里设置了authTimeout和absoluteAuthTimeout两个变量
+        //如果从Session完成了登录，且在session变量里设置了authTimeout和absoluteAuthTimeout两个变量
         //则会触发判断逻辑
         if ($identity !== null && ($this->authTimeout !== null || $this->absoluteAuthTimeout !== null)) {
             $expire = $this->authTimeout !== null ? $session->get($this->authTimeoutParam) : null;
@@ -847,17 +871,22 @@ class User extends Component
         再次访问网站，服务端对应的essionID已经不存在了，但浏览器里__identity这个cookie尚未过期（默认一个月），故仍然可以免输入密码登录)
         */
         if ($this->enableAutoLogin) {
-            if ($this->getIsGuest()) {//单从页面头部显示登录者姓名来说，这里又调用getIsGuest()判断是否登录了，但第一次执行时$this->_identity已经是null
+            //单从页面头部显示登录者姓名来说，这里又调用getIsGuest()判断是否登录了，但第一次执行时$this->_identity已经是null
+            //不是最初的false,$this->_identity条件已经不同了，所以不会递归。
+            if ($this->getIsGuest()) {
                 $this->loginByCookie();
             } elseif ($this->autoRenewCookie) {
+                //去刷新__identity这个cookie的expire字段
                 $this->renewIdentityCookie();
             }
         }
     }
 
     /**
+     * 检测，当前登录的用户，根据事先设置好的权限，能否执行指定的操作。
      * Checks if the user can perform the operation as specified by the given permission.
      *
+     *使用这个方法，应该确保配置了authManager这个应用组件，否则它永远返回false。
      * Note that you must configure "authManager" application component in order to use this method.
      * Otherwise it will always return false.
      *
@@ -889,7 +918,10 @@ class User extends Component
     }
 
     /**
+     * 检测http请求的header部分的Accept字段里包含的Content-Type，是否包含Yii给出的登录页的Content-Type
+     * 真是少见之。
      * Checks if the `Accept` header contains a content type that allows redirection to the login page.
+     * 登录页面的Content-Type默认是text/html,或者application/xhtml+xml。可以设置[[acceptableRedirectTypes]]这个成员属性修改
      * The login page is assumed to serve `text/html` or `application/xhtml+xml` by default. You can change acceptable
      * content types by modifying [[acceptableRedirectTypes]] property.
      * @return bool whether this request may be redirected to the login page.
@@ -919,6 +951,7 @@ class User extends Component
      * You may override this method to return a different auth manager instance if needed.
      * @return \yii\rbac\ManagerInterface
      * @since 2.0.6
+     * 从2.0.9版本开始，在2.1版本里将会删除，应该使用getAccessChecker这个方法。
      * @deprecated since version 2.0.9, to be removed in 2.1. Use [[getAccessChecker()]] instead.
      */
     protected function getAuthManager()

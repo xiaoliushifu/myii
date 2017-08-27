@@ -245,6 +245,7 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
      * 然后，使用session_destroy()再把session文件也删除掉，并关闭会话进程
      * 经过上述的三个步骤，就把所有的会话数据清除了，$_SESSION也空数组了，session文件也没有了。会话进程也关闭了。
      * 再开启，就得session_start()了。
+     * 为什么不直接通过session_unset(),session_destroy()这两部完成会话的清除呢？
      * Frees all session variables and destroys all data registered to a session.
      */
     public function destroy()
