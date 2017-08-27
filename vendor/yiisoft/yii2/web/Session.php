@@ -380,10 +380,21 @@ class Session extends Component implements \IteratorAggregate, \ArrayAccess, \Co
 
     /**
      * 设置session名字，默认就是PHPSESSID
+     * 可以通过配置name成员属性，完成更改sessionID（比如SSID)
      * Sets the name for the current session.
      * This is a wrapper for [PHP session_name()](http://php.net/manual/en/function.session-name.php).
      * @param string $value the session name for the current session, must be an alphanumeric string.
      * It defaults to "PHPSESSID".
+     * 'session' => [
+            'class' => 'yii\redis\Session',
+            'redis' => 'userRedis',
+            'keyPrefix' => '_dc_session:',
+            'cookieParams'=>[
+                'domain'=>'.yzbmp.yunzong',
+            ],
+            //通过这里更改SESSION ID的名字
+            'name' => 'SSID',
+        ],
      */
     public function setName($value)
     {
