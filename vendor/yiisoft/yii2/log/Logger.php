@@ -125,6 +125,8 @@ class Logger extends Component
             // make sure log entries written by shutdown functions are also flushed
             // ensure "flush()" is called last when there are multiple shutdown functions
             //shutdown函数也是函数队列，按照注册顺序有序执行，一旦某个shutdown函数里执行了exit()，那后续所有的shutdown也就不执行了。
+            //第一次注册是打入日志，这里再注册，是怕后续还有其他的shutdown函数执行的错误信息不能记录比如Session。
+            //所以这里是确保log组件是最终的shutdown函数，注意这次注册shutdown函数时，还传递了参数true
             register_shutdown_function([$this, 'flush'], true);
         });
     }
