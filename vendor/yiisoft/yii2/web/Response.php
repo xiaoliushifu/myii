@@ -16,17 +16,20 @@ use yii\helpers\FileHelper;
 use yii\helpers\StringHelper;
 
 /**
+ * Response代表了http的响应
  * The web Response class represents an HTTP response
- *
+ * 包括发送给客户端的 【headers】【cookies】【content】三项
  * It holds the [[headers]], [[cookies]] and [[content]] that is to be sent to the client.
+ * 还可以控制响应码
  * It also controls the HTTP [[statusCode|status code]].
- *
+ * Response默认配置为Web应用的组件
  * Response is configured as an application component in [[\yii\web\Application]] by default.
+ * 可以通过 Yii::$app->response来访问
  * You can access that instance via `Yii::$app->response`.
- *
+ * 默认是核心组件，可以更新response的配置，在`conponents`组件，看下面的例子
  * You can modify its configuration by adding an array to your application config under `components`
  * as it is shown in the following example:
- *
+ * 
  * ```php
  * 'response' => [
  *     'format' => yii\web\Response::FORMAT_JSON,
@@ -34,24 +37,36 @@ use yii\helpers\StringHelper;
  *     // ...
  * ]
  * ```
- *
+ * 详情和如何使用Response,先到官网查看(guide:runtime-responses).
  * For more details and usage information on Response, see the [guide article on responses](guide:runtime-responses).
- *
+ *  CookieCollection集合
  * @property CookieCollection $cookies The cookie collection. This property is read-only.
+ *  字符串，$downloadHeaders  下载文件时的attachment部分的文件名，该属性只写
  * @property string $downloadHeaders The attachment file name. This property is write-only.
+ *  headerCollection $headers  是header集合,该属性是只读的
  * @property HeaderCollection $headers The header collection. This property is read-only.
+ * $isClientError  是否这response是要报告客户端的错误，该属性只读。
  * @property bool $isClientError Whether this response indicates a client error. This property is read-only.
+ * $isEmpty 是否这个response是空的，该属性只读
  * @property bool $isEmpty Whether this response is empty. This property is read-only.
+ * $isForbidden 表名当前的response是报告客户端403的  ，该属性只读
  * @property bool $isForbidden Whether this response indicates the current request is forbidden. This property
  * is read-only.
+ * $isInformational 表名当前的response是informational，该属性只读。不明白？什么“response is informational"
  * @property bool $isInformational Whether this response is informational. This property is read-only.
+ *  $isInvalid 当前response是否有有效的状态码，该属性只读
  * @property bool $isInvalid Whether this response has a valid [[statusCode]]. This property is read-only.
+ * $isNotFound 是否表名当前请求的资源未找到，（就是404）
  * @property bool $isNotFound Whether this response indicates the currently requested resource is not found.
  * This property is read-only.
  * @property bool $isOk Whether this response is OK. This property is read-only.
+ *  是否当前的response是一个重定向，该属性只读（就是302,301）这样的
  * @property bool $isRedirection Whether this response is a redirection. This property is read-only.
+ * 是否服务端错误
  * @property bool $isServerError Whether this response indicates a server error. This property is read-only.
+ * 是否是成功的
  * @property bool $isSuccessful Whether this response is successful. This property is read-only.
+ * 响应状态码
  * @property int $statusCode The HTTP status code to send with the response.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
@@ -61,15 +76,18 @@ use yii\helpers\StringHelper;
 class Response extends \yii\base\Response
 {
     /**
+     * 定义了一个事件，在send()方法的开始触发
      * @event ResponseEvent an event that is triggered at the beginning of [[send()]].
      */
     const EVENT_BEFORE_SEND = 'beforeSend';
-    /**
+    /**还是事件，在send()方法的最后触发
      * @event ResponseEvent an event that is triggered at the end of [[send()]].
      */
     const EVENT_AFTER_SEND = 'afterSend';
     /**
+     * 在prepare()之后触发这个事件，prepare()在send()中调用
      * @event ResponseEvent an event that is triggered right after [[prepare()]] is called in [[send()]].
+     * 我们可以响应这个事件，在http响应发送到客户端的最终关头来过滤下http响应的内容
      * You may respond to this event to filter the response content before it is sent to the client.
      */
     const EVENT_AFTER_PREPARE = 'afterPrepare';
@@ -80,40 +98,57 @@ class Response extends \yii\base\Response
     const FORMAT_XML = 'xml';
 
     /**
+     *  响应的格式，定义如何转化data为content
      * @var string the response format. This determines how to convert [[data]] into [[content]]
+     * 该值后期如果没有设置，那么它必须是[[formatters]]数组里的keys之一
      * when the latter is not set. The value of this property must be one of the keys declared in the [[formatters]] array.
      * By default, the following formats are supported:
-     *
+     * 
+     *      表名无需转换content,也无需添加额外的HTTP的header
      * - [[FORMAT_RAW]]: the data will be treated as the response content without any conversion.
      *   No extra HTTP header will be added.
+     *   无需转换content,只添加Content-Type头信息"text/html"
      * - [[FORMAT_HTML]]: the data will be treated as the response content without any conversion.
      *   The "Content-Type" header will set as "text/html".
+     *   转换content为JSON格式的，添加"Content-Type"头信息的值是“application/json"
      * - [[FORMAT_JSON]]: the data will be converted into JSON format, and the "Content-Type"
      *   header will be set as "application/json".
+     *   转换content为JSONP格式，"Content-Type"头信息的值是“text/javascript"
      * - [[FORMAT_JSONP]]: the data will be converted into JSONP format, and the "Content-Type"
+     *   这种格式$data必须是一个数组，有data和callback两个元素
      *   header will be set as "text/javascript". Note that in this case `$data` must be an array
+     *   data元素代表实际要发送的内容，后者callback则是JavaScript的回调函数名
      *   with "data" and "callback" elements. The former refers to the actual data to be sent,
      *   while the latter refers to the name of the JavaScript callback.
+     *    转换content为XML格式，请去[[XmlResponseFormatter]]查看详情
      * - [[FORMAT_XML]]: the data will be converted into XML format. Please refer to [[XmlResponseFormatter]]
      *   for more details.
-     *
+     *  最后，你还可以自定义格式化的过程，或者通过配置[[formatters]]数组添加额外的格式
      * You may customize the formatting process or support additional formats by configuring [[formatters]].
      * @see formatters
      */
     public $format = self::FORMAT_HTML;
     /**
+     * MIME类型  ，来源于http的ACCEPT头信息，是表名客户端浏览器支持的类型，Yii框架据此来发送http响应
+     * 类型可不是瞎设置的呀。
      * @var string the MIME type (e.g. `application/json`) from the request ACCEPT header chosen for this response.
+     * 该属性由[[\yii\filters\ContentNegotiator]].内容协商过滤器维护
      * This property is mainly set by [[\yii\filters\ContentNegotiator]].
      */
     public $acceptMimeType;
     /**
+     * ['q' => 1, 'version' => '1.0']这样的数组，有关上一个属性$acceptMimeType的一列表键值对
      * @var array the parameters (e.g. `['q' => 1, 'version' => '1.0']`) associated with the [[acceptMimeType|chosen MIME type]].
+     * 。
      * This is a list of name-value pairs associated with [[acceptMimeType]] from the ACCEPT HTTP header.
+     * 该属性由[[\yii\filters\ContentNegotiator]].内容协商过滤器维护
      * This property is mainly set by [[\yii\filters\ContentNegotiator]].
      */
     public $acceptParams = [];
     /**
+     * 数组，由[format]参数指定的，把content转换格式的配置数组
      * @var array the formatters for converting data into the response content of the specified [[format]].
+     * 数组是key就是格式名，数组的值则是对应负责的格式化对象
      * The array keys are the format names, and the array values are the corresponding configurations
      * for creating the formatter objects.
      * @see format
@@ -121,6 +156,7 @@ class Response extends \yii\base\Response
      */
     public $formatters = [];
     /**
+     * 该$data就是原始的response数据，该属性不空时则根据[[format]]属性，在响应处理时把$data转换为[[content]]
      * @var mixed the original response data. When this is not null, it will be converted into [[content]]
      * according to [[format]] when the response is being sent out.
      * @see content
@@ -132,32 +168,41 @@ class Response extends \yii\base\Response
      * @see data
      */
     public $content;
-    /**
+    /** 
+     * 资源和数组类型，表示要发送的流。可以是流处理器或者可配置的流处理器对象数组
      * @var resource|array the stream to be sent. This can be a stream handle or an array of stream handle,
+     * 当这个属性被设置后，[[data]]和[[content]]属性将会被忽略
      * the begin position and the end position. Note that when this property is set, the [[data]] and [[content]]
      * properties will be ignored by [[send()]].
      */
     public $stream;
     /**
+     * http响应的字符集
      * @var string the charset of the text response. If not set, it will use
      * the value of [[Application::charset]].
      */
     public $charset;
     /**
+     * 状态短语
      * @var string the HTTP status description that comes together with the status code.
      * @see httpStatuses
      */
     public $statusText = 'OK';
     /**
+     * http协议的版本。默认是1.1。也可以通过$_SERVER['SERVER_PROTOCOL']来指定
      * @var string the version of the HTTP protocol to use. If not set, it will be determined via `$_SERVER['SERVER_PROTOCOL']`,
      * or '1.1' if that is not available.
      */
     public $version;
     /**
+     * 布尔值，表名http响应是否真的发送过了，如果是false，则调用send()方法啥也不做
+     * （因为http响应处理的过程非常复杂且漫长）
      * @var bool whether the response has been sent. If this is true, calling [[send()]] will do nothing.
      */
     public $isSent = false;
     /**
+     * 数组列表，http响应的状态码和短语的对应关系
+     * 复习一下，很好，数了一下 66个
      * @var array list of HTTP status codes and the corresponding texts
      */
     public static $httpStatuses = [
@@ -230,10 +275,12 @@ class Response extends \yii\base\Response
     ];
 
     /**
+     * http状态码
      * @var int the HTTP status code to send with the response.
      */
     private $_statusCode = 200;
     /**
+     * 存储处理response过程中的头信息
      * @var HeaderCollection
      */
     private $_headers;
