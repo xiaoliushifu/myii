@@ -21,6 +21,13 @@ $this->registerJs("console.log('this is registerJs')",$this::POS_HEAD, $key = nu
     <p>Please fill out the following fields to login:</p>
 
     <?php $form = ActiveForm::begin([
+        
+        //如何为form标签单独添加一个属性，哪怕自定义属性？
+        //那就来个options呀
+        //本质上ActiveForm是一个类，所以如何利用它，就看类的源文件，肯定能看出个123来。
+        'options'=>['aaaaa'=>'ddddd'],
+        
+        
 		//下述对AF的参数的配置，也会实际反映到前端yiiActiveForm中
         //不对表单的submit事件进行绑定。
 		//如何传递给客户端呢？就是yiiActiveForm()方法的第二个参数
@@ -31,6 +38,12 @@ $this->registerJs("console.log('this is registerJs')",$this::POS_HEAD, $key = nu
          */
         'id' => 'login-form',
         'layout' => 'horizontal',
+        //还有一种布局设置
+        //其中{items}指table表格的一行行数据
+        //{summary} 指的是"第1-5条，共7条数据."这样的总结字符串
+        //{pager}则是各个可点击的分页a标签
+        //如果不想分页，那可以只保留{items}即可。
+        //'layout' => '{items}<div class="col-sm-2">{summary}</div><div class="col-sm-7"><div class="dataTables_paginate">{pager}</div></div>',
         //fieldConfig给所有的表单项的总体配置，某个表单项的个性配置可以在$form->field()方法里写
         //具体这个fieldConfig都有哪些配置项？相信你也猜到了，它既然是表单项的配置，那么它肯定是ActiveField类的属性映射了
         //具体详细配置请阅读http://www.yiichina.com/doc/api/2.0/yii-widgets-activefield吧
