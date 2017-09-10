@@ -14,10 +14,13 @@ namespace yii\base;
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
+
+ * 看到 response也是组件
  */
 class Response extends Component
 {
     /**
+	 * 退出码，范围是0-254。0代表没有问题，成功退出。
      * @var int the exit status. Exit statuses should be in the range 0 to 254.
      * The status 0 means the program terminates successfully.
      */
