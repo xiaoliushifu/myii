@@ -16,13 +16,13 @@ use yii\helpers\FileHelper;
 use yii\helpers\StringHelper;
 
 /**
- * Response代表了http的响应
+ * Web Response代表了http的响应
  * The web Response class represents an HTTP response
  * 包括发送给客户端的 【headers】【cookies】【content】三项
  * It holds the [[headers]], [[cookies]] and [[content]] that is to be sent to the client.
  * 还可以控制响应码
  * It also controls the HTTP [[statusCode|status code]].
- * Response默认配置为Web应用的组件
+ * 在[[\yii\web\Application]]中，Response默认配置为应用的组件
  * Response is configured as an application component in [[\yii\web\Application]] by default.
  * 可以通过 Yii::$app->response来访问
  * You can access that instance via `Yii::$app->response`.
@@ -32,7 +32,9 @@ use yii\helpers\StringHelper;
  * 
  * ```php
  * 'response' => [
+		//响应data的编码格式
  *     'format' => yii\web\Response::FORMAT_JSON,
+		//响应header中的字符集
  *     'charset' => 'UTF-8',
  *     // ...
  * ]
@@ -195,7 +197,7 @@ class Response extends \yii\base\Response
      */
     public $version;
     /**
-     * 布尔值，表名http响应是否真的发送过了，如果是false，则调用send()方法啥也不做
+     * 布尔值，表名http响应是否真的发送过了，如果是true，则调用send()方法啥也不做
      * （因为http响应处理的过程非常复杂且漫长）
      * @var bool whether the response has been sent. If this is true, calling [[send()]] will do nothing.
      */
@@ -291,6 +293,7 @@ class Response extends \yii\base\Response
      */
     public function init()
     {
+		//基本上 http版本都是1.1了，所以，为了些许的性能考虑，觉得初始化配置response组件时设置为"HTTP/1.1"合适
         if ($this->version === null) {
             if (isset($_SERVER['SERVER_PROTOCOL']) && $_SERVER['SERVER_PROTOCOL'] === 'HTTP/1.0') {
                 $this->version = '1.0';
@@ -298,9 +301,11 @@ class Response extends \yii\base\Response
                 $this->version = '1.1';
             }
         }
+		//如果response组件没有设置的话，可以使用它上一级web应用的charset。即$app,通过查看yii\base\Application知道，它的charset=UTF-8
         if ($this->charset === null) {
             $this->charset = Yii::$app->charset;
         }
+		//初始化四个响应格式，这四种格式是写死的，我们目前无需扩展。
         $this->formatters = array_merge($this->defaultFormatters(), $this->formatters);
     }
 
@@ -1036,6 +1041,8 @@ class Response extends \yii\base\Response
     }
 
     /**
+	 * 返回四种web响应里内容的格式
+	 * HTML,XML,JSON,JSONP
      * @return array the formatters that are supported by default
      */
     protected function defaultFormatters()
