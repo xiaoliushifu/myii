@@ -310,6 +310,7 @@ class Response extends \yii\base\Response
     }
 
     /**
+	 * 返回http状态码，可以把它组装到响应中
      * @return int the HTTP status code to send with the response.
      */
     public function getStatusCode()
@@ -318,7 +319,9 @@ class Response extends \yii\base\Response
     }
 
     /**
+	 * 设置http响应码及短语
      * Sets the response status code.
+	 * 如果$text是null的话，该方法将会根据$httpStatuses静态成员数组设置对应的短语(statusText)
      * This method will set the corresponding status text if `$text` is null.
      * @param int $value the status code
      * @param string $text the status text. If not set, it will be set automatically based on the status code.
@@ -326,13 +329,17 @@ class Response extends \yii\base\Response
      */
     public function setStatusCode($value, $text = null)
     {
+		//状态码为null，则直接认为是200
         if ($value === null) {
             $value = 200;
         }
+		//先设置状态码
         $this->_statusCode = (int) $value;
+		//然后判断状态码是否有效（是否在[100,600]区间）
         if ($this->getIsInvalid()) {
             throw new InvalidParamException("The HTTP status code is invalid: $value");
         }
+		//短语为null,则根据状态码来设置短语
         if ($text === null) {
             $this->statusText = isset(static::$httpStatuses[$this->_statusCode]) ? static::$httpStatuses[$this->_statusCode] : '';
         } else {
@@ -341,7 +348,9 @@ class Response extends \yii\base\Response
     }
 
     /**
+	 * 返回http响应的头部集合
      * Returns the header collection.
+	 * 头部集合包含了当前已注册（添加）的http头部
      * The header collection contains the currently registered HTTP headers.
      * @return HeaderCollection the header collection
      */
