@@ -357,16 +357,22 @@ class Response extends \yii\base\Response
     public function getHeaders()
     {
         if ($this->_headers === null) {
+			//头部集合单独使用一个类来管理，该类维护了一个二维数组来完成头部集合的管理。
             $this->_headers = new HeaderCollection;
         }
         return $this->_headers;
     }
 
     /**
+	 * 把http响应发送给客户端
+	 * 关键就是那两个方法
+			sendHeaders()
+			sendContent()
      * Sends the response to the client.
      */
     public function send()
     {
+		//不会重复发送
         if ($this->isSent) {
             return;
         }
@@ -376,6 +382,7 @@ class Response extends \yii\base\Response
         $this->sendHeaders();
         $this->sendContent();
         $this->trigger(self::EVENT_AFTER_SEND);
+		//置为已发送
         $this->isSent = true;
     }
 
