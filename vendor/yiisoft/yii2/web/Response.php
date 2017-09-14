@@ -29,7 +29,7 @@ use yii\helpers\StringHelper;
  * 默认是核心组件，可以更新response的配置，在`conponents`组件，看下面的例子
  * You can modify its configuration by adding an array to your application config under `components`
  * as it is shown in the following example:
- * 
+ * 网页应用开发的最终目的本质上就是根据不同的请求构建这些响应对象
  * ```php
  * 'response' => [
 		//响应data的编码格式
@@ -41,7 +41,7 @@ use yii\helpers\StringHelper;
  * ```
  * 详情和如何使用Response,先到官网查看(guide:runtime-responses).
  * For more details and usage information on Response, see the [guide article on responses](guide:runtime-responses).
- *  CookieCollection集合
+ *  CookieCollection  集合类，cookie，只读
  * @property CookieCollection $cookies The cookie collection. This property is read-only.
  *  字符串，$downloadHeaders  下载文件时的attachment部分的文件名，该属性只写
  * @property string $downloadHeaders The attachment file name. This property is write-only.
@@ -100,7 +100,7 @@ class Response extends \yii\base\Response
     const FORMAT_XML = 'xml';
 
     /**
-     *  响应的格式，定义如何转化data为content
+     *  $format 响应的格式，定义如何转化data为content
      * @var string the response format. This determines how to convert [[data]] into [[content]]
      * 该值后期如果没有设置，那么它必须是[[formatters]]数组里的keys之一
      * when the latter is not set. The value of this property must be one of the keys declared in the [[formatters]] array.
@@ -131,8 +131,8 @@ class Response extends \yii\base\Response
      */
     public $format = self::FORMAT_HTML;
     /**
-     * MIME类型  ，来源于http的ACCEPT头信息，是表名客户端浏览器支持的类型，Yii框架据此来发送http响应
-     * 类型可不是瞎设置的呀。
+     * MIME类型  ，来源于http请求的ACCEPT头信息，是表名客户端浏览器支持的类型，Yii框架据此来发送http响应
+     * 可见响应内容的类型可不是瞎设置的呀。
      * @var string the MIME type (e.g. `application/json`) from the request ACCEPT header chosen for this response.
      * 该属性由[[\yii\filters\ContentNegotiator]].内容协商过滤器维护
      * This property is mainly set by [[\yii\filters\ContentNegotiator]].
@@ -350,7 +350,7 @@ class Response extends \yii\base\Response
     /**
 	 * 返回http响应的头部集合
      * Returns the header collection.
-	 * 头部集合包含了当前已注册（添加）的http头部
+	 * 头部集合是一个类，包含了当前已注册（添加）的http头部
      * The header collection contains the currently registered HTTP headers.
      * @return HeaderCollection the header collection
      */
@@ -376,17 +376,23 @@ class Response extends \yii\base\Response
         if ($this->isSent) {
             return;
         }
+		//send方法的开始，先触发before_send事件
         $this->trigger(self::EVENT_BEFORE_SEND);
         $this->prepare();
+		//触发after_prepare事件
         $this->trigger(self::EVENT_AFTER_PREPARE);
+		//根据http协议的规范，肯定是先发送响应头部，再发送响应实体内容
         $this->sendHeaders();
         $this->sendContent();
+		//send方法的结尾，触发after_send事件
         $this->trigger(self::EVENT_AFTER_SEND);
-		//置为已发送
+		//置为已发送，这是后续其他处理判断的依据
         $this->isSent = true;
     }
 
     /**
+	 * 清空 响应头，响应cookie,响应实体,状态码。
+	 * 问：什么情况下需要调用这个方法呢？
      * Clears the headers, cookies, content, status code of the response.
      */
     public function clear()
@@ -402,34 +408,49 @@ class Response extends \yii\base\Response
     }
 
     /**
+	 *  单独发送响应头部，如何发送？其实就是php的原生函数header了。
      * Sends the response headers to the client
      */
     protected function sendHeaders()
     {
+		//headers_send是干啥的？这是php基础，跟Yii框架没有关系
+		//判断是否已经发送过http的响应头部，已发，则不再发；否则可发。
+		//该函数还能传递两个参数，据此可以知道哪个php文件的哪一行发送过header。
         if (headers_sent()) {
             return;
         }
+		//当有要发送的头部时
         if ($this->_headers) {
+			//获得响应头集合对象
             $headers = $this->getHeaders();
+			//遍历之，注意$headers是二维数组
             foreach ($headers as $name => $values) {
+				//替换成空格，然后首字母都大写，再替换回连字符。仅仅为了两个单词的首字母大写
                 $name = str_replace(' ', '-', ucwords(str_replace('-', ' ', $name)));
                 // set replace for first occurrence of header but false afterwards to allow multiple
                 $replace = true;
+				//既然是二维数组，这里当然还能再次遍历。一般第二维的数组，都是只有一个元素。
                 foreach ($values as $value) {
+					//复习一下php的header函数，最多可以传递三个参数呢，第二个参数默认是true,表示覆盖之前重复发送的头信息。
                     header("$name: $value", $replace);
+					//这里发送一个后，就置为false,使得同一个头部字段里的值（某二维数组有多个元素），都以第一个元素值为准。
                     $replace = false;
                 }
             }
         }
+		//再最后设置http响应的状态行。（有时所谓的响应头部，也包含状态行）
+		//格式为“HTTP/1.1 200  OK这样的。
         $statusCode = $this->getStatusCode();
         header("HTTP/{$this->version} {$statusCode} {$this->statusText}");
+		//还要发送cookie,这个重要性也非常高，当然得单独写个方法了。
         $this->sendCookies();
+		//好了，至此http响应的头部部分就做完了。
     }
 
     /**
      * response组件发送cookie给客户端（使用php原生setcookie()函数）
      * 发送之前肯定早已准备好要种植给客户端的cookie了，都存在response组件的_cookies属性中
-     * 为了安全考虑，防止cookie在客户端被篡改，还使用了安全组件给cookie值进行hash散射
+     * 为了安全考虑，防止cookie在客户端被篡改，还使用了secure组件给cookie值进行hash散射
      * Sends the cookies to the client.
      */
     protected function sendCookies()
@@ -438,14 +459,19 @@ class Response extends \yii\base\Response
         if ($this->_cookies === null) {
             return;
         }
+		//种植cookie和服务端接收cookie来处理是一致的，不能种植cookie时不加密，但是服务端接收处理时解密，这就不一致。
+		//所以，需要request组件的enableCookieValidation属性判断，是否服务端种植cookie时需要加密。
         $request = Yii::$app->getRequest();
+		//默认是true,即客户端会解密cookie,那服务端种植是得配合，加密cookie。
         if ($request->enableCookieValidation) {
+			//加密时需要一个随机固定的字符串（盐），没有就报异常，说明这个盐非常重要！
             if ($request->cookieValidationKey == '') {
                 throw new InvalidConfigException(get_class($request) . '::cookieValidationKey must be configured with a secret key.');
             }
             $validationKey = $request->cookieValidationKey;
         }
         //cookie集合对象可以被遍历，是因为这个对象实现了PHP原生接口IteratorAggregate
+		//复习一下，我们知道，遍历出的$cookie其实是一个web\cookie对象。
         foreach ($this->getCookies() as $cookie) {
             $value = $cookie->value;
             //不过期，且配置了认证key，则对发送到客户端的cookie进行加密
@@ -461,35 +487,53 @@ class Response extends \yii\base\Response
     }
 
     /**
+	 * 发送响应内容给客户端
      * Sends the response content to the client
      */
     protected function sendContent()
     {
+		//流数据为空，则直接使用echo 输出content就行，简单干脆！
         if ($this->stream === null) {
             echo $this->content;
 
             return;
         }
-
+		
+		//重新归零脚本运行的超时时间，与php.ini里的max_execution_time对应。
+		//这里是动态地使用php函数设置，0表示不限制超时时间。
         set_time_limit(0); // Reset time limit for big files
+		//定义流数据的分块大小
         $chunkSize = 8 * 1024 * 1024; // 8MB per chunk
 
         if (is_array($this->stream)) {
             list ($handle, $begin, $end) = $this->stream;
+			//在$handle关联的资源中，定位指针位置为$begin
             fseek($handle, $begin);
+			//尚未到达文件流数据的末尾，并且，此时指针的位置还未到$end。（ftell是返回当前资源的文件指针位置，fseek是设置当前指针的位置）
             while (!feof($handle) && ($pos = ftell($handle)) <= $end) {
+				//如果剩余的流数据不够分块大小
                 if ($pos + $chunkSize > $end) {
+					//直接读取剩余部分就是。
                     $chunkSize = $end - $pos + 1;
                 }
+				//按照此时$chunkSize指定的数据量，读取流数据，并输出。也就是说，本次输出不是我们自己用代码编写的内容，而是从某个文件中读取内容
+				//作为http响应内容发送给客户端，真是太棒了，还支持从外界读取。
                 echo fread($handle, $chunkSize);
+				//立即释放PHP脚本所有的输出缓存给Web服务器,注意，是释放php级别的缓存。可以释放php因输出缓存而占据的一部分内存。
+				//但理解尚不深。
                 flush(); // Free up memory. Otherwise large files will trigger PHP's memory limit.
             }
+			//最终关闭资源
             fclose($handle);
+		//如果不是数组的话
         } else {
+			//则steam属性存储的，直接就是资源了，不用那么多的判断了，只要不到流数据的结尾，就按照$chunkSize大小的读取量，
+			//循环读取出来，并立即echo之。
             while (!feof($this->stream)) {
                 echo fread($this->stream, $chunkSize);
                 flush();
             }
+			//最终也关闭流资源，好习惯！
             fclose($this->stream);
         }
     }

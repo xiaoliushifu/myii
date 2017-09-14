@@ -12,6 +12,8 @@ use app\models\EntryForm;
 
 class SiteController extends Controller
 {
+    //怎么回事呢？
+    //use \TestTrait;
     const EVENT_TEST='testEvent';
     /**
      * @inheritdoc
