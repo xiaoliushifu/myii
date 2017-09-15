@@ -539,11 +539,15 @@ class Response extends \yii\base\Response
     }
 
     /**
+	 * 给浏览器发送一个文件（就是所谓的浏览器端的下载？）
      * Sends a file to the browser.
      *
+	 * 这个方法只是在为发送文件做准备，直到暗中或明面地调用send()方法的时候才真正发送文件
      * Note that this method only prepares the response for file sending. The file is not sent
+	 * 后者（暗中地）一般是从控制器的action中返回后，yii框架最终都会调用send。（当然也可以明确地直接调用send()）
      * until [[send()]] is called explicitly or implicitly. The latter is done after you return from a controller action.
      *
+	 * 来，下面给个例子，看看如何从一个action中发送文件。该例子是根据文件名，从指定文件系统目录(web不可直接访问）里读取文件内容
      * The following is an example implementation of a controller action that allows requesting files from a directory
      * that is not accessible from web:
      *
@@ -556,43 +560,58 @@ class Response extends \yii\base\Response
      *     if (!preg_match('/^[a-z0-9]+\.[a-z0-9]+$/i', $filename) || !is_file("$storagePath/$filename")) {
      *         throw new \yii\web\NotFoundHttpException('The file does not exists.');
      *     }
+	 *										//第一个参数是服务端文件系统的路径，第二个参数是展示给浏览器端的文件名。两者有可能相同
      *     return Yii::$app->response->sendFile("$storagePath/$filename", $filename);
      * }
      * ```
-     *
+     * $filePath  是文件系统的路径，从该路径下寻找要发送的文件
      * @param string $filePath the path of the file to be sent.
+	 * $attachmentName   展示给浏览器的文件名（也许在服务端文件系统里存在的文件名与此不同，也许相同），如果不给出这个名字，则由$filePath决定。
      * @param string $attachmentName the file name shown to the user. If null, it will be determined from `$filePath`.
+	 * $options  发送文件时额外的选项，支持的选项有：
      * @param array $options additional options for sending the file. The following options are supported:
-     *
+     * mimeType http响应的MIME类型，如果没有指明，则根据$filePath猜测
      *  - `mimeType`: the MIME type of the content. If not set, it will be guessed based on `$filePath`
+	 * inline  布尔值，浏览器是否应该在浏览器窗口打开这个文件，默认是false，
      *  - `inline`: boolean, whether the browser should open the file within the browser window. Defaults to false,
+	 *	也就是说，浏览器应该会弹出一个下载文件的对话框。
      *    meaning a download dialog will pop up.
      *
      * @return $this the response object itself
-     * @see sendContentAsFile()
+     * @see sendContentAsFile()  参考这些方法
      * @see sendStreamAsFile()
      * @see xSendFile()
      */
     public function sendFile($filePath, $attachmentName = null, $options = [])
     {
+		//mimeType信息的判断
         if (!isset($options['mimeType'])) {
+			//根据文件的扩展名（pathinfo()函数获得），Yii框架本身维护了一个Content-Type的数据字典在
+			//yii/helpers/mimeTypes.php文件里。这是一个文件扩展名和MIME的映射大数组（大约1000个元素）
             $options['mimeType'] = FileHelper::getMimeTypeByExtension($filePath);
         }
+		//展示给浏览器端的文件名的判断
         if ($attachmentName === null) {
             $attachmentName = basename($filePath);
         }
+		//只读方式打开一个文件，第二个字符b是以二进制模式读取文件的内容，不改变原文件里的行结束符。根据php手册的解释，
+		//该字符b仅仅影响文件的行结束符（windows的\r\n,Unix的\n,还是Mac的\r这三种）。我们有疑问了，读取文件时还会破坏文件吗？
+		//是的，因为每个程序读取文件的方式不同，有的就有可能造成对原始二进制流的破坏，这里open文件时，加上b参数，就是说php的这些函数可以
+		//安全无破坏地读取$filePath文件流。这也是php手册的强烈建议。
         $handle = fopen($filePath, 'rb');
+		//发送给这个方法去处理（涉及文件大小，分批下载，有关下载的几个http响应头设置）
         $this->sendStreamAsFile($handle, $attachmentName, $options);
 
         return $this;
     }
 
     /**
+	 * 把指定的内容作为文件发送给客户端
      * Sends the specified content as a file to the browser.
-     *
+     * 这个方法只是在为发送文件做准备。后续的send()方法才是真正发送文件给客户端
      * Note that this method only prepares the response for file sending. The file is not sent
      * until [[send()]] is called explicitly or implicitly. The latter is done after you return from a controller action.
-     *
+     * $content是要发送的内容，而存在的成员属性[[content]]将会丢弃
      * @param string $content the content to be sent. The existing [[content]] will be discarded.
      * @param string $attachmentName the file name shown to the user.
      * @param array $options additional options for sending the file. The following options are supported:
@@ -608,8 +627,9 @@ class Response extends \yii\base\Response
     public function sendContentAsFile($content, $attachmentName, $options = [])
     {
         $headers = $this->getHeaders();
-
+		//使用工具类StringHelper来查询$content这个字符串的字节长度，其实就是mb_strlen($content, '8bit');而已。
         $contentLength = StringHelper::byteLength($content);
+		//确定本次要发送给客户端的内容范围
         $range = $this->getHttpRange($contentLength);
 
         if ($range === false) {
@@ -624,72 +644,86 @@ class Response extends \yii\base\Response
             $this->content = StringHelper::byteSubstr($content, $begin, $end - $begin + 1);
         } else {
             $this->setStatusCode(200);
+			//注意，这里与sendStreamAsFile()方法的不同是，直接使用$content覆盖了原始的content成员。
             $this->content = $content;
         }
-
+		//同样需要设置下载相关的几个http头字段
         $mimeType = isset($options['mimeType']) ? $options['mimeType'] : 'application/octet-stream';
         $this->setDownloadHeaders($attachmentName, $mimeType, !empty($options['inline']), $end - $begin + 1);
-
+		//为啥使用这个格式呢？
         $this->format = self::FORMAT_RAW;
 
         return $this;
     }
 
     /**
+	 *  把指定的流数据作为文件内容发送给浏览器
      * Sends the specified stream as a file to the browser.
-     *
+     * 注意，这仍然是在准备发送文件，直到调用send()方法才真正发送给浏览器。如果我们不明确地调用，则稍后Yii框架会在程序的结尾处调用send()方法
      * Note that this method only prepares the response for file sending. The file is not sent
      * until [[send()]] is called explicitly or implicitly. The latter is done after you return from a controller action.
-     *
+     *  $handle  这流数据的资源，一般是打开的文件资源，网络连接等
      * @param resource $handle the handle of the stream to be sent.
+	 * $attachmentName  展示给终端用户的，下载资源的名字（也许和服务端原始文件名不一样）
      * @param string $attachmentName the file name shown to the user.
+	 * $options  是额外的选项（请看sendFile()方法，有点重复了）
      * @param array $options additional options for sending the file. The following options are supported:
      *
      *  - `mimeType`: the MIME type of the content. Defaults to 'application/octet-stream'.
      *  - `inline`: boolean, whether the browser should open the file within the browser window. Defaults to false,
      *    meaning a download dialog will pop up.
+	 *   fileSize 文件大小，当内容大小知道，但是内容是不可寻址的。默认使用ftell()函数确定内容大小。
      *  - `fileSize`: the size of the content to stream this is useful when size of the content is known
      *    and the content is not seekable. Defaults to content size using `ftell()`.
+	 * 这个选项在2.0.4中才有
      *    This option is available since version 2.0.4.
      *
      * @return $this the response object itself
      * @throws RangeNotSatisfiableHttpException if the requested range is not satisfiable
-     * @see sendFile() for an example implementation.
+     * @see sendFile() for an example implementation. 请参考sendFile()方法里的一个例子
      */
     public function sendStreamAsFile($handle, $attachmentName, $options = [])
     {
+
         $headers = $this->getHeaders();
         if (isset($options['fileSize'])) {
             $fileSize = $options['fileSize'];
         } else {
+			//首先移动到文件尾，注意查看手册。第三个参数SEEK_END，是说从文件末尾参考偏移量。第二个参数就是偏移量。这里是0。
+			//所以，就是说距离文件末尾偏移量为0的地方，岂不是文件末尾吗？
             fseek($handle, 0, SEEK_END);
+			//然后读取此时指针的位置，就是流资源的数据大小了。这样解释明白吗？
             $fileSize = ftell($handle);
         }
-
+		//确定要发送给客户端的数据范围（也许是整个文件流，也许是文件流的一部分）
         $range = $this->getHttpRange($fileSize);
         if ($range === false) {
+			//范围不确定的话，就得报异常。可见文件流的范围必须确定。
             $headers->set('Content-Range', "bytes */$fileSize");
             throw new RangeNotSatisfiableHttpException();
         }
-
+		//下面这段代码涉及了分批次下载的概念，或者叫断点续传的功能。206这个状态码，估计在迅雷，电驴等下载应用里比较常见。
         list($begin, $end) = $range;
         if ($begin != 0 || $end != $fileSize - 1) {
             $this->setStatusCode(206);
             $headers->set('Content-Range', "bytes $begin-$end/$fileSize");
         } else {
+		//否则就是整个的文件下载，200即可。
             $this->setStatusCode(200);
         }
-
+		//去设置有关下载的一些http响应头
         $mimeType = isset($options['mimeType']) ? $options['mimeType'] : 'application/octet-stream';
         $this->setDownloadHeaders($attachmentName, $mimeType, !empty($options['inline']), $end - $begin + 1);
-
+		//也是设置这样的格式。有什么用意？
         $this->format = self::FORMAT_RAW;
+		//存储到stream属性中，在send方法里会用得到
         $this->stream = [$handle, $begin, $end];
 
         return $this;
     }
 
     /**
+	 * 设置http头部字段，这些头部字段是有关文件下载的，并不完全清楚，后续慢慢了解吧。
      * Sets a default set of HTTP headers for file downloading purpose.
      * @param string $attachmentName the attachment file name
      * @param string $mimeType the MIME type for the response. If null, `Content-Type` header will NOT be set.
@@ -703,8 +737,9 @@ class Response extends \yii\base\Response
         $headers = $this->getHeaders();
 
         $disposition = $inline ? 'inline' : 'attachment';
+		//链式设置多个头部字段
         $headers->setDefault('Pragma', 'public')
-            ->setDefault('Accept-Ranges', 'bytes')
+            ->setDefault('Accept-Ranges', 'bytes')//这个头部，非常重要，有些客户端据此判断服务端某些资源是否支持断点续传。
             ->setDefault('Expires', '0')
             ->setDefault('Cache-Control', 'must-revalidate, post-check=0, pre-check=0')
             ->setDefault('Content-Disposition', $this->getDispositionHeaderValue($disposition, $attachmentName));
@@ -721,18 +756,27 @@ class Response extends \yii\base\Response
     }
 
     /**
+	 * 查看$_SERVER变量HTTP_RANGE。初次认识这个变量。
+	 * 大概看一下，这个好像跟断点续传，分批次下载文件有关吧？
+	 * 这样，先略过吧，总之我们知道不是每次都一股脑地把文件全部给客户端，而是会给出整个流资源的数据范围。
+	 * 该方法就是根据HTTP_RANGE确定要发送给客户端的数据范围吧。
+	 * 根据代码$_SERVER可知，HTTP_RANGE这个应该是从http请求头部而来。像这样：range bytes=1-50 的。
+	 * 检测http请求中的http range字段。
      * Determines the HTTP range given in the request.
      * @param int $fileSize the size of the file that will be used to validate the requested HTTP range.
      * @return array|bool the range (begin, end), or false if the range request is invalid.
      */
     protected function getHttpRange($fileSize)
     {
+		//没有这个变量，就返回一个闭区间
         if (!isset($_SERVER['HTTP_RANGE']) || $_SERVER['HTTP_RANGE'] === '-') {
             return [0, $fileSize - 1];
         }
+		//没有匹配到符合规范的字符时，return false。
         if (!preg_match('/^bytes=(\d*)-(\d*)$/', $_SERVER['HTTP_RANGE'], $matches)) {
             return false;
         }
+		//为了理解下述的代码逻辑，我得知道分批下载的http请求和http响应头部都应该是哪些内容。所以，暂时，先略了吧。
         if ($matches[1] === '') {
             $start = $fileSize - $matches[2];
             $end = $fileSize - 1;
@@ -839,6 +883,7 @@ class Response extends \yii\base\Response
     }
 
     /**
+	 * 返回Content-Disposition这个头部字段的值，考虑了新旧浏览器的兼容性。
      * Returns Content-Disposition header value that is safe to use with both old and new browsers
      *
      * Fallback name:
