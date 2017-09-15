@@ -1060,19 +1060,21 @@ class Response extends \yii\base\Response
 	 * 通过返回的cookie集合，开发人员可以添加或删除cookie,如下：
      * Through the returned cookie collection, you add or remove cookies as follows,
      *
+	 * 添加cookie的例子
      * ```php
      * // add a cookie
      * $response->cookies->add(new Cookie([
      *     'name' => $name,
      *     'value' => $value,
      * ]);
-     *
+     * 删除cookie的例子
      * // remove a cookie
      * $response->cookies->remove('name');
-     * // alternatively
+     * // alternatively，或者使用这个办法
      * unset($response->cookies['name']);
      * ```
-     * CookieCollection类并没有在当前文件里引入（use进来），但是却可以通过自动加载机制加载进来
+     * CookieCollection类并没有在当前文件里引入（use进来），但是却可以通过自动加载机制加载进来，
+	 * 因为CookieCollection类和response类在同一个目录下
      * @return CookieCollection the cookie collection.
      */
     public function getCookies()
@@ -1086,6 +1088,7 @@ class Response extends \yii\base\Response
     }
 
     /**
+	* 检测设置的响应状态码是否合法
      * @return bool whether this response has a valid [[statusCode]].
      */
     public function getIsInvalid()
@@ -1094,6 +1097,8 @@ class Response extends \yii\base\Response
     }
 
     /**
+	 * 是否是informational类型的响应。（响应码在100到200之间的）
+	 * 了解什么是informational的响应，需要去https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html看RFC
      * @return bool whether this response is informational
      */
     public function getIsInformational()
@@ -1102,6 +1107,7 @@ class Response extends \yii\base\Response
     }
 
     /**
+	 * 检测状态码是否在  [200,300)区间里
      * @return bool whether this response is successful
      */
     public function getIsSuccessful()
@@ -1109,7 +1115,7 @@ class Response extends \yii\base\Response
         return $this->getStatusCode() >= 200 && $this->getStatusCode() < 300;
     }
 
-    /**
+    /**是否是跳转类型的响应，跳转类型的响应状态码在[300,400)区间。
      * @return bool whether this response is a redirection
      */
     public function getIsRedirection()
@@ -1118,6 +1124,7 @@ class Response extends \yii\base\Response
     }
 
     /**
+	 * 是否是报告客户端错误的响应，响应码区间在[400,500)
      * @return bool whether this response indicates a client error
      */
     public function getIsClientError()
@@ -1126,6 +1133,7 @@ class Response extends \yii\base\Response
     }
 
     /**
+	* 是否是报告服务端错误的响应，状态码在[500,600)区间。
      * @return bool whether this response indicates a server error
      */
     public function getIsServerError()
@@ -1134,6 +1142,7 @@ class Response extends \yii\base\Response
     }
 
     /**
+	* 状态码是否是 200
      * @return bool whether this response is OK
      */
     public function getIsOk()
@@ -1142,6 +1151,7 @@ class Response extends \yii\base\Response
     }
 
     /**
+	 * 状态码是否是  403
      * @return bool whether this response indicates the current request is forbidden
      */
     public function getIsForbidden()
@@ -1150,6 +1160,7 @@ class Response extends \yii\base\Response
     }
 
     /**
+	 * 状态码是否是  404
      * @return bool whether this response indicates the currently requested resource is not found
      */
     public function getIsNotFound()
@@ -1158,6 +1169,10 @@ class Response extends \yii\base\Response
     }
 
     /**
+	 * 201,204,304是什么意思呢？曾经在进销存里，针对ajax请求返回202,（服务端接收了请求，但还未处理）
+	 * 201 请求成功，服务端成功创建了资源。
+	 * 204服务端成功处理了请求，但不返回任何内容。
+	 * 304 Not Modified,说明上次客户端请求得到的响应还没修改过，客户端可以继续使用，服务端就不再返回重复的内容了。
      * @return bool whether this response is empty
      */
     public function getIsEmpty()
@@ -1168,6 +1183,7 @@ class Response extends \yii\base\Response
     /**
 	 * 返回四种web响应里内容的格式
 	 * HTML,XML,JSON,JSONP
+	 * 这四种响应都继承了同一个接口yii\web\ResponseFormatterInterface
      * @return array the formatters that are supported by default
      */
     protected function defaultFormatters()
@@ -1176,6 +1192,7 @@ class Response extends \yii\base\Response
             self::FORMAT_HTML => 'yii\web\HtmlResponseFormatter',
             self::FORMAT_XML => 'yii\web\XmlResponseFormatter',
             self::FORMAT_JSON => 'yii\web\JsonResponseFormatter',
+			//其实是三种类，JSON和JSONP在同一个类里用两个方法分别实现了。
             self::FORMAT_JSONP => [
                 'class' => 'yii\web\JsonResponseFormatter',
                 'useJsonp' => true,
@@ -1184,36 +1201,45 @@ class Response extends \yii\base\Response
     }
 
     /**
+	 * 准备发送请求。准备？
      * Prepares for sending the response.
+	 * 默认的实现，就是把data成员转换给content成员，然后设置头字段
      * The default implementation will convert [[data]] into [[content]] and set headers accordingly.
      * @throws InvalidConfigException if the formatter for the specified format is invalid or [[format]] is not supported
      */
     protected function prepare()
     {
+		//不处理流数据
         if ($this->stream !== null) {
             return;
         }
-
+		//格式工具类是否在列表里（列表里默认是那四种类型，且response模式是HTML的）
         if (isset($this->formatters[$this->format])) {
             $formatter = $this->formatters[$this->format];
+			//依赖注入方式实例化这个格式工具类
             if (!is_object($formatter)) {
                 $this->formatters[$this->format] = $formatter = Yii::createObject($formatter);
             }
+			//得是这个接口的实现类才行，否则报异常！
             if ($formatter instanceof ResponseFormatterInterface) {
                 $formatter->format($this);
             } else {
                 throw new InvalidConfigException("The '{$this->format}' response formatter is invalid. It must implement the ResponseFormatterInterface.");
             }
+		//是否是FORMAT_RAW格式的
         } elseif ($this->format === self::FORMAT_RAW) {
             if ($this->data !== null) {
+				//这种格式，无需做格式处理，直接赋值即可。
                 $this->content = $this->data;
             }
         } else {
             throw new InvalidConfigException("Unsupported response format: {$this->format}");
         }
-
+	
+		//是数组的话，那不行，必须是字符串。
         if (is_array($this->content)) {
             throw new InvalidParamException('Response content must not be an array.');
+		//如果是对象的话，是否存在__toString魔术方法。不行的话也报异常。
         } elseif (is_object($this->content)) {
             if (method_exists($this->content, '__toString')) {
                 $this->content = $this->content->__toString();
@@ -1221,5 +1247,6 @@ class Response extends \yii\base\Response
                 throw new InvalidParamException('Response content must be a string or an object implementing __toString().');
             }
         }
+		//		总之,content得是字符串才行。
     }
 }
