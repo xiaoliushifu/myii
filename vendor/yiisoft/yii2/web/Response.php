@@ -797,7 +797,7 @@ class Response extends \yii\base\Response
         }
     }
 
-    /**
+    /**略过
      * Sends existing file to a browser as a download using x-sendfile.
      *
      * X-Sendfile is a feature allowing a web application to redirect the request for a file to the webserver
@@ -920,15 +920,18 @@ class Response extends \yii\base\Response
     }
 
     /**
+	 * 重定向浏览器到指定的URL
      * Redirects the browser to the specified URL.
      *
+	 * 该方法其实就是给当前的response增加一个Location头部字段。注意，只是增加一个头部字段，到send()方法时
      * This method adds a "Location" header to the current response. Note that it does not send out
+	 * 才真正发送http响应。下面给出了使用重定向的几个例子：
      * the header until [[send()]] is called. In a controller action you may use this method as follows:
      *
      * ```php
      * return Yii::$app->getResponse()->redirect($url);
      * ```
-     *
+     * 如果在其他情况下，你想立即重定向，那就直接调用send()方法就是了。
      * In other places, if you want to send out the "Location" header immediately, you should use
      * the following code:
      *
@@ -936,15 +939,17 @@ class Response extends \yii\base\Response
      * Yii::$app->getResponse()->redirect($url)->send();
      * return;
      * ```
-     *
+     * 如果是AJAX模式，正常情况下Location对ajax是无效的，需要客户端的一些JS代码的协助才行。
      * In AJAX mode, this normally will not work as expected unless there are some
+	 * 此种情况下，服务端就应该发送X-Redirect头字段给客户端，而不是网页的Location字段。
      * client-side JavaScript code handling the redirection. To help achieve this goal,
      * this method will send out a "X-Redirect" header instead of "Location".
-     *
+     * Yii框架提供的yii.js里有段js代码可以处理服务端返回X-Redirect的情况。
      * If you use the "yii" JavaScript module, it will handle the AJAX redirection as
+	 * 当然，如果你自己不用yii.js的话，也简单，自己写点js代码就行了。
      * described above. Otherwise, you should write the following JavaScript code to
      * handle the redirection:
-     *
+     * ajax完成重定向的js代码，就是这两行了，简单不？
      * ```javascript
      * $document.ajaxComplete(function (event, xhr, settings) {
      *     var url = xhr && xhr.getResponseHeader('X-Redirect');
@@ -953,39 +958,50 @@ class Response extends \yii\base\Response
      *     }
      * });
      * ```
-     *
+     * $url  第一个参数。可以是字符串或者数组，表示重定向的地址。有下面几种情况：
      * @param string|array $url the URL to be redirected to. This can be in one of the following formats:
      *
+	 *  1 全部域名的字符串
      * - a string representing a URL (e.g. "http://example.com")
+	 *  2 URL别名
      * - a string representing a URL alias (e.g. "@example.com")
+	 *  3 一个数组，元素1是路由，后续元素是键值对，比如['site/index', 'ref' => 1]
      * - an array in the format of `[$route, ...name-value pairs...]` (e.g. `['site/index', 'ref' => 1]`).
+	 * 注意，路由是关于整个应用的（with respect to),而不是相对于一个控制器或模块
      *   Note that the route is with respect to the whole application, instead of relative to a controller or module.
+	 *   Url::to快捷方式，将会把数组格式转换为最终的URL
      *   [[Url::to()]] will be used to convert the array into a URL.
      *
+	 * 任何相对的URL都会转换为一个绝对的URL地址，这是通过在前面增加当前请求的host信息实现的
      * Any relative URL will be converted into an absolute one by prepending it with the host info
      * of the current request.
-     *
+     * $statusCode http响应的状态码，默认是302
      * @param int $statusCode the HTTP status code. Defaults to 302.
-     * See <http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html>
+     * See <http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html>  w3上有关http响应码的解释
      * for details about HTTP status code
+	 * $checkAjax   是否处理AJAX (PJAX）请求，默认是true.
      * @param bool $checkAjax whether to specially handle AJAX (and PJAX) requests. Defaults to true,
+	 * 意味着 如果当前请求是AJAX或着PJAX，那么仍然可以实现跳转。
      * meaning if the current request is an AJAX or PJAX request, then calling this method will cause the browser
+	 * 如果是false的话，将肯定返回Location相关的响应头。如果是ajax请求的话，此时跳转就无效了。
      * to redirect to the given URL. If this is false, a `Location` header will be sent, which when received as
      * an AJAX/PJAX response, may NOT cause browser redirection.
+	 * 客户端浏览器的请求里没有IE浏览器特有的X-Ie-Redirect-Compatibility时，跳转才有效！
      * Takes effect only when request header `X-Ie-Redirect-Compatibility` is absent.
      * @return $this the response object itself
      */
     public function redirect($url, $statusCode = 302, $checkAjax = true)
     {
         if (is_array($url) && isset($url[0])) {
-            // ensure the route is absolute
+            // ensure the route is absolute，确保左边有一个斜杠"/"，左斜杠就是绝对路径，因为左斜杠代表根目录。
             $url[0] = '/' . ltrim($url[0], '/');
         }
+		//用Url一个快捷方法去解析$url参数，可以解析数组或者字符串。最终返回一个字符串。
         $url = Url::to($url);
         if (strpos($url, '/') === 0 && strpos($url, '//') !== 0) {
             $url = Yii::$app->getRequest()->getHostInfo() . $url;
         }
-
+		//是否检测ajax请求，据此返回ajax可以处理的跳转头部
         if ($checkAjax) {
             if (Yii::$app->getRequest()->getIsAjax()) {
                 if (Yii::$app->getRequest()->getHeaders()->get('X-Ie-Redirect-Compatibility') !== null && $statusCode === 302) {
@@ -1003,29 +1019,33 @@ class Response extends \yii\base\Response
         } else {
             $this->getHeaders()->set('Location', $url);
         }
-
+		//设置响应状态码。
         $this->setStatusCode($statusCode);
 
         return $this;
     }
 
     /**
+	 * 刷新当前页面
      * Refreshes the current page.
+	 * 该方法的作用，跟用户在客户端点击刷新按钮是一个功能。（不是提交数据的post，一般是get方式）
      * The effect of this method call is the same as the user pressing the refresh button of his browser
      * (without re-posting data).
-     *
+     * 在控制器的action里，看下面使用刷新功能的例子：
      * In a controller action you may use this method like this:
      *
      * ```php
      * return Yii::$app->getResponse()->refresh();
      * ```
-     *
+     * 有一个参数$anchor，是一个添加到刷新URL的锚。
      * @param string $anchor the anchor that should be appended to the redirection URL.
+	 * 默认是空，请注意锚的语法，以'#开头'
      * Defaults to empty. Make sure the anchor starts with '#' if you want to specify it.
      * @return Response the response object itself
      */
     public function refresh($anchor = '')
     {
+		//所谓刷新，其实还是一个重定向而已，只不过重定向的URL还是跟当前请求的URL是一样的。
         return $this->redirect(Yii::$app->getRequest()->getUrl() . $anchor);
     }
 
