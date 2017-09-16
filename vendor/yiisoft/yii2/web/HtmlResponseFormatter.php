@@ -36,6 +36,8 @@ class HtmlResponseFormatter extends Component implements ResponseFormatterInterf
         }
         $response->getHeaders()->set('Content-Type', $this->contentType);
         if ($response->data !== null) {
+            //data直接赋值给content成员属性，难道不检查字符串吗，万一是数组啥的呢？
+            //这里其实不判断格式正确与否，而是交给上层去处理
             $response->content = $response->data;
         }
     }

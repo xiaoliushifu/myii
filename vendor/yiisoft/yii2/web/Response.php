@@ -1201,7 +1201,7 @@ class Response extends \yii\base\Response
     }
 
     /**
-	 * 准备发送请求。准备？
+	 * 准备发送请求。准备？。涉及这么几个处理  1format格式化，没了
      * Prepares for sending the response.
 	 * 默认的实现，就是把data成员转换给content成员，然后设置头字段
      * The default implementation will convert [[data]] into [[content]] and set headers accordingly.
