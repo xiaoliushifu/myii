@@ -322,11 +322,15 @@ class View extends Component
      */
     public function renderPhpFile($_file_, $_params_ = [])
     {
+        //开启输出缓存阀门
         ob_start();
+        //关闭绝对输出选项
         ob_implicit_flush(false);
+        //析出关联数组的下标为变量，覆盖已有的变量符号表
         extract($_params_, EXTR_OVERWRITE);
         require($_file_);
 
+        //取得所有输出缓存区的内容，然后清空并关闭输出缓存阀门
         return ob_get_clean();
     }
 

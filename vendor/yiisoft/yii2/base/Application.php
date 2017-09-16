@@ -233,7 +233,9 @@ abstract class Application extends Module
     public function __construct($config = [])
     {
         Yii::$app = $this;
-        static::setInstance($this);//把自己$this放到自己的静态属性中
+        //把自己$this,通过Module继承而来的静态方法放到自己的静态属性Loadmodules中，
+        //webApp属于（Module)模块的一种
+        static::setInstance($this);
 
         $this->state = self::STATE_BEGIN;
         //设置路径，路径别名，配置容器类container属性，
@@ -261,7 +263,7 @@ abstract class Application extends Module
      * 还确定了时区，利用date_default_timezone_set()
      * 设置了容器静态类的属性（如果有的话）
      * 以上的设置都是设置完之后unset
-     * populate(填充了)几个核心组件（写死在base\Application基类里的）
+     * populate(填充了)几个核心组件（这些组件写死在base\Application基类里的）
      */
     public function preInit(&$config)
     {
@@ -448,6 +450,7 @@ abstract class Application extends Module
             $this->trigger(self::EVENT_AFTER_REQUEST);
 
             $this->state = self::STATE_SENDING_RESPONSE;
+            //最终调用send方法，完成内容的发送,如果之前已经sent，则不会再次输出。
             $response->send();
 
             $this->state = self::STATE_END;
