@@ -213,9 +213,95 @@ class SiteController extends Controller
             return $this->render('entry',['model'=>$m]);
         }
     }
+    //测试独立视图，没有layout文件
     public function actionMsg()
     {
             var_dump(Yii::$app->request->getcookies());
             return $this->render('/Message/msg');
     }
+    
+    //响应为下载文件
+    public function actionFile()
+     {
+       $filename='d1.txt';
+/** ==============下面是用firebug抓取到的，下载d1.txt时的响应头部==============
+HTTP/1.1 200 OK
+Date: Sat, 16 Sep 2017 23:50:55 GMT
+Server: Apache/2.4.23 (Win64)
+Pragma: public
+Accept-Ranges: bytes
+Expires: 0
+Cache-Control: must-revalidate, post-check=0, pre-check=0
+Content-Disposition: attachment; filename="d1.txt"
+Content-Length: 11
+Keep-Alive: timeout=5, max=100
+Connection: Keep-Alive
+Content-Type: text/plain;charset=UTF-8
+*/
+ /**================下面就是响应内容===============
+This is NO.
+  */
+        $filename='test.mkv';
+ /*该文件大概19M。由于Response的分块大小默认是8M，故会分三次echo和flush()。但是filebug只抓取到一个完整的19M大小的http响应
+这就说明，在web服务器端可以汇总后然后一并发送给浏览器吗？
+应该这样理解：虽然会分三次echo和flush，但是Yii框架却只使用一个响应头，而不是三个响应头。
+
+刚使用debug走了一遍，使用的是谷歌浏览器。三次echo都是直接到了浏览器。谷歌浏览器底部的下载进度条分别是8,16,19。这说明web服务器并没有汇总，
+在Yii直接echo还没有flush时，就把8M的数据交给web服务器，而web服务器也直接交给浏览器，浏览器就显示进度条。且浏览器标签不再转动。
+注意，echo一次后此时文件流数据尚未发送完毕，故服务端进程继续运行，第二次echo又像上次那样向浏览器发送了8M数据，此时进度条显示16。
+第三次echo时，浏览器不显示进度条了，直接显示下载完成。但是服务端PHP程序尚未结束，Yii会继续flush,执行shutdown函数，打日志。最终结束本次PHP进程。
+浏览器是如何计算进度条的呢？因为header是先发送的，且header中有Content-Length。浏览器应该会计算响应实体的数据量与这个Content-Length的比例吧。
+从网络协议来说，http响应是分三次发送到客户端的，可见一次完整的http响应到底分几次（发送几个响应网络包数据）是看数据量的大小才能决定的，因为网络
+数据包一次发送的数据量的大小是有上限的，IP是1500大小的限制（可以调小些）,TCP是1460？
+刚又换FIleFox浏览器测试了一下，效果跟谷歌浏览器一样，也是每次echo都到了浏览器端，有进度条显示。并未抓取到三个包。
+如果想测试看到抓包效果，用别的工具才行吧。
+IP可以分片（拆包），tcp是端到端。所以，理论上可以断定：这个debug下载文件的过程，从网络协议上来说，
+    就是一次TCP连接，多个IP包，不止3个IP包,因为一个8M大小的数据量，一个ip包肯定不够。
+*/
+
+/**===================下面是filebug 下载test.mkv的响应头的原始信息==============
+HTTP/1.1 200 OK
+Date: Sun, 17 Sep 2017 00:22:25 GMT
+Server: Apache/2.4.23 (Win64)
+Pragma: public
+Accept-Ranges: bytes
+Expires: 0
+Cache-Control: must-revalidate, post-check=0, pre-check=0
+Content-Disposition: attachment; filename="test.mkv"
+Content-Length: 19950833
+Keep-Alive: timeout=5, max=100
+Connection: Keep-Alive
+Content-Type: video/x-matroska
+
+=====================断点续传后，Yii这边的响应头信息==================
+在服务端echo一次后，此时浏览器的进度条是8M,于是在浏览器下载进度条上点击暂停。但是服务端继续echo剩下的11M（因浏览器此时是暂停状态，故这11M数据应该被浏览器丢弃了吧）
+服务器端应该不知道浏览器拒收了吧？会知道吗？略过。此时服务端进程也结束了。
+然后，再次点击浏览器的按钮，继续开始下载，此时浏览器就又发送请求了。从debug视图里看到$_SERVER多了一个HTTP_RANGE请求头字段。值为"838808-",这就意味着浏览器已经
+下载了0-838807部分，本次请求是下载从838808开始的部分。下面是针对本次请求，服务端给出的响应。
+2017-09-17 10:31:37 [error][application] Content-Range: bytes 8388608-19950832/19950833
+2017-09-17 10:31:54 [error][application] Pragma: public
+2017-09-17 10:32:24 [error][application] Accept-Ranges: bytes
+2017-09-17 10:32:32 [error][application] Expires: 0
+2017-09-17 10:32:36 [error][application] Cache-Control: must-revalidate, post-check=0, pre-check=0
+2017-09-17 10:32:41 [error][application] Content-Disposition: attachment; filename="test.mkv"
+2017-09-17 10:32:45 [error][application] Content-Type: video/x-matroska
+2017-09-17 10:32:50 [error][application] Content-Length: 11562225
+2017-09-17 10:33:22 [error][application] 8388608
+2017-09-17 10:33:39 [error][application] 3173617
+
+由于是第一次看到断点续传的过程，总结一下：
+Content-Range：8388608-19950832/19950833        对应请求里的       RANGE : 8388608-
+Content-Length: 11562225
+其中8388608-19950832是本次响应给客户端的数据范围，/19950833则是完整文件数据总大小
+11562225 正好是本次响应数据的大小（19950832-8388608+1）
+ */
+        $options = ['inline'=>true];
+         $storagePath = Yii::getAlias('@app/files');
+         // check filename for allowed chars (do not allow ../ to avoid security issue: downloading arbitrary files)
+         if (!preg_match('/^[a-z0-9]+\.[a-z0-9]+$/i', $filename) || !is_file("$storagePath/$filename")) {
+                 throw new \yii\web\NotFoundHttpException('The file does not exists.');
+             }
+        //第一个参数是服务端文件系统的路径，第二个参数是展示给浏览器端的文件名。两者有可能相同
+             return Yii::$app->response->sendFile("$storagePath/$filename", $filename);
+         }
 }

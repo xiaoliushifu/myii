@@ -495,10 +495,10 @@ class Response extends \yii\base\Response
 		//流数据为空，则直接使用echo 输出content就行，简单干脆！
         if ($this->stream === null) {
             echo $this->content;
-
             return;
         }
-		
+		//使用流数据时，就无需data和content了，直接从流数据资源里读取
+		//涉及了一些指针的操作（指针移动，剩余流数据大小，循环分批下载）
 		//重新归零脚本运行的超时时间，与php.ini里的max_execution_time对应。
 		//这里是动态地使用php函数设置，0表示不限制超时时间。
         set_time_limit(0); // Reset time limit for big files
@@ -509,17 +509,19 @@ class Response extends \yii\base\Response
             list ($handle, $begin, $end) = $this->stream;
 			//在$handle关联的资源中，定位指针位置为$begin
             fseek($handle, $begin);
-			//尚未到达文件流数据的末尾，并且，此时指针的位置还未到$end。（ftell是返回当前资源的文件指针位置，fseek是设置当前指针的位置）
+			//尚未到达文件流数据的末尾，并且，此时指针的位置还未到$end。
+			//（ftell是读取当前资源的文件指针位置，fseek是设置(移动）当前指针的位置）
             while (!feof($handle) && ($pos = ftell($handle)) <= $end) {
 				//如果剩余的流数据不够分块大小
                 if ($pos + $chunkSize > $end) {
 					//直接读取剩余部分就是。
                     $chunkSize = $end - $pos + 1;
                 }
-				//按照此时$chunkSize指定的数据量，读取流数据，并输出。也就是说，本次输出不是我们自己用代码编写的内容，而是从某个文件中读取内容
-				//作为http响应内容发送给客户端，真是太棒了，还支持从外界读取。
+				//按照此时$chunkSize指定的数据量，读取流数据，并输出。也就是说，本次输出不是我们自己用content，而是从某个文件中读取内容
+				//作为http响应内容发送给客户端
+				//默认的8M已经不小了，故web服务器应该不会缓存，而是直接转给浏览器客户端的
                 echo fread($handle, $chunkSize);
-				//立即释放PHP脚本所有的输出缓存给Web服务器,注意，是释放php级别的缓存。可以释放php因输出缓存而占据的一部分内存。
+				//立即释放PHP脚本所有的输出缓存给Web服务器,注意，是释放php级别的缓存，据说可以释放php中【输出缓存机制】占据的一部分内存。
 				//但理解尚不深。
                 flush(); // Free up memory. Otherwise large files will trigger PHP's memory limit.
             }
@@ -564,7 +566,7 @@ class Response extends \yii\base\Response
      *     return Yii::$app->response->sendFile("$storagePath/$filename", $filename);
      * }
      * ```
-     * $filePath  是文件系统的路径，从该路径下寻找要发送的文件
+     * $filePath  是文件系统的绝对路径，从该路径下寻找要发送的文件
      * @param string $filePath the path of the file to be sent.
 	 * $attachmentName   展示给浏览器的文件名（也许在服务端文件系统里存在的文件名与此不同，也许相同），如果不给出这个名字，则由$filePath决定。
      * @param string $attachmentName the file name shown to the user. If null, it will be determined from `$filePath`.
@@ -690,7 +692,7 @@ class Response extends \yii\base\Response
             $fileSize = $options['fileSize'];
         } else {
 			//首先移动到文件尾，注意查看手册。第三个参数SEEK_END，是说从文件末尾参考偏移量。第二个参数就是偏移量。这里是0。
-			//所以，就是说距离文件末尾偏移量为0的地方，岂不是文件末尾吗？
+			//所以，就是说距离文件末尾偏移量为0（就是不偏移呗）的地方，岂不是移动到文件末尾吗？
             fseek($handle, 0, SEEK_END);
 			//然后读取此时指针的位置，就是流资源的数据大小了。这样解释明白吗？
             $fileSize = ftell($handle);
@@ -714,7 +716,7 @@ class Response extends \yii\base\Response
 		//去设置有关下载的一些http响应头
         $mimeType = isset($options['mimeType']) ? $options['mimeType'] : 'application/octet-stream';
         $this->setDownloadHeaders($attachmentName, $mimeType, !empty($options['inline']), $end - $begin + 1);
-		//也是设置这样的格式。有什么用意？
+		//也是设置这样的格式。有什么用意？response组件的响应格式默认是HTML，只在下载时使用FORMAT_RAW
         $this->format = self::FORMAT_RAW;
 		//存储到stream属性中，在send方法里会用得到
         $this->stream = [$handle, $begin, $end];
