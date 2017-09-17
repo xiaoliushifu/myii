@@ -454,7 +454,8 @@ abstract class Application extends Module
             $response->send();
 
             $this->state = self::STATE_END;
-
+            //正常来说，一旦返回就到了入口文件了，也就是说本次http请求就结束了，或者说浏览器请求的目的已经达到。
+            //但是，接下来还有shutdown函数，但这是服务端自己的事了，已经与浏览器无关了，但是保不齐shutdown函数里也可能有echo之类的东西，未尝不可。
             return $response->exitStatus;
 
         } catch (ExitException $e) {
