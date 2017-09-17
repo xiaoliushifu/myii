@@ -61,11 +61,12 @@ class Application extends \yii\base\Application
      * @inheritdoc
      */
     protected function bootstrap()
-    {//把request组件取出来，就为了设置两个别名吗，是的，这是web\application,不是console\application？
+    {
+        //把request组件取出来，就为了设置两个别名吗，是的，这是web\application,不是console\application。
         $request = $this->getRequest();
         Yii::setAlias('@webroot', dirname($request->getScriptFile()));
         Yii::setAlias('@web', $request->getBaseUrl());
-    //再去引导其他
+        //再去引导其他
         parent::bootstrap();
     }
 
@@ -101,15 +102,18 @@ class Application extends \yii\base\Application
             $this->requestedRoute = $route;
             //从action中的返回的$result
             $result = $this->runAction($route, $params);
+            //如果是个response组件对象，则直接返回。从整个流程来看，这里应该是response组件正式开始工作的地方吧？
+            //之前的地方可能会出现echo,var_dump,print等，但都会因为开启输出缓存机制，而临时存储在php的输出缓存区里，并不是直接交给web服务器
             if ($result instanceof Response) {
                 return $result;
             } else {
+            //否则就找来response组件，填充data成员，开始后续的格式化，header,cookie,content的处理。
                 $response = $this->getResponse();
                 if ($result !== null) {
                     //$result从这里赋值给response的data属性
                     $response->data = $result;
                 }
-
+                //无论如何，不是返回字符串，而是response组件
                 return $response;
             }
         } catch (InvalidRouteException $e) {
