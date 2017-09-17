@@ -481,10 +481,14 @@ class View extends Component
     }
 
     /**
+     * 标记一个页面的开始，不是缓存功能，但也能干缓存的事。
+     * 一般在整个页面的起始位置（因为页面被视图文件拆分，经检查该代码在layouts/html.php的起始位置）
      * Marks the beginning of a page.
      */
     public function beginPage()
     {
+        //开启一个输出缓存阀门（与其他ob_start互不干扰，各个ob_start是栈数据结构，不是队列数据结构）
+        //这样就解释了，为什么一般在action中使用echo,var_dump什么的，都不会立即输出，而是程序结束才会输出。
         ob_start();
         ob_implicit_flush(false);
 
@@ -492,11 +496,14 @@ class View extends Component
     }
 
     /**
+     * 标记一个页面的结束。
+     * 一般在整个页面的结束位置（因为页面被视图文件拆分，经检查该代码在layouts/html.php的结束位置）
      * Marks the ending of a page.
      */
     public function endPage()
     {
         $this->trigger(self::EVENT_END_PAGE);
+        //输出缓存区的内容，并关闭本次缓存
         ob_end_flush();
     }
 }
