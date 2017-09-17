@@ -19,6 +19,7 @@ use Yii;
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
+ * 抽象类
  */
 abstract class Request extends Component
 {

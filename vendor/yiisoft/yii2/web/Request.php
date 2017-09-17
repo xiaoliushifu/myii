@@ -12,6 +12,7 @@ use yii\base\InvalidConfigException;
 use yii\helpers\StringHelper;
 
 /**
+* Request组件，代表了Http的请求实体
  * The web Request class represents an HTTP request
  *
  * It encapsulates the $_SERVER variable and resolves its inconsistency among different Web servers.
