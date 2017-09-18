@@ -14,12 +14,14 @@ use yii\widgets\ContentDecorator;
 use yii\widgets\FragmentCache;
 
 /**
+ * View组件在MVC模式里代表视图对象
  * View represents a view object in the MVC pattern.
- *
+ * View组件提供了一系列的方法，比如render()来渲染视图（文件）
  * View provides a set of methods (e.g. [[render()]]) for rendering purpose.
- *
+ * 详情请看看guide
  * For more details and usage information on View, see the [guide article on views](guide:structure-views).
  *
+ * $viewFile 当前正被渲染的视图文件，false表示当前没有视图文件被渲染，只读。
  * @property string|bool $viewFile The view file currently being rendered. False if no view file is being
  * rendered. This property is read-only.
  *
@@ -28,7 +30,7 @@ use yii\widgets\FragmentCache;
  */
 class View extends Component
 {
-    /**
+    /**开始先是四个事件
      * @event Event an event that is triggered by [[beginPage()]].
      */
     const EVENT_BEGIN_PAGE = 'beginPage';
@@ -46,16 +48,19 @@ class View extends Component
     const EVENT_AFTER_RENDER = 'afterRender';
 
     /**
+	* 上下文对象，renderFile()被调用时，所处的上下文环境
      * @var ViewContextInterface the context under which the [[renderFile()]] method is being invoked.
      */
     public $context;
-    /**
+    /**自定义参数，可以在好几个视图模板里共享
      * @var mixed custom parameters that are shared among view templates.
      */
     public $params = [];
     /**
+	 * 数组，一系列的视图渲染器。由扩展名作为下标，对应的渲染器对象为元素值的数组。
      * @var array a list of available renderers indexed by their corresponding supported file extensions.
      * Each renderer may be a view renderer object or the configuration for creating the renderer object.
+	 * 下面的例子支持Smarty和twig模板引擎
      * For example, the following configuration enables both Smarty and Twig view renderers:
      *
      * ```php
@@ -64,41 +69,47 @@ class View extends Component
      *     'twig' => ['class' => 'yii\twig\ViewRenderer'],
      * ]
      * ```
-     *
+     *如果没有渲染器的话，那么视图文件将视为普通的php文件，转而使用readerPhpFile()方法去渲染。
      * If no renderer is available for the given view file, the view file will be treated as a normal PHP
      * and rendered via [[renderPhpFile()]].
      */
     public $renderers;
     /**
+	* 默认的视图文件的扩展，如果渲染时没有给出视图文件的扩展名，那么就是默认的php。
      * @var string the default view file extension. This will be appended to view file names if they don't have file extensions.
      */
     public $defaultExtension = 'php';
     /**
+	* 主体对象，数组或字符串 。
      * @var Theme|array|string the theme object or the configuration for creating the theme object.
+	 * 没设置，则意味着未启用
      * If not set, it means theming is not enabled.
      */
     public $theme;
     /**
+	* 数组，一系列命名的输出块。下标是块名，值就是块内容。
      * @var array a list of named output blocks. The keys are the block names and the values
+	 * 可以通过beginBlock()和endBlock()来捕获视图文件里的小片段。捕获的小片段在视图文件的其他地方可以重复使用。
      * are the corresponding block content. You can call [[beginBlock()]] and [[endBlock()]]
      * to capture small fragments of a view. They can be later accessed somewhere else
      * through this property.
      */
     public $blocks;
     /**
+	* 不太懂。
      * @var array a list of currently active fragment cache widgets. This property
      * is used internally to implement the content caching feature. Do not modify it directly.
      * @internal
      */
     public $cacheStack = [];
-    /**
+    /**不太懂。
      * @var array a list of placeholders for embedding dynamic contents. This property
      * is used internally to implement the content caching feature. Do not modify it directly.
      * @internal
      */
     public $dynamicPlaceholders = [];
 
-    /**
+    /**当前正被渲染的视图文件，允许同时渲染多个视图，因为一个视图可以在另一个视图里被渲染
      * @var array the view files currently being rendered. There may be multiple view files being
      * rendered at a moment because one view may be rendered within another.
      */
