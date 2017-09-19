@@ -80,7 +80,8 @@ class View extends Component
      */
     public $defaultExtension = 'php';
     /**
-	* 主体对象，数组或字符串 。
+	* 主题，数组或字符串，表示主题对象或者主题对象的配置数组。主题就是一个目录，里面有好多视图，将来可以替换非主题的内容，
+	* 从而保留主题的内容，有多个子目录就有多个主题
      * @var Theme|array|string the theme object or the configuration for creating the theme object.
 	 * 没设置，则意味着未启用
      * If not set, it means theming is not enabled.
@@ -122,6 +123,7 @@ class View extends Component
     public function init()
     {
         parent::init();
+		//确定主题
         if (is_array($this->theme)) {
             if (!isset($this->theme['class'])) {
                 $this->theme['class'] = 'yii\base\Theme';
@@ -133,17 +135,25 @@ class View extends Component
     }
 
     /**
+	* 渲染视图
      * Renders a view.
-     *
+     * 被渲染的视图，可以是以下情况之一
      * The view to be rendered can be specified in one of the following formats:
-     *
+     * 1 路径别名,比如"@app/views/site/index"
      * - path alias (e.g. "@app/views/site/index");
+	 * 2 该应用的视图目录的绝对路径。 视图名字以双斜线开始。比如"//site/index"。则表示  basic/views/site/index.php
      * - absolute path within application (e.g. "//site/index"): the view name starts with double slashes.
+	 * 实际的视图文件将从$app::viewPath()方法返回的应用视图路径里寻找。
      *   The actual view file will be looked for under the [[Application::viewPath|view path]] of the application.
+	 * 3 当前模块的绝对路径，比如"/site/index",这种以一个斜线开始。
      * - absolute path within current module (e.g. "/site/index"): the view name starts with a single slash.
+	 *   实际的视图文件将从当前模块的视图路径中寻找 [[Module::viewPath|view path]] 和 [[Controller::module|current module]]两个方法确定
      *   The actual view file will be looked for under the [[Module::viewPath|view path]] of the [[Controller::module|current module]].
+	    4 相对视图，比如只一个"index"。既不是以斜线开始，也不是以"@"号开始。
      * - relative view (e.g. "index"): the view name does not start with `@` or `/`. The corresponding view file will be
+	 *   这种视图文件将从[[ViewContextInterface::getViewPath()|view path]]给出的路径里寻找
      *   looked for under the [[ViewContextInterface::getViewPath()|view path]] of the view `$context`.
+	 *    如果$context上下文没有给出，则使用当前被渲染的其他视图的路径。这种情况一般发生在在另一个视图里渲染又一个视图。
      *   If `$context` is not given, it will be looked for under the directory containing the view currently
      *   being rendered (i.e., this happens when rendering a view within another view).
      *
@@ -159,7 +169,9 @@ class View extends Component
      */
     public function render($view, $params = [], $context = null)
     {
+		//根据上下文参数（第二个参数）找到视图文件
         $viewFile = $this->findViewFile($view, $context);
+		//绝对路径到这个方法里去渲染
         return $this->renderFile($viewFile, $params, $context);
     }
 
