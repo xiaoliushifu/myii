@@ -156,16 +156,22 @@ class View extends Component
 	 *    如果$context上下文没有给出，则使用当前被渲染的其他视图的路径。这种情况一般发生在在另一个视图里渲染又一个视图。
      *   If `$context` is not given, it will be looked for under the directory containing the view currently
      *   being rendered (i.e., this happens when rendering a view within another view).
-     *
+     * 
+	 * $view 视图名
      * @param string $view the view name.
+	 * $params 传入视图的参数，键值对。将会在视图文件中析出（extract())函数，然后在视图文件中可以使用
      * @param array $params the parameters (name-value pairs) that will be extracted and made available in the view file.
+	 * $context  上下文对象。分配到视图中，在视图中通过context可以访问到。
      * @param object $context the context to be assigned to the view and can later be accessed via [[context]]
+	 * 如果这个上下文实现[[ViewContextInterface]]接口，还可以根据视图名定位视图的路径
      * in the view. If the context implements [[ViewContextInterface]], it may also be used to locate
      * the view file corresponding to a relative view name.
      * @return string the rendering result
+	 * 视图未找到的异常
      * @throws ViewNotFoundException if the view file does not exist.
+	 * 无效调用，当视图不可解析时报异常
      * @throws InvalidCallException if the view cannot be resolved.
-     * @see renderFile()
+     * @see renderFile() 详情参考renderFile()
      */
     public function render($view, $params = [], $context = null)
     {
@@ -176,62 +182,83 @@ class View extends Component
     }
 
     /**
+	 * 根据视图文件名，找到视图文件的绝对路径。
      * Finds the view file based on the given view name.
+	 * 
+	 * $view 视图名 或者视图文件的路径别名。请参考[[render()]]方法学习如何设置这个参数
      * @param string $view the view name or the path alias of the view file. Please refer to [[render()]]
      * on how to specify this parameter.
+	 * 
      * @param object $context the context to be assigned to the view and can later be accessed via [[context]]
      * in the view. If the context implements [[ViewContextInterface]], it may also be used to locate
      * the view file corresponding to a relative view name.
-     * @return string the view file path. Note that the file may not exist.
+	 * 
+	 * 视图文件的路径，也许这个文件根本就不存在。
+     * @return string the view file path. Note that the file may not exist.   仅仅返回字符串，并不检验是否在文件系统里存在。
      * @throws InvalidCallException if a relative view name is given while there is no active context to
      * determine the corresponding view file.
      */
     protected function findViewFile($view, $context = null)
     {
+		//别名形式的，就去解析别名，获得文件系统绝对路径
         if (strncmp($view, '@', 1) === 0) {
             // e.g. "@app/views/main"
             $file = Yii::getAlias($view);
+		//两斜杠开始的，就从mvc的视图目录，
         } elseif (strncmp($view, '//', 2) === 0) {
             // e.g. "//layouts/main"
             $file = Yii::$app->getViewPath() . DIRECTORY_SEPARATOR . ltrim($view, '/');
+		//单斜杠开始的视图名
         } elseif (strncmp($view, '/', 1) === 0) {
             // e.g. "/site/index"
+			//当前控制器的模块所在视图目录
             if (Yii::$app->controller !== null) {
                 $file = Yii::$app->controller->module->getViewPath() . DIRECTORY_SEPARATOR . ltrim($view, '/');
             } else {
                 throw new InvalidCallException("Unable to locate view file for view '$view': no active controller.");
             }
+		//$view都不符合上述三种情况，则根据$context上下文对象取得视图目录
         } elseif ($context instanceof ViewContextInterface) {
             $file = $context->getViewPath() . DIRECTORY_SEPARATOR . $view;
+		//再或者，根据getViewFile方法返回的路径决定
         } elseif (($currentViewFile = $this->getViewFile()) !== false) {
             $file = dirname($currentViewFile) . DIRECTORY_SEPARATOR . $view;
         } else {
             throw new InvalidCallException("Unable to resolve view file for view '$view': no active view context.");
         }
-
+		//有扩展名，则直接返回
         if (pathinfo($file, PATHINFO_EXTENSION) !== '') {
             return $file;
         }
+		//没有扩展名的，就加上默认的扩展，由defaultExtension成员指定
         $path = $file . '.' . $this->defaultExtension;
+		//如果defaultExtension成员不是php，文件也不对，那就再加上php。有可能是a.ddd.php这种情况。
         if ($this->defaultExtension !== 'php' && !is_file($path)) {
             $path = $file . '.php';
         }
-
+		//终于可以返回了。
         return $path;
     }
 
     /**
+	 * 
+	 * 渲染一个视图文件
      * Renders a view file.
      *
+	 * 如果主题开启（非null),那么尽可能渲染视图的主题版本。
      * If [[theme]] is enabled (not null), it will try to render the themed version of the view file as long
      * as it is available.
      *
+	 * 该方法会调用localize来本地化视图文件，什么叫本地化？有些视图难道是远程的？
      * The method will call [[FileHelper::localize()]] to localize the view file.
      *
+	 * 如果渲染器可用，那么使用渲染器渲染视图文件
      * If [[renderers|renderer]] is enabled (not null), the method will use it to render the view file.
+	 * 不然，就当做正常的php文件，require过来，捕获视图文件的输出然后以字符串的形式返回。
      * Otherwise, it will simply include the view file as a normal PHP file, capture its output and
      * return it as a string.
      *
+	 * $viewFile  视图文件名，可用是一个绝对路径也可以是一个别名
      * @param string $viewFile the view file. This can be either an absolute file path or an alias of it.
      * @param array $params the parameters (name-value pairs) that will be extracted and made available in the view file.
      * @param object $context the context that the view should use for rendering the view. If null,
@@ -242,26 +269,32 @@ class View extends Component
     public function renderFile($viewFile, $params = [], $context = null)
     {
         $viewFile = Yii::getAlias($viewFile);
-
+		
+		//有主题就应用主题
         if ($this->theme !== null) {
             $viewFile = $this->theme->applyTo($viewFile);
         }
         if (is_file($viewFile)) {
+            //本地化，就是相对于国际化，同一个视图，在中国是zh-cn目录下,在美国就是en-US目录下
+			//所以，对于公司内部用的项目来说，暂无用。
             $viewFile = FileHelper::localize($viewFile);
         } else {
             throw new ViewNotFoundException("The view file does not exist: $viewFile");
         }
-
+		//保存旧的上下文
         $oldContext = $this->context;
+		//使用本次参数传递的上下文对象
         if ($context !== null) {
             $this->context = $context;
         }
         $output = '';
         $this->_viewFiles[] = $viewFile;
-
+		//触发一个【渲染前】事件
         if ($this->beforeRender($viewFile, $params)) {
             Yii::trace("Rendering view file: $viewFile", __METHOD__);
+			//获得视图文件的扩展名
             $ext = pathinfo($viewFile, PATHINFO_EXTENSION);
+			//是否有对应扩展名的渲染器【模板引擎】，因为每个渲染器都有自己独特的视图文件的扩展名
             if (isset($this->renderers[$ext])) {
                 if (is_array($this->renderers[$ext]) || is_string($this->renderers[$ext])) {
                     $this->renderers[$ext] = Yii::createObject($this->renderers[$ext]);
@@ -270,8 +303,10 @@ class View extends Component
                 $renderer = $this->renderers[$ext];
                 $output = $renderer->render($this, $viewFile, $params);
             } else {
+                //目前都是没有使用渲染器的，直接走这个
                 $output = $this->renderPhpFile($viewFile, $params);
             }
+			//触发一个【渲染后】事件
             $this->afterRender($viewFile, $params, $output);
         }
 
@@ -331,17 +366,20 @@ class View extends Component
     }
 
     /**
+     * 把视图看做是php脚本来渲染
      * Renders a view file as a PHP script.
      *
+     *该方法把视图文件看做php脚本。包含进来这个文件，析出参数，
      * This method treats the view file as a PHP script and includes the file.
      * It extracts the given parameters and makes them available in the view file.
+     * 捕获包含进来的视图文件的输出，作为字符串返回。
      * The method captures the output of the included view file and returns it as a string.
      *
      * This method should mainly be called by view renderer or [[renderFile()]].
      *
-     * @param string $_file_ the view file.
-     * @param array $_params_ the parameters (name-value pairs) that will be extracted and made available in the view file.
-     * @return string the rendering result
+     * @param string $_file_ the view file.  视图文件
+     * @param array $_params_ the parameters (name-value pairs) that will be extracted and made available in the view file.析出的参数
+     * @return string the rendering result  返回渲染后的结果
      */
     public function renderPhpFile($_file_, $_params_ = [])
     {
