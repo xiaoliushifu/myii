@@ -52,9 +52,13 @@ class Controller extends Component implements ViewContextInterface
      */
     public $defaultAction = 'index';
     /**
+     * null或者字符串或者false。指明用于当前控制器的布局视图名称
      * @var null|string|false the name of the layout to be applied to this controller's views.
+     * 这个属性成员主要影响render()方法的行为
      * This property mainly affects the behavior of [[render()]].
+     * 默认就是null,意味着实际的layout值应该继承自module对象的layout值
      * Defaults to null, meaning the actual layout value should inherit that from [[module]]'s layout value.
+     * false则说明无需应用布局文件
      * If false, no layout will be applied.
      */
     public $layout;
@@ -153,7 +157,7 @@ class Controller extends Component implements ViewContextInterface
         $result = null;
         //过滤器由beforeAction里的beforeAction事件触发而发挥作用
         if ($runAction && $this->beforeAction($action)) {
-            // run the action
+            // run the action，普通视图的渲染，布局视图的渲染完成，基本上就是一个action的结束了。
             $result = $action->runWithParams($params);
 
             $result = $this->afterAction($action, $result);
@@ -379,21 +383,27 @@ class Controller extends Component implements ViewContextInterface
      */
     public function render($view, $params = [])
     {
+        //得到View组件，然后调用其render方法来渲染普通视图
+        //并且增加了第三个参数$this,这就是视图处理过程中的上下文对象，也就是控制器对象
         $content = $this->getView()->render($view, $params, $this);
+        //把渲染普通视图文件后的内容，当做参数传递进来，进而再去渲染布局视图
         return $this->renderContent($content);
     }
 
-    /**
+    /**通过应用一个布局文件来渲染一个静态字符串
      * Renders a static string by applying a layout.
-     * @param string $content the static string being rendered
+     * @param string $content the static string being rendered  $content就是那个静态字符串（刚刚从视图中渲染而来）
+     * 返回的内容，就是渲染布局文件后的结果，布局文件中有$content变量，就是用来替换参数$content的。
      * @return string the rendering result of the layout with the given static string as the `$content` variable.
-     * If the layout is disabled, the string will be returned back.
+     * If the layout is disabled, the string will be returned back.如果布局文件不启用。直接返回$content就行了，不用布局文件
+     * 这，是不是某些ajax返回时无需布局视图，此时就可以直接返回结果，无需再次去寻找布局文件来渲染了。
      * @since 2.0.1
      */
     public function renderContent($content)
     {
         $layoutFile = $this->findLayoutFile($this->getView());
         if ($layoutFile !== false) {
+            //布局视图，也是视图，所以还是继续使用View组件的renderFile方法来渲染呗，注意传递的第二个参数，仅仅就是刚刚普通视图渲染后的结果字符串$content
             return $this->getView()->renderFile($layoutFile, ['content' => $content], $this);
         }
         return $content;
@@ -424,7 +434,7 @@ class Controller extends Component implements ViewContextInterface
         return $this->getView()->renderFile($file, $params, $this);
     }
 
-    /**
+    /**返回View组件，控制器哪里来的View组件，当然也是从$app应用对象而来了
      * Returns the view object that can be used to render views or view files.
      * The [[render()]], [[renderPartial()]] and [[renderFile()]] methods will use
      * this view object to implement the actual view rendering.
@@ -473,22 +483,27 @@ class Controller extends Component implements ViewContextInterface
         $this->_viewPath = Yii::getAlias($path);
     }
 
-    /**
+    /**找到应用的布局文件
      * Finds the applicable layout file.
-     * @param View $view the view object to render the layout file.
-     * @return string|bool the layout file path, or false if layout is not needed.
-     * Please refer to [[render()]] on how to specify this parameter.
+     * @param View $view the view object to render the layout file.   $view是yii\web\view视图对象
+     * @return string|bool the layout file path, or false if layout is not needed.返回字符串(布局文件路径）或布尔false,表示无需布局视图
+     * Please refer to [[render()]] on how to specify this parameter.请参考render方法了解如何传递参数
      * @throws InvalidParamException if an invalid path alias is used to specify the layout.
      */
     public function findLayoutFile($view)
     {
+        //此时控制器的module一般就是yii\web\Application，也就是所谓的$app了
         $module = $this->module;
+        //当前控制器指定了布局文件
         if (is_string($this->layout)) {
             $layout = $this->layout;
+        //默认当前控制器不指定布局文件的话，将是null
         } elseif ($this->layout === null) {
+            //此时将从模块对象（yii\web\Application)上的layout成员属性上找布局文件，如果还没有，就再次向上去找
             while ($module !== null && $module->layout === null) {
                 $module = $module->module;
             }
+            //对basic来说，就是从这里找到的main视图
             if ($module !== null && is_string($module->layout)) {
                 $layout = $module->layout;
             }
@@ -497,18 +512,24 @@ class Controller extends Component implements ViewContextInterface
         if (!isset($layout)) {
             return false;
         }
-
+        //布局视图文件，也有可能是别名
         if (strncmp($layout, '@', 1) === 0) {
             $file = Yii::getAlias($layout);
+        //是以单斜杠开头的路径
         } elseif (strncmp($layout, '/', 1) === 0) {
             $file = Yii::$app->getLayoutPath() . DIRECTORY_SEPARATOR . substr($layout, 1);
         } else {
+            //有了布局视图名，然后根据路径，返回绝对路径（类似于普通视图找路径的逻辑）
+            //布局视图文件是属于整个模块对象的，它将应用于整个模块下的控制器，所以是在模块的方法里找到布局视图文件。
+            //比如，返回内容是：  "D:\wamp64\www\basic\views\layouts\main"
             $file = $module->getLayoutPath() . DIRECTORY_SEPARATOR . $layout;
         }
-
+        //类似地，有扩展名就直接返回（这也说明了，我们完全可以在控制器的操作方法里的最后阶段返回视图时，视图文件的参数，完全可以自带扩展名
+        //还能提高一点性能呢
         if (pathinfo($file, PATHINFO_EXTENSION) !== '') {
             return $file;
         }
+        //加上视图组件成员defaultExtension指明的扩展后缀
         $path = $file . '.' . $view->defaultExtension;
         if ($view->defaultExtension !== 'php' && !is_file($path)) {
             $path = $file . '.php';

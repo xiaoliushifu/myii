@@ -89,7 +89,7 @@ class BaseHtml
     public static $dataAttributes = ['data', 'data-ng', 'ng'];
 
 
-    /**
+    /**编码指定的字符为HTML实体。什么是HTML实体？回忆一下吧。
      * Encodes special characters into HTML entities.
      * The [[\yii\base\Application::charset|application charset]] will be used for encoding.
      * @param string $content the content to be encoded
@@ -101,6 +101,7 @@ class BaseHtml
      */
     public static function encode($content, $doubleEncode = true)
     {
+        //是使用php原生函数htmlspecialchars来实现的
         return htmlspecialchars($content, ENT_QUOTES | ENT_SUBSTITUTE, Yii::$app ? Yii::$app->charset : 'UTF-8', $doubleEncode);
     }
 
