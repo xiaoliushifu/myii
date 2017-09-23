@@ -115,22 +115,26 @@ abstract class Application extends Module
      */
     public $controllerNamespace = 'app\\controllers';
     /**
+     * 应用主体的名字
      * @var string the application name.
      */
     public $name = 'My Application';
     /**
+     * 字符集属性
      * @var string the charset currently used for the application.
      */
     public $charset = 'UTF-8';
     /**
+     * 终端用户使用的语言属性，强烈建议符合IETF语言标签。
      * @var string the language that is meant to be used for end users. It is recommended that you
      * use [IETF language tags](http://en.wikipedia.org/wiki/IETF_language_tag). For example, `en` stands
      * for English, while `en-US` stands for English (United States).
      * en英文，en-US美式英文，zh-CN简体中文，zh中文
-     * @see sourceLanguage
+     * @see sourceLanguage 参考这个
      */
     public $language = 'en-US';
     /**
+     * 应用主体的原语言，主要指的是提示信息和视图文件里写入的文字的语言
      * @var string the language that the application is written in. This mainly refers to
      * the language that the messages and view files are written in.
      * @see language
@@ -146,11 +150,12 @@ abstract class Application extends Module
      * @var string|bool the layout that should be applied for views in this application. Defaults to 'main'.
      * If this is false, layout will be disabled.
      * 布局视图文件，为其他视图中使用。false时将不使用布局视图
+     * 不使用布局时，在返回ajax的响应时非常有用
      */
     public $layout = 'main';
     /**
      * @var string the requested route
-     * 请求路径，含控制器和动作信息
+     * 字符串，请求路径，含控制器和动作信息，如  "stockin/create"
      */
     public $requestedRoute;
     /**
@@ -203,7 +208,7 @@ abstract class Application extends Module
      * - a module ID as specified via [[modules]].
      * - a class name.
      * - a configuration array.
-     *在bootstrap()中，每个组件将会实例化，若某个组件实现了BootstrapInterface接口，还会调用bootstrap方法
+     *在bootstrap()中，每个组件或模块将会实例化，若某个组件实现了BootstrapInterface接口，还会调用其bootstrap方法
      * During the bootstrapping process, each component will be instantiated. If the component class
      * implements [[BootstrapInterface]], its [[BootstrapInterface::bootstrap()|bootstrap()]] method
      * will be also be called.
@@ -219,6 +224,16 @@ abstract class Application extends Module
     public $state;
     /**类名作为下标，模块实例作为值的数组
      * 一系列已经加载了的模块，这里要区别模块和组件
+     * 根据Yii官网所说，这里的模块，应该是包含当前应用主体的子模块
+     * 深入理解模块和应用主体的概念和关系非常重要
+     * 根据我的想法和思考，大概是这样的：
+     * web\Application是应用主体，console\Application也是应用主体，API\Application也是应用主体
+     * 目前想来，就是只有这三种应用主体了
+     * 那么模块呢？模块是一个独立的软件单元，它们就附着在应用主体下，包含MVC目录和其他支持的组件，模块还可以有自己的子模块。说到包含mvc，三个应用主体都有，那应用主体
+     * 岂不是符合模块的概念？不错，从这个角度来看，可以把的应用主体和模块等同起来。（base\Application继承Module可以看出点证据）
+     * 官网也说过，模块就是小应用主体
+     * 我们知道web\Application里可以加载模块，比如gii,rbac等，这些其实是子模块，此时的父模块，就是其应用主体本身而已。
+     * 它俩的区别吧，官网有句话：应用主体可以单独部署，但是模块不可以，必须属于某个应用主体
      * @var array list of loaded modules indexed by their class names.
      */
     public $loadedModules = [];
