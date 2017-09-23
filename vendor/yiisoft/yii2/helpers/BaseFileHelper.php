@@ -97,7 +97,7 @@ class BaseFileHelper
         }
         if ($sourceLanguage === null) {
             $sourceLanguage = Yii::$app->sourceLanguage;
-        }
+        }//基本来说，这俩是一样的，所以无需往下走了
         if ($language === $sourceLanguage) {
             return $file;
         }

@@ -53,7 +53,8 @@ if (YII_ENV_DEV) {
         //'allowedIPs' => ['127.0.0.1', '::1'],
     ];
 
-    $config['bootstrap'][] = 'gii';
+    //用不到就把它去掉
+    //$config['bootstrap'][] = 'gii';
     
     //添加一个模块gii
     $config['modules']['gii'] = [

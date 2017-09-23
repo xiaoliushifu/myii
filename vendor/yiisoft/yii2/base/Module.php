@@ -63,7 +63,7 @@ class Module extends ServiceLocator
      * @var Module the parent module of this module. `null` if this module does not have a parent.
      */
     public $module;
-    /**
+    /**布局文件
      * @var string|bool the layout that should be applied for views within this module. This refers to a view name
      * relative to [[layoutPath]]. If this is not set, it means the layout value of the [[module|parent module]]
      * will be taken. If this is `false`, layout will be disabled within this module.
@@ -287,7 +287,7 @@ class Module extends ServiceLocator
         $this->_viewPath = Yii::getAlias($path);
     }
 
-    /**
+    /**返回布局文件的路径，布局视图文件也是视图，故根基还是从MVC的视图目录下寻找
      * Returns the directory that contains layout view files for this module.
      * @return string the root directory of layout files. Defaults to "[[viewPath]]/layouts".
      */
