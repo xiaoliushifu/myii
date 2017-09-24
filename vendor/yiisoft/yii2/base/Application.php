@@ -9,9 +9,9 @@ namespace yii\base;
 
 use Yii;
 
-/**
+/**Application是所有应用主体的基类
  * Application is the base class for all application classes.
- *
+ *先去官网看看有关应用主体的介绍
  * For more details and usage information on Application, see the [guide article on applications](guide:structure-applications).
  *资源包管理器组件，只读
  * @property \yii\web\AssetManager $assetManager The asset manager application component. This property is
@@ -268,7 +268,7 @@ abstract class Application extends Module
      * Pre-initializes the application.
      * 这个方法在构造方法里的开始
      * This method is called at the beginning of the application constructor.
-     * 它初始化了几个重要的应用属性
+     * 它初始化了几个重要的应用属性（按照官网的说法，这些属于高级属性）
      * It initializes several important application properties.
      * 子类如果覆盖这个方法时，请记得调用父类的方法
      * If you override this method, please make sure you call the parent implementation.
@@ -277,7 +277,7 @@ abstract class Application extends Module
      * 注意，设置的三个路径都不是application而是其父类Module的，比如_basePath,_vendorPath,_runtimePath
      * 还确定了时区，利用date_default_timezone_set()
      * 设置了容器静态类的属性（如果有的话）
-     * 以上的设置都是设置完之后unset
+     * 以上的设置都是设置完之后unset $config
      * populate(填充了)几个核心组件（这些组件写死在base\Application基类里的）
      */
     public function preInit(&$config)
@@ -329,10 +329,15 @@ abstract class Application extends Module
             unset($config['container']);
         }
 
+        //把核心组件和配置文件里的组件合并起来
         // merge core components with custom components
         foreach ($this->coreComponents() as $id => $component) {
+            //配置文件里的组件和核心组件是否重名了，重名的话，优先使用配置文件里的，因为配置文件属于动态的
+            //配置文件就是随时可以更改配置的，而更改核心组件列表就算是更改程序源代码了。虽然实现效果都可以，但是
+            //一般还是在配置文件中做更改，尽量不要动程序源代码，避免合作开发时产生问题。如果自己一个人开发，想干啥就干啥
             if (!isset($config['components'][$id])) {
                 $config['components'][$id] = $component;
+            //组件一定要有class
             } elseif (is_array($config['components'][$id]) && !isset($config['components'][$id]['class'])) {
                 $config['components'][$id]['class'] = $component['class'];
             }
@@ -345,18 +350,21 @@ abstract class Application extends Module
     public function init()
     {
         $this->state = self::STATE_INIT;
+        //开始推土机过程，推土机形象不？
         $this->bootstrap();
     }
 
     /**
-     * 初始化扩展，并执行bootstrap里的组件
+     * 初始化扩展，并执行bootstrap里的组件,这是应用主体启动之初做得事情（比如log组件，gii模块）
      * Initializes extensions and executes bootstrap components.
+     * 该方法在init()里调用，在应用主体配置完成之后调用
      * This method is called by [[init()]] after the application has been fully configured.
+     * 若有覆盖该方法，请确保调用父类的实现
      * If you override this method, make sure you also call the parent implementation.
      */
     protected function bootstrap()
     {
-        //读取组件
+        //读取扩展里的组件
         if ($this->extensions === null) {
             $file = Yii::getAlias('@vendor/yiisoft/extensions.php');
             $this->extensions = is_file($file) ? include($file) : [];
@@ -384,9 +392,10 @@ abstract class Application extends Module
         foreach ($this->bootstrap as $class) {
             $component = null;
             if (is_string($class)) {
+                //官网说明，如果组件和模块同名，那么优先组件。这从代码就能看出来，第一个if分支，比第二个else if分支优先高。
                 if ($this->has($class)) {//服务定位器中是否已注册
                     $component = $this->get($class);//得到这个实例化的组件（其中有服务定位器模式的实现）
-                } elseif ($this->hasModule($class)) {//再看Module中是否有
+                } elseif ($this->hasModule($class)) {//再看Module中是否有（这下看出组件优先级比模块高了吧?)
                     $component = $this->getModule($class);
                 } elseif (strpos($class, '\\') === false) {
                     throw new InvalidConfigException("Unknown bootstrapping component ID: $class");
@@ -407,6 +416,7 @@ abstract class Application extends Module
     }
 
     /**
+     * 注册错误处理器组件，作为项目整体的错误处理器对象
      * Registers the errorHandler component as a PHP error handler.
      * @param array $config application config
      */
@@ -417,14 +427,18 @@ abstract class Application extends Module
                 echo "Error: no errorHandler component is configured.\n";
                 exit(1);
             }
+            //添加一个组件
             $this->set('errorHandler', $config['components']['errorHandler']);
             unset($config['components']['errorHandler']);
+            //取得一个组件，并调用其register()方法
             $this->getErrorHandler()->register();
         }
     }
 
     /**
+     * 返回模块的唯一标识符，在当前应用主体里的所有模块（再次说明模块是依附于应用主体的）
      * Returns an ID that uniquely identifies this module among all modules within the current application.
+     * 由于当前对象是应用主体(不是模块），该方法总是返回''
      * Since this is an application instance, it will always return an empty string.
      * @return string the unique ID of the module.
      */
@@ -434,35 +448,42 @@ abstract class Application extends Module
     }
 
     /**
+     * 设置应用主体的根目录，和@app别名
      * Sets the root directory of the application and the @app alias.
+     * 该方法只在构造函数的开始部分调用一次
      * This method can only be invoked at the beginning of the constructor.
-     * @param string $path the root directory of the application.
+     * @param string $path the root directory of the application.  根目录
      * @property string the root directory of the application.
      * @throws InvalidParamException if the directory does not exist.
      */
     public function setBasePath($path)
     {
+        //在父类Module中设置应用主体的根目录
         parent::setBasePath($path);
+        //全局助手类Yii设置根目录别名
         Yii::setAlias('@app', $this->getBasePath());
     }
 
     /**
+     * 执行应用主体（任务）
      * Runs the application.
+     * 这就是应用主体解析客户端http请求，处理请求，过滤，事件，响应等一系列后续处理的开始
      * This is the main entrance of an application.
+     * 0表示正常结束  非0表示非正常。
      * @return int the exit status (0 means normal, non-zero values mean abnormal)
      */
     public function run()
     {
         try {
 
-            $this->state = self::STATE_BEFORE_REQUEST;//标志状态
-            $this->trigger(self::EVENT_BEFORE_REQUEST);//触发事件call_user_func
+            $this->state = self::STATE_BEFORE_REQUEST;//标志应用主体的状态
+            $this->trigger(self::EVENT_BEFORE_REQUEST);//触发事件beforeRequest,底层使用php原生函数call_user_func
 
             $this->state = self::STATE_HANDLING_REQUEST;
             $response = $this->handleRequest($this->getRequest());
 
             $this->state = self::STATE_AFTER_REQUEST;
-            $this->trigger(self::EVENT_AFTER_REQUEST);
+            $this->trigger(self::EVENT_AFTER_REQUEST);//触发事件afterRequest
 
             $this->state = self::STATE_SENDING_RESPONSE;
             //最终调用send方法，完成内容的发送,如果之前已经sent，则不会再次输出。
@@ -482,11 +503,14 @@ abstract class Application extends Module
     }
 
     /**
+     * 处理http请求
      * Handles the specified request.
-     *
+     *该方法应该返回一个Response实例或其子类
      * This method should return an instance of [[Response]] or its child class
+     * 返回的对象表示请求的处理结果
      * which represents the handling result of the request.
      *
+     *$request  request组件，表示将要处理的http请求
      * @param Request $request the request to be handled
      * @return Response the resulting response
      */
@@ -494,14 +518,15 @@ abstract class Application extends Module
 
     private $_runtimePath;
 
-    /**
+    /**返回runtime目录
      * Returns the directory that stores runtime files.
      * @return string the directory that stores runtime files.
-     * Defaults to the "runtime" subdirectory under [[basePath]].
+     * Defaults to the "runtime" subdirectory under [[basePath]].默认的runtime目录就是BasePath的子目录
      */
     public function getRuntimePath()
     {
         if ($this->_runtimePath === null) {
+            //BasePath是重中之重，好多其他的目录，都是基于它创建
             $this->setRuntimePath($this->getBasePath() . DIRECTORY_SEPARATOR . 'runtime');
         }
 
@@ -509,11 +534,14 @@ abstract class Application extends Module
     }
 
     /**
+     * 设置runtime目录及别名（默认由应用主题启动之初调用，但该方法是public的，故如果修改runtime目录，
+     * 可以在外部直接调用该方法生效
      * Sets the directory that stores runtime files.
      * @param string $path the directory that stores runtime files.
      */
     public function setRuntimePath($path)
     {
+        //可以使用别名来设置runtime目录（不必是文件系统的绝对路径）
         $this->_runtimePath = Yii::getAlias($path);
         Yii::setAlias('@runtime', $this->_runtimePath);
     }
@@ -521,9 +549,10 @@ abstract class Application extends Module
     private $_vendorPath;
 
     /**
+     * 获得vendor路径
      * Returns the directory that stores vendor files.
      * @return string the directory that stores vendor files.
-     * Defaults to "vendor" directory under [[basePath]].
+     * Defaults to "vendor" directory under [[basePath]].默认是basePath子目录
      */
     public function getVendorPath()
     {
@@ -541,14 +570,20 @@ abstract class Application extends Module
     public function setVendorPath($path)
     {
         $this->_vendorPath = Yii::getAlias($path);
+        //vendor路径的别名
         Yii::setAlias('@vendor', $this->_vendorPath);
+        //bower目录别名（bower属于npm的插件，可以安装Jquery,bootstrap等，由twitter开发）
         Yii::setAlias('@bower', $this->_vendorPath . DIRECTORY_SEPARATOR . 'bower');
+        //npm目录的别名（npm是Node的包管理器）
         Yii::setAlias('@npm', $this->_vendorPath . DIRECTORY_SEPARATOR . 'npm');
     }
 
     /**
+     * 返回应用主体使用的时区
      * Returns the time zone used by this application.
+     * 简单地包装了php原生函数date_default_timezone_get()
      * This is a simple wrapper of PHP function date_default_timezone_get().
+     * 如果没有在php.ini或者应用主体配置文件中设置，那么就会设置成UTC
      * If time zone is not configured in php.ini or application config,
      * it will be set to UTC by default.
      * @return string the time zone used by this application.
@@ -560,8 +595,11 @@ abstract class Application extends Module
     }
 
     /**
+     * 设置应用主体的时区
      * Sets the time zone used by this application.
+     * 也是简单地使用php原生函数 date_default_timezone_set()
      * This is a simple wrapper of PHP function date_default_timezone_set().
+     * 可以去php官网查看可用的时区列表
      * Refer to the [php manual](http://www.php.net/manual/en/timezones.php) for available timezones.
      * @param string $value the time zone used by this application.
      * @see http://php.net/manual/en/function.date-default-timezone-set.php
@@ -572,6 +610,7 @@ abstract class Application extends Module
     }
 
     /**
+     * 返回数据库连接组件db，已实例化的对象
      * Returns the database connection component.
      * @return \yii\db\Connection the database connection.
      */
@@ -581,6 +620,7 @@ abstract class Application extends Module
     }
 
     /**
+     * 返回日志组件的实例，组件名是log，实际是dispatcher类。
      * Returns the log dispatcher component.
      * @return \yii\log\Dispatcher the log dispatcher application component.
      */
@@ -590,6 +630,7 @@ abstract class Application extends Module
     }
 
     /**
+     * 返回错误处理器组件实例（web的，console的）
      * Returns the error handler component.
      * @return \yii\web\ErrorHandler|\yii\console\ErrorHandler the error handler application component.
      */
@@ -599,6 +640,7 @@ abstract class Application extends Module
     }
 
     /**
+     * 返回缓存组件，如果组件还未启用（not enabled）则返回null（在组件类里，第二个参数false表示找不到组件时返回null而不是抛出异常）
      * Returns the cache component.
      * @return \yii\caching\Cache the cache application component. Null if the component is not enabled.
      */
@@ -607,7 +649,7 @@ abstract class Application extends Module
         return $this->get('cache', false);
     }
 
-    /**
+    /**返回格式化组件实例，格式化一般用于处理国际化涉及的语言字符，货币符号等
      * Returns the formatter component.
      * @return \yii\i18n\Formatter the formatter application component.
      */
@@ -617,6 +659,7 @@ abstract class Application extends Module
     }
 
     /**
+     * 返回请求组件实例（web的，console的）
      * Returns the request component.
      * @return \yii\web\Request|\yii\console\Request the request component.
      */
@@ -626,6 +669,7 @@ abstract class Application extends Module
     }
 
     /**
+     * 返回响应组件实例（web的，console的）
      * Returns the response component.
      * @return \yii\web\Response|\yii\console\Response the response component.
      */
@@ -635,6 +679,7 @@ abstract class Application extends Module
     }
 
     /**
+     * 返回View组件实例，该实例用来渲染许多视图文件
      * Returns the view object.
      * @return View|\yii\web\View the view application component that is used to render various view files.
      */
@@ -644,6 +689,7 @@ abstract class Application extends Module
     }
 
     /**
+     * 返回URL管理器实例，属于应用主体级别，本身也是个组件
      * Returns the URL manager for this application.
      * @return \yii\web\UrlManager the URL manager for this application.
      */
@@ -652,7 +698,7 @@ abstract class Application extends Module
         return $this->get('urlManager');
     }
 
-    /**
+    /**返回国际化（i18n)组件实例
      * Returns the internationalization (i18n) component
      * @return \yii\i18n\I18N the internationalization application component.
      */
@@ -662,6 +708,7 @@ abstract class Application extends Module
     }
 
     /**
+     * 返回邮件组件实例
      * Returns the mailer component.
      * @return \yii\mail\MailerInterface the mailer application component.
      */
@@ -671,7 +718,9 @@ abstract class Application extends Module
     }
 
     /**
+     * 返回权限管理器组件实例，属于应用主体级别。
      * Returns the auth manager for this application.
+     * 不启用时返回null（第二个参数是false),不是默认的抛异常
      * @return \yii\rbac\ManagerInterface the auth manager application component.
      * Null is returned if auth manager is not configured.
      */
@@ -681,6 +730,7 @@ abstract class Application extends Module
     }
 
     /**
+     * 返回前端资源（Asset)组件实例
      * Returns the asset manager.
      * @return \yii\web\AssetManager the asset manager application component.
      */
@@ -690,6 +740,7 @@ abstract class Application extends Module
     }
 
     /**
+     * 返回安全组件实例
      * Returns the security component.
      * @return \yii\base\Security the security application component.
      */
@@ -699,6 +750,7 @@ abstract class Application extends Module
     }
 
     /**
+     * 返回核心组件列表（一个应用主体必备的几个组件）
      * Returns the configuration of core application components.
      * @see set()
      */
@@ -717,20 +769,27 @@ abstract class Application extends Module
     }
 
     /**
+     * 终止应用主体的运行
      * Terminates the application.
+     * 该方法替代了php原生函数exit(),用来确保应用主体的生命周期走完全程后再终止应用主体的运行
      * This method replaces the `exit()` function by ensuring the application life cycle is completed
+     * （可以理解为软终止，不是强制终止）
      * before terminating the application.
+     * 终止退出码，默认是0，非0表示非正常退出
      * @param int $status the exit status (value 0 means normal exit while other values mean abnormal exit).
+     * 响应实体，如果没有设置的话，默认使用应用主体处理过程中的响应组件
      * @param Response $response the response to be sent. If not set, the default application [[response]] component will be used.
-     * @throws ExitException if the application is in testing mode
+     * @throws ExitException if the application is in testing mode 应用主体运行在测试模式时抛出异常
      */
     public function end($status = 0, $response = null)
     {
+        //切换应用主体状态[为处理完客户端的请求]（不管实际是否处理完客户端请求)
         if ($this->state === self::STATE_BEFORE_REQUEST || $this->state === self::STATE_HANDLING_REQUEST) {
             $this->state = self::STATE_AFTER_REQUEST;
             $this->trigger(self::EVENT_AFTER_REQUEST);
         }
 
+        //还没有到发送响应的状态，并且应用主体还未结束。才能根据响应实例，向客户端发送http响应内容
         if ($this->state !== self::STATE_SENDING_RESPONSE && $this->state !== self::STATE_END) {
             $this->state = self::STATE_END;
             $response = $response ? : $this->getResponse();
@@ -745,8 +804,9 @@ abstract class Application extends Module
     }
 
     /**
+     * 配置全局助手类YII的属性container
      * Configures [[Yii::$container]] with the $config
-     *
+     *这个属性是服务器模式里容器的引用，可以据此实例化应用组件等其他php类，有解析依赖功能（控制反转）
      * @param array $config values given in terms of name-value pairs
      * @since 2.0.11
      */
