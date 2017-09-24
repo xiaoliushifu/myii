@@ -140,7 +140,7 @@ class View extends Component
     }
 
     /**
-	* 渲染视图，这就是从控制器的方法里最后调用的那个render。只不过控制器做了个转接而已
+	* 渲染视图，这就是从控制器的方法里最后调用的那个render。只不过从控制器做了个转接到达这里而已
      * Renders a view.
      * 被渲染的视图，可以是以下情况之一
      * The view to be rendered can be specified in one of the following formats:
@@ -148,7 +148,7 @@ class View extends Component
      * - path alias (e.g. "@app/views/site/index");
 	 * 2 该应用的视图目录的绝对路径。 视图名字以双斜线开始。比如"//site/index"。则表示  basic/views/site/index.php
      * - absolute path within application (e.g. "//site/index"): the view name starts with double slashes.
-	 * 实际的视图文件将从$app::viewPath()方法返回的应用视图路径里寻找。
+	 * 实际的视图文件将从$app::viewPath()方法返回的应用主体的视图路径里寻找。
      *   The actual view file will be looked for under the [[Application::viewPath|view path]] of the application.
 	 * 3 当前模块的绝对路径，比如"/site/index",这种以一个斜线开始。
      * - absolute path within current module (e.g. "/site/index"): the view name starts with a single slash.
@@ -158,7 +158,7 @@ class View extends Component
      * - relative view (e.g. "index"): the view name does not start with `@` or `/`. The corresponding view file will be
 	 *   这种视图文件将从[[ViewContextInterface::getViewPath()|view path]]给出的路径里寻找
      *   looked for under the [[ViewContextInterface::getViewPath()|view path]] of the view `$context`.
-	 *    如果$context上下文没有给出，则使用当前被渲染的其他视图的路径。这种情况一般发生在在另一个视图里渲染又一个视图。
+	 *    如果$context上下文没有给出，则使用当前被渲染的其他视图的路径。这种情况一般发生在在一个视图里渲染另一个视图。
      *   If `$context` is not given, it will be looked for under the directory containing the view currently
      *   being rendered (i.e., this happens when rendering a view within another view).
      * 
@@ -184,7 +184,7 @@ class View extends Component
         //一般就是在视图目录里，和当前控制器名字有关的子目录里。
         //返回的例子可以是:D:\wamp64\www\basic\views\site\index.php
         $viewFile = $this->findViewFile($view, $context);
-		//绝对路径到这个方法里去渲染
+		//找到视图文件的绝对路径后，到这个方法里去渲染
         return $this->renderFile($viewFile, $params, $context);
     }
 
@@ -251,7 +251,7 @@ class View extends Component
 
     /**
 	 * 
-	 * 渲染一个视图文件(从方法里调用，多数是渲染普通视图；从控制器里直接调用，多数就是布局视图）
+	 * 渲染一个视图文件(如果从action里调用，多数是渲染普通视图；从控制器里直接调用，多数就是布局视图）
      * Renders a view file.
      *
 	 * 如果主题开启（非null),那么尽可能渲染视图的主题版本。
@@ -346,6 +346,7 @@ class View extends Component
     }
 
     /**
+     * 执行beforeRender事件。事件对象是继承自Event基类的ViewEvent
      * This method is invoked right before [[renderFile()]] renders a view file.
      * The default implementation will trigger the [[EVENT_BEFORE_RENDER]] event.
      * If you override this method, make sure you call the parent implementation first.
@@ -363,6 +364,7 @@ class View extends Component
         ]);//默认没有绑定事件处理器
         $this->trigger(self::EVENT_BEFORE_RENDER, $event);
 
+        //事件对象的isValid属性默认都是true,故即使没有事件处理器，也是可以正常往后进行下去
         return $event->isValid;
     }
 
@@ -382,7 +384,7 @@ class View extends Component
     public function afterRender($viewFile, $params, &$output)
     {
 		//何时绑定的？是不是默认没有绑定呢？afterRender方法的触发方法非同一般，是直接判断是否有事件处理者，进而再去触发事件；
-		//而我们平时看到的，都是直接去触发（trigger,在trigger中使用行为方式绑定）。为什么要这样呢？这里为啥hasEventHandler呢？
+		//而我们平时看到的，都是直接去触发（trigger,在trigger中使用行为方式绑定事件处理器）。为什么要这样呢？这里为啥hasEventHandler呢？
         if ($this->hasEventHandlers(self::EVENT_AFTER_RENDER)) {
             $event = new ViewEvent([
                 'viewFile' => $viewFile,
