@@ -71,6 +71,7 @@ class Application extends \yii\base\Application
     }
 
     /**
+     * 请求的处理，就是从应用主体的这个方法开始的
      * Handles the specified request.
      * @param Request $request the request to be handled
      * @return Response the resulting response
@@ -80,6 +81,7 @@ class Application extends \yii\base\Application
     {
         if (empty($this->catchAll)) {
             try {
+                //解析请求时，获得原始的路由与请求参数
                 list ($route, $params) = $request->resolve();
             } catch (UrlNormalizerRedirectException $e) {
                 $url = $e->url;

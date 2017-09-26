@@ -205,7 +205,7 @@ class View extends \yii\base\View
     }
 
     /**
-     * 渲染一个视图，作为ajax请求的响应。
+     * 渲染一个视图，作为ajax请求的响应。一般由控制器里调用
      * Renders a view in response to an AJAX request.
      *
      *该方法类似于render方法，有一点不同的是，它将把需要调用beginPage,head,beginBody,endBody,endPage方法的视图收集起来一块调用
