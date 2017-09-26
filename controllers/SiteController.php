@@ -74,6 +74,8 @@ class SiteController extends Controller
     }
 
     /**
+     * 独立动作登记处
+     * 独立动作是error和captcha
      * @inheritdoc
      */
     public function actions()
@@ -144,6 +146,7 @@ class SiteController extends Controller
         //不是我们想到的使用认证User，而是用LoginForm模型，作为中间件和认证User关联
         $model = new LoginForm();
         if ($model->load(Yii::$app->request->post()) && $model->login()) {
+            //使用了web\Controller控制器的方法。其实是Response组件的跳转方法（redirect)快捷方式
             return $this->goBack();
         }
         return $this->render('login', [
@@ -160,6 +163,7 @@ class SiteController extends Controller
     {
         Yii::$app->user->logout();
 
+        //控制器的goHome()方法，其实是Response里redirect()方法的快捷方式
         return $this->goHome();
     }
 
@@ -202,6 +206,27 @@ class SiteController extends Controller
     }
     
     /**
+     * 展示ajax响应的测试,不带布局视图。
+     * 响应头部还是html,没有什么区别
+     * @param string $message
+     */
+    public function actionAjax($msg='One',$id=1)
+    {
+        return $this->renderAjax('/ajax',['msg'=>$msg]);
+    }
+    
+    /**
+     * 展示响应里无需布局视图，和ajax那个区别，倒还没有看出来
+     * 响应头部还是text/html;到没有啥区别
+     * 重点就是没有布局视图。
+     * @param string $message
+     */
+    public function actionPartial($msg='One',$id=1)
+    {
+        return $this->renderPartial('/ajax',['msg'=>$msg]);
+    }
+    
+    /**
      * 
      */
     public function actionEntry()
@@ -214,10 +239,18 @@ class SiteController extends Controller
             return $this->render('entry',['model'=>$m]);
         }
     }
-    //测试独立视图，没有layout文件
+    
+    /**
+     * 
+     * 测试视图文件，视图文件的路径是带有斜杠的
+     * 这种路径是从应用主体的视图目录下找。
+     */
     public function actionMsg()
     {
-            var_dump(Yii::$app->request->getcookies());
+            //var_dump(Yii::$app->request->getcookies());
+            //视图路径，是以单斜杠"/"开始的，则说明从应用主体的viewPath开始。不是控制器的viewPath
+            //对于当前控制器来说，它的模块就是应用主体，故视图前面是一个斜杠"/"，或者两个斜杠"//"。都会从
+            //basic\views\下开始寻找视图
             return $this->render('/Message/msg');
     }
     
