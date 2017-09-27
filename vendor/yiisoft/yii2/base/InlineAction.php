@@ -57,6 +57,7 @@ class InlineAction extends Action
         //打个trace级别的日志
         Yii::trace('Running action: ' . get_class($this->controller) . '::' . $this->actionMethod . '()', __METHOD__);
         if (Yii::$app->requestedParams === null) {
+            //全局保存请求到指定方法的参数
             Yii::$app->requestedParams = $args;
         }
         //用php原生函数call_user_func_array来调用方法，疑惑。
