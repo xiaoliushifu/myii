@@ -522,12 +522,14 @@ class Module extends ServiceLocator
      */
     public function runAction($route, $params = [])
     {
+        //先创建控制器，根据路由创建
         $parts = $this->createController($route);
         if (is_array($parts)) {
             /* @var $controller Controller */
             list($controller, $actionID) = $parts;
             $oldController = Yii::$app->controller;
             Yii::$app->controller = $controller;
+            //控制器在这里接管，开始处理http请求，就到了控制器的天下了
             $result = $controller->runAction($actionID, $params);
             if ($oldController !== null) {
                 Yii::$app->controller = $oldController;

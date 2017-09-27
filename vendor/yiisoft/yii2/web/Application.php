@@ -81,7 +81,7 @@ class Application extends \yii\base\Application
     {
         if (empty($this->catchAll)) {
             try {
-                //解析请求时，获得原始的路由与请求参数
+                //解析请求时，获得原始的路由与请求参数(待学习Request时再细看）
                 list ($route, $params) = $request->resolve();
             } catch (UrlNormalizerRedirectException $e) {
                 $url = $e->url;
@@ -100,9 +100,10 @@ class Application extends \yii\base\Application
             unset($params[0]);
         }
         try {
+            //打个日志
             Yii::trace("Route requested: '$route'", __METHOD__);
             $this->requestedRoute = $route;
-            //从action中的返回的$result
+            //从action中的返回的$result（从这里开始真正处理开始吧？）
             $result = $this->runAction($route, $params);
             //如果是个response组件对象，则直接返回。从整个流程来看，这里应该是response组件正式开始工作的地方吧？
             //之前的地方可能会出现echo,var_dump,print等，但都会因为开启输出缓存机制，而临时存储在php的输出缓存区里，并不是直接交给web服务器

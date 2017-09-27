@@ -130,7 +130,7 @@ class Controller extends Component implements ViewContextInterface
     }
 
     /**
-     * 执行动作方法，根据动作ID和传递的参数
+     * 执行动作方法，根据动作ID和传递的参数（控制器根据路由实例化后，就是以这个方法为入口开始干活的）
      * Runs an action within this controller with the specified action ID and parameters.
      * 如果动作ID为空，则使用默认动作[[defaultAction]].
      * If the action ID is empty, the method will use [[defaultAction]].
@@ -151,11 +151,12 @@ class Controller extends Component implements ViewContextInterface
         Yii::trace('Route to run: ' . $action->getUniqueId(), __METHOD__);
 
         if (Yii::$app->requestedAction === null) {
+            //全局保存当前正在处理的动作对象
             Yii::$app->requestedAction = $action;
         }
         //保存当前action。当前？难道这也有递归不成？
         $oldAction = $this->action;
-        //赋值给当前的控制器
+        //赋值给当前的控制器，动作对象即保存在全局，也保存在所属控制器
         $this->action = $action;
 
         $modules = [];
@@ -259,17 +260,18 @@ class Controller extends Component implements ViewContextInterface
      */
     public function createAction($id)
     {
+        //没有给出动作ID，那么就用默认动作，一般是index
         if ($id === '') {
             $id = $this->defaultAction;
         }
-        //把actions方法自己调用来判断，看来是独立动作优先于行内动作呀
+        //自己调用actions方法，根据结果来判断是独立的还是行内的，看来是独立动作优先于行内动作呀
         $actionMap = $this->actions();
         if (isset($actionMap[$id])) {
             //Yii助手类创建独立动作对象
             return Yii::createObject($actionMap[$id], [$id, $this]);
         //从正则来看，动作ID区分大小写
         } elseif (preg_match('/^[a-z0-9\\-_]+$/', $id) && strpos($id, '--') === false && trim($id, '-') === $id) {
-            //连字符连接的两个单词首字母大写，然后加个action前缀
+            //连字符连接的两个单词首字母大写，然后加个action前缀。equ-deliver=====>EquDeliver
             $methodName = 'action' . str_replace(' ', '', ucwords(implode(' ', explode('-', $id))));
             //方法不再当前的控制器时就返回null
             if (method_exists($this, $methodName)) {
@@ -361,7 +363,7 @@ class Controller extends Component implements ViewContextInterface
     }
 
     /**
-     * 返回当前控制器所属的所有祖先模块
+     * 返回当前控制器所属的所有祖先模块（一般就是web\Application了）
      * Returns all ancestor modules of this controller.
      * 数组里第一个模块就是最外层的（最顶级的模块，一般是应用主体）
      * The first module in the array is the outermost one (i.e., the application instance),
