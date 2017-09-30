@@ -62,7 +62,7 @@ class InlineAction extends Action
         }
         //用php原生函数call_user_func_array来调用方法，疑惑。
         //为什么不直接$this->controller->actionMethod()调用呢？最直观，简单了，为啥不呢？
-        //返回执行方法actionMethod后的返回值
+        //call_user_func_array函数的返回值，就是actionMethod后的返回值
         return call_user_func_array([$this->controller, $this->actionMethod], $args);
     }
 }

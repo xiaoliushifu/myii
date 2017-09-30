@@ -780,7 +780,7 @@ class Component extends Object
             $behavior->attach($this);
             $this->_behaviors[] = $behavior;
         } else {
-			//重名的行为类，后绑定的会覆盖前者
+			//重名的行为类，先解绑旧的，然后再绑新的，最终其实就是覆盖
             if (isset($this->_behaviors[$name])) {
                 $this->_behaviors[$name]->detach();
             }

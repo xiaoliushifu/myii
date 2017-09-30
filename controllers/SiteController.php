@@ -98,7 +98,7 @@ class SiteController extends Controller
      */
     public function actionIndex()
     {
-        echo "不在视图文件里的输出语句";
+        echo "不在视图文件里的输出语句,因为输出量足够小，程序缓存，跟php没有关系";
         return $this->render('index');
     }
     
