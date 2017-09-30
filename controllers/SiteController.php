@@ -22,7 +22,7 @@ class SiteController extends Controller
     {
         return [
             'access' => [
-                //声明过滤器
+                //声明过滤器的名字
                 'class' => AccessControl::className(),
                 //默认对该控制器的所有动作，这里通过only数组指定ACF
 				//只对logout,about方法起作用，其他方法不受限制。only指出动作的范围，或者约束的对象。
@@ -36,6 +36,7 @@ class SiteController extends Controller
 					//第一个规则（只针对logout动作）
                     [
                         //actions指出当前rule规则对logout有用，不写则当前规则对全部动作都起作用
+                        //（这里的全部就是指上述的logout和about)
                         'actions' => ['logout'],
 						//'controllers'=>[],//适用的控制器，一般在父类控制器中使用才有效
 						//'ips'=>[''],//用户ip的配置，默认所有IP
@@ -56,15 +57,14 @@ class SiteController extends Controller
 					//第三个规则.......
 					//从上到下。依次按照规则进行匹配。有一个规则与控制器的动作匹配上了，后续的rule就
 					//不再匹配了。
-					
 
 
                 //总结来说，就是 在当前控制器中，已登录的用户，才能去访问about,logout方法
                 ],
             ],
-            //verbs过滤器，与
+            //verbs过滤器
             'verbs' => [
-                //声明过滤器
+                //指出具体的过滤器类
                 'class' => VerbFilter::className(),
                 'actions' => [
                    // 'logout' => ['post'],

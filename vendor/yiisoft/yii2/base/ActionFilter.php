@@ -8,6 +8,11 @@
 namespace yii\base;
 
 /**
+ * beforeFilter和afterFilter是真正绑定到beforeAction或afterAction的事件处理者。
+ * 但是其中的逻辑还是交给子过滤器的beforeAction和afterAction()。
+ * 
+ * 
+ * 
  * ActionFilter is the base class for action filters.
  *ActionFilter是所有动作过滤器的基类
  * 动作过滤器通过由模块和控制器触发的响应事件来参与到动作执行流中，
@@ -72,8 +77,8 @@ class ActionFilter extends Behavior
 		我猜应该是绑定方便，不用单独写on。或者估计作者有一套自己的想法吧。
 		ActionFilter即是过滤器，又是行为类，同一个东西有两个名称，前因后果明白了吧？
 		下面还有两句话：
-		ActionFilter叫过滤器，是因为它通过响应Controller::EVENT_BEFORE_ACTION事件发挥作用。
-		ActionFilter叫行为类，是从它如何绑定事件，何时绑定事件上来说的。
+		ActionFilter叫过滤器，是因为它通过响应Controller::EVENT_BEFORE_ACTION事件发挥作用。过滤器目的
+		ActionFilter叫行为类，是从它如何绑定事件，何时绑定事件上来说的。 过滤器实现方式
      */
     public function attach($owner)
     {
@@ -99,7 +104,10 @@ class ActionFilter extends Behavior
     }
 
     /**
-	* 这个方法目前来看，也是父类仅有的，子类无需覆盖这个方法。而是直接写beforeAction即可。
+     * beforeFilter方法，就是过滤器绑定到beforeAction事件的处理器。
+	* 这个方法目前来看，也是父类仅有的，子类无需覆盖这个方法。
+	* beforeFilter的重点是其中调用了过滤器自身的公共方法，beforeAction()。
+	* 这就给了子过滤器机会了，所有的子过滤器，只要各自实现自己的beforeAction()逻辑即可。
      * @param ActionEvent $event
      */
     public function beforeFilter($event)
@@ -108,11 +116,12 @@ class ActionFilter extends Behavior
         if (!$this->isActive($event->action)) {
             return;
         }
-		//执行一段固定的方法beforeAction。这是所有过滤器子类发挥自己特性的地方。
-		/**
+        /**
+         * 执行一段固定的方法beforeAction。这是所有过滤器子类发挥自己特性的地方。
 		*方法名虽然叫beforeAction，但是同名的方法也很多，
 		我们知道Yii框架中大多事件的触发(trigger)，都是写在代码执行过程的beforeXXXX，afterXXXX方法里的
-		所以，不要和这些混淆了。只是重名了而已。这个beforeAction里没有trigger。
+		所以，不要和这些混淆了。只是重名了而已。这个beforeAction里并没有trigger什么事件
+		把beforeAction()的结果赋值给事件的isValid属性，从而可以为程序后续的走向做参考
 		*/
         $event->isValid = $this->beforeAction($event->action);
 		//beforeAction的返回值影响afterAction的绑定，注意，是绑定，并不是调用执行哟
@@ -129,11 +138,18 @@ class ActionFilter extends Behavior
 
     /**
 	 * afterFilter的实质，就是afterAction方法而已
+	 * 但是，得在过滤器的beforeAction返回true的情况下，才能绑定
+	 * 这个afterFilter作为EVENT_AFTER_ACTION事件的处理器。
+	 * 注意，仅仅是绑定。
+	 * 这里是所有基类过滤器的实现
      * @param ActionEvent $event
      */
     public function afterFilter($event)
     {
 		//执行完后就解绑afterFilter。为什么要解绑呢？是怕后患无穷吗？
+		//如果能够调用afterFilter的话（事件触发），就会调用过滤器的afterAction方法（注意传递的参数，返回的结果）
+		//返回的结果，给了事件对象的result。（据观察，一般afterXXXX事件对象的result ，受影响于事件处理器的返回值，而beforeXXXX事件对象
+        //受事件处理器的返回值影响的则是isValid）
         $event->result = $this->afterAction($event->action, $event->result);
         $this->owner->off(Controller::EVENT_AFTER_ACTION, [$this, 'afterFilter']);
     }
@@ -225,7 +241,7 @@ class ActionFilter extends Behavior
                 break;
             }
         }
-		//不能排外且还得喜欢这个action,才是中意的action
+		//不在排外列表里，还得在目标列表里,才是中意的action。也就意味着这个action是Active的
         return !$exceptMatch && $onlyMatch;
     }
 }
