@@ -600,7 +600,9 @@ class Component extends Object
     public function trigger($name, Event $event = null)
     {
 		//这个ensureBehaviors()的作用非常明显，举例来说，Controller::EVENT_BEFORE_ACTION事件，将被触发的最后一刻
-		//完成事件处理者的绑定，因为在这之前，Yii框架没有明显的Controller::EVENT_BEFORE_ACTION事件的on绑定，类似这样的有好多(触发事件之前根本就没有绑定handler），当时我还纳闷呢：触发之前至少得绑定一个事件处理者，触发时才会调用事件处理者，否则都是空的事件处理者,岂不白白浪费了。
+		//完成事件处理者的绑定，因为在这之前，Yii框架没有明显的Controller::EVENT_BEFORE_ACTION事件的on绑定，
+		//类似这样的有好多(触发事件之前根本就没有绑定handler），当时我还纳闷呢：触发之前至少得绑定一个事件处理者，
+		//这样在触发时才会调用事件处理者，否则都是空的事件处理者,岂不白白浪费了。
 		//而下面的ensureBehaviors恰恰就是在最后关头，完成行为类的绑定，进而完成事件的绑定。
 		//可以说立即绑定，然后就立即触发执行了。
 		//阅读过滤器行为类ActionFilter的实现机制有感
@@ -746,6 +748,7 @@ class Component extends Object
      */
     public function ensureBehaviors()
     {
+        //第一次进来时_behavios是null,
         if ($this->_behaviors === null) {
             $this->_behaviors = [];
 			//调用应用组件的behaviors方法获得组件数组，遍历之绑定到当前的应用组件上
@@ -767,7 +770,7 @@ class Component extends Object
      * @param string|array|Behavior $behavior the behavior to be attached
      * @return Behavior the attached behavior.
 	 * 注意，绑定的操作attach与解绑操作detach都是行为类的方法，
-	 * 最终把绑定的行为类，装填入组件的_befaviors数组里
+	 * 最终把行为类，装填入组件的_befaviors数组里，这就是绑定
      */
     private function attachBehaviorInternal($name, $behavior)
     {
