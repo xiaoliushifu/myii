@@ -167,7 +167,7 @@ class Controller extends Component implements ViewContextInterface
         //当前控制器所属的模块祖先们，看看它们有没有beforeAction事件处理
         foreach ($this->getModules() as $module) {
             if ($module->beforeAction($action)) {
-                //有的话，就保留这个模块，后来居上
+                //有的话，就保留这个模块，后来居上。因为后续还有afterAction呢
                 array_unshift($modules, $module);
             } else {
                 //模块级别的事件结果返回false,则后续的控制器级别的beforeAction也就不得触发了
@@ -175,7 +175,7 @@ class Controller extends Component implements ViewContextInterface
                 break;
             }
         }
-
+        //初始化执行动作的结果变量$result
         $result = null;
         //模块级别事件处理器OK（$runAction为真）,才能去执行控制器级别的事件处理器
         if ($runAction && $this->beforeAction($action)) {
@@ -260,7 +260,8 @@ class Controller extends Component implements ViewContextInterface
      */
     public function createAction($id)
     {
-        //没有给出动作ID，那么就用默认动作，一般是index
+        //没有给出动作ID，那么就用默认动作，一般是index，是在对顶层的base\Controller指定的，
+        //由于是public,故继承的子类可以自行修改
         if ($id === '') {
             $id = $this->defaultAction;
         }

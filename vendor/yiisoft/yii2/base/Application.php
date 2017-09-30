@@ -143,7 +143,7 @@ abstract class Application extends Module
     public $sourceLanguage = 'en-US';
     /**
      * @var Controller the currently active controller instance
-     * 当前处于激活状态的控制器
+     * 在应用主体上保存当前处于激活状态的控制器实例
      */
     public $controller;
     /**
@@ -160,7 +160,7 @@ abstract class Application extends Module
     public $requestedRoute;
     /**
      * @var Action the requested Action. If null, it means the request cannot be resolved into an action.
-     * 请求的方法
+     * 在应用主体上保存当前处于激活状态的动作实例
      */
     public $requestedAction;
     /**
@@ -240,14 +240,14 @@ abstract class Application extends Module
 
 
     /**
-     * Constructor.
+     * Constructor. 构造函数，是创建应用主体的开始
      * @param array $config name-value pairs that will be used to initialize the object properties.
      * Note that the configuration must contain both [[id]] and [[basePath]].
      * @throws InvalidConfigException if either [[id]] or [[basePath]] configuration is missing.
      */
     public function __construct($config = [])
     {
-        Yii::$app = $this;
+        Yii::$app = $this;//构造函数的头一行代码，就是把自己放到全局助手类里，可见Yii::$app的重中之重!
         //把自己$this,通过Module继承而来的静态方法放到自己的静态属性Loadmodules中，
         //webApp属于（Module)模块的一种
         static::setInstance($this);
@@ -503,7 +503,7 @@ abstract class Application extends Module
     }
 
     /**
-     * 处理http请求
+     * 处理http请求 抽象方法。可见把处理逻辑交给了子类
      * Handles the specified request.
      *该方法应该返回一个Response实例或其子类
      * This method should return an instance of [[Response]] or its child class
@@ -807,6 +807,7 @@ abstract class Application extends Module
      * 配置全局助手类YII的属性container
      * Configures [[Yii::$container]] with the $config
      *这个属性是服务器模式里容器的引用，可以据此实例化应用组件等其他php类，有解析依赖功能（控制反转）
+     *放在全局助手Yii里，非常方便使用
      * @param array $config values given in terms of name-value pairs
      * @since 2.0.11
      */

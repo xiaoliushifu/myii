@@ -152,7 +152,7 @@ class Controller extends \yii\base\Controller
         $missing = [];
         //关联数组的
         $actionParams = [];
-        //反射对象的方法getParameters()，可以返回这个方法的形式参数列表
+        //反射对象的方法getParameters()，可以返回这个方法的形式参数列表，没有参数的返回空
         foreach ($method->getParameters() as $param) {
             //每个形式参数也是一个反射对象，进而再次调用它的方法getName()可以获得这个形参的名字
             $name = $param->getName();

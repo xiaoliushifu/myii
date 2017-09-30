@@ -85,7 +85,7 @@ class Behavior extends Object
 		//遍历事件
         foreach ($this->events() as $event => $handler) {
 			//用owner的on方法绑定事件，也就是说绑定到owner上，但是事件处理者注意，
-			//它的对象是$this,是behavior，不是owner哦，这一点要注意
+			//它的所属对象是$this,也就是behavior的事件处理者，不是owner的哦，这一点要注意
             $owner->on($event, is_string($handler) ? [$this, $handler] : $handler);
         }
     }
