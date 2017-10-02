@@ -40,26 +40,28 @@ class SiteController extends Controller
                         'actions' => ['logout'],
 						//'controllers'=>[],//适用的控制器，一般在父类控制器中使用才有效
 						//'ips'=>[''],//用户ip的配置，默认所有IP
-                        'allow' => true,
 						//还能配置允许的http方法
 						//'verbs' => ['POST'],
                         //roles指出约束的角色，@表示已登录用户，？表示未登录用户，还可以关联rbac的角色
 						//为空则代表适用于所有角色
                         'roles' => ['@'],
+                        
+                        //allow表示当上述规则（ips,verbs,roles,controllers等）全部匹配后，是允许还是不允许。
+                        //设置为true，表示规则全部匹配后，是允许，即放行。
+                        //设置为false,表示规则全部匹配后，是不允许，即不放行
+                        'allow' => true,
                     ],
 					//第二个规则（只针对about动作）
                     [
                     //actions指出当前规则对about有用
-                    'actions' => ['about'],
-                    'allow' => true,
+                    'actions' => ['about','logout'],
                     'roles' => ['@'],
+                    'allow' => true,
+                    //总结来说，第二个规则就是 在当前控制器中，已登录的用户，才能去访问about,logout方法
                     ],
 					//第三个规则.......
 					//从上到下。依次按照规则进行匹配。有一个规则与控制器的动作匹配上了，后续的rule就
 					//不再匹配了。
-
-
-                //总结来说，就是 在当前控制器中，已登录的用户，才能去访问about,logout方法
                 ],
             ],
             //verbs过滤器
