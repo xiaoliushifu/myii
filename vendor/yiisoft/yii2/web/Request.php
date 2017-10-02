@@ -14,39 +14,59 @@ use yii\helpers\StringHelper;
 /**
 * Request组件，代表了Http的请求实体
  * The web Request class represents an HTTP request
- *
+ * 囊括$_SERVER超全局数组，并解析它们，以处理不同Web服务器的不一致性
  * It encapsulates the $_SERVER variable and resolves its inconsistency among different Web servers.
+ * 也提供了一个这样的接口：从$_POST,$_GET,$_COOKIES和通过http的put，delete方法发送的REST 参数
  * Also it provides an interface to retrieve request parameters from $_POST, $_GET, $_COOKIES and REST
  * parameters sent via other HTTP methods like PUT or DELETE.
- *
+ *Request配置为应用主体组件
  * Request is configured as an application component in [[\yii\web\Application]] by default.
+ * 可以通过Yii::$app->request。
  * You can access that instance via `Yii::$app->request`.
  *
+ *可以先看看官网的guide
  * For more details and usage information on Request, see the [guide article on requests](guide:runtime-requests).
  *
+ * 字符串，$absoluteUrl  比如http:://www.cctv.com/index.php/admin/?r=site/index
  * @property string $absoluteUrl The currently requested absolute URL. This property is read-only.
+ * 数组，可接受的内容类型,由优先级排列。
  * @property array $acceptableContentTypes The content types ordered by the quality score. Types with the
+ * 数组的键是内容类型，数组的值对应的优先级
  * highest scores will be returned first. The array keys are the content types, while the array values are the
  * corresponding quality score and other parameters as given in the header.
+ * 数组，$acceptableLanguages  可接受的语言，优先级排列
  * @property array $acceptableLanguages The languages ordered by the preference level. The first element
  * represents the most preferred language.
+ * 字符串，null  $authPassword  通过HTTP authentication发送的，如果没有发送则是null,只读
  * @property string|null $authPassword The password sent via HTTP authentication, null if the password is not
  * given. This property is read-only.
+ * 字符串，null;  $authUser   通过HTTP authentication发送的，如果没有发送则是null,只读
  * @property string|null $authUser The username sent via HTTP authentication, null if the username is not
  * given. This property is read-only.
+ * 字符串，$baseUrl   相对与当前应用主体的URL   /index.php(不带host）
  * @property string $baseUrl The relative URL for the application.
+ * 数组，$bodyParams，请求参数来自于http请求实体（不是queryString)
  * @property array $bodyParams The request parameters given in the request body.
+ * 字符串，$contentType  请求内容类型，如果读取不到内容类型（content-TYPE）,则返回null，只读
  * @property string $contentType Request content-type. Null is returned if this information is not available.
  * This property is read-only.
+ * cookie集合    $cookie  只读
  * @property CookieCollection $cookies The cookie collection. This property is read-only.
+ * 字符串，$csrfToken  用来执行CSRF验证，只读
  * @property string $csrfToken The token used to perform CSRF validation. This property is read-only.
+ * 字符串，$csrfTokenFromHeader   见名知意，通过http请求header里的CSRF_HEADER。没有则返回null。只读
  * @property string $csrfTokenFromHeader The CSRF token sent via [[CSRF_HEADER]] by browser. Null is returned
  * if no such header is sent. This property is read-only.
+ * 数组，$eTags   实体标记，只读属性
  * @property array $eTags The entity tags. This property is read-only.
+ * HeaderCollection  $headers  头部对象实体。只读
  * @property HeaderCollection $headers The header collection. This property is read-only.
+ * 字符串，null,$hostInfo模式和主机部分（带端口后如果需要）。比如http://www.yiiframework.com
  * @property string|null $hostInfo Schema and hostname part (with port number if needed) of the request URL
  * (e.g. `http://www.yiiframework.com`), null if can't be obtained from `$_SERVER` and wasn't set. See
  * [[getHostInfo()]] for security related notes on this property.
+ * 
+ * 字符串，null。$hostName，比如 www.yiiframework.com。只读
  * @property string|null $hostName Hostname part of the request URL (e.g. `www.yiiframework.com`). This
  * property is read-only.
  * @property bool $isAjax Whether this is an AJAX (XMLHttpRequest) request. This property is read-only.
@@ -66,19 +86,32 @@ use yii\helpers\StringHelper;
  * @property string $pathInfo Part of the request URL that is after the entry script and before the question
  * mark. Note, the returned path info is already URL-decoded.
  * @property int $port Port number for insecure requests.
+ * 数组，$queryParams  请求参数值
  * @property array $queryParams The request GET parameter values.
+ * 字符串，$queryString  请求URL的问号之后的部分
  * @property string $queryString Part of the request URL that is after the question mark. This property is
  * read-only.
+ * 字符串，$rawBody   原始http的请求实体
  * @property string $rawBody The request body.
+ * 字符串，$referrer  。URL的referrer,只读
  * @property string|null $referrer URL referrer, null if not available. This property is read-only.
+ * 字符串，$scriptFile  入口脚本路径
  * @property string $scriptFile The entry script file path.
+ * 字符串，入口脚本的相对路径
  * @property string $scriptUrl The relative URL of the entry script.
+ * 整型，$securePort，安全请求（https)的端口号
  * @property int $securePort Port number for secure requests.
+ * 字符串，$serverName  服务器名字，只读
  * @property string $serverName Server name, null if not available. This property is read-only.
+ * 整型，$serverPort  服务器的端口号，只读
  * @property int|null $serverPort Server port number, null if not available. This property is read-only.
+ * 字符串，$url  当前请求的相对URL,注意，返回的信息是URL-encoded的
  * @property string $url The currently requested relative URL. Note that the URI returned is URL-encoded.
+ * 字符串，$userAgent  用户代理，只读
  * @property string|null $userAgent User agent, null if not available. This property is read-only.
+ * 字符串，$userHost 用户主机名，只读（客户端的主机名？）
  * @property string|null $userHost User host name, null if not available. This property is read-only.
+ * 字符串，$userIP  用户ip地址
  * @property string|null $userIP User IP address, null if not available. This property is read-only.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
@@ -87,6 +120,7 @@ use yii\helpers\StringHelper;
 class Request extends \yii\base\Request
 {
     /**
+     * 发送CSRF字符串的http头字段的名字（请求还是响应？）
      * The name of the HTTP header for sending CSRF token.
      */
     const CSRF_HEADER = 'X-CSRF-Token';
@@ -102,20 +136,26 @@ class Request extends \yii\base\Request
      * from the same application. If not, a 400 HTTP exception will be raised.
      * 这个机制，需要客户端浏览器开启接收cookie的支持
      * Note, this feature requires that the user client accepts cookie. Also, to use this feature,
+     * 通过post方法提交的表单里必须包含一个隐藏域，它的名字由csrfParam成员指定
      * forms submitted via POST method must contain a hidden input whose name is specified by [[csrfParam]].
+     * 可以使用yii\helpers\Html::beginForm()来生成它的隐藏项
      * You may use [[\yii\helpers\Html::beginForm()]] to generate his hidden input.
-     *
+     *在客户端的JavaScript里，可以通过yii.getCsrfParam()获得[[csrfParam]]的值，通过yii.getCsrfToken()获得csrfToken的值。
      * In JavaScript, you may get the values of [[csrfParam]] and [[csrfToken]] via `yii.getCsrfParam()` and
+     * 但是yiiAsset必须注册才行。还需要在页面里使用Html::csrfMetaTags()来包含meta标签
      * `yii.getCsrfToken()`, respectively. The [[\yii\web\YiiAsset]] asset must be registered.
+     * 
      * You also need to include CSRF meta tags in your pages by using [[\yii\helpers\Html::csrfMetaTags()]].
      *
-     * @see Controller::enableCsrfValidation
-     * @see http://en.wikipedia.org/wiki/Cross-site_request_forgery
+     * @see Controller::enableCsrfValidation  参考这个
+     * @see http://en.wikipedia.org/wiki/Cross-site_request_forgery 参考wiki
      */
+    //默认开启
     public $enableCsrfValidation = true;
     /**
      * 实现CSRF验证的那个cookie的名字
      * @var string the name of the token used to prevent CSRF. Defaults to '_csrf'.
+     * 仅在$enableCsrfValidation为true时才有用
      * This property is used only when [[enableCsrfValidation]] is true.
      */
     public $csrfParam = '_csrf';
@@ -128,34 +168,42 @@ class Request extends \yii\base\Request
     public $csrfCookie = ['httpOnly' => true];
     /**
      * 使用cookie方式存储csrf字符串
+     * 布尔，是否使用cookie方式存储CSRF令牌。如果不允许，那么将会使用session来存储
      * @var bool whether to use cookie to persist CSRF token. If false, CSRF token will be stored
+     * 其中session名也是由csrfParam来指定，注意，虽然用session存储增加安全性，但是它需要每个页面都要开启session
      * in session under the name of [[csrfParam]]. Note that while storing CSRF tokens in session increases
+     * 这将影响网站性能
      * security, it requires starting a session for every page, which will degrade your site performance.
      */
     public $enableCsrfCookie = true;
     /**
-     * 为了确保客户端cookie不被篡改，是否应该加密那些种植给客户端的cookie
+     * 为了确保客户端cookie不被篡改，是否应该加密(验证）那些种植给客户端的所有cookie。默认true
      * @var bool whether cookies should be validated to ensure they are not tampered. Defaults to true.
      */
     public $enableCookieValidation = true;
     /**
-     * 配合上一个属性，需要给cookie加密时，提供加密的token，这个属性在初始化request组件时设置的
+     * 配合上一个属性，需要给cookie加密时，加密算法需要一个加密的token，这个属性在初始化request组件时指出
      * @var string a secret key used for cookie validation. This property must be set if [[enableCookieValidation]] is true.
      */
     public $cookieValidationKey;
     /**
+     * 字符串，POST参数的名字，表名是否一个http请求是一个通过POST方法来建立的PUT,PATCH,或者DELETE请求通道，
      * @var string the name of the POST parameter that is used to indicate if a request is a PUT, PATCH or DELETE
+     * 默认是_method
      * request tunneled through POST. Defaults to '_method'.
-     * @see getMethod()
-     * @see getBodyParams()
+     * @see getMethod() 参考
+     * @see getBodyParams() 参考
      */
     public $methodParam = '_method';
     /**
+     * 数组，把原始http请求转为[bodyParams]]的解析器
      * @var array the parsers for converting the raw HTTP request body into [[bodyParams]].
+     * 数组的keys是请求的Content-Types，而数组的values是对应的配置（用Yii::createObject据此配置来创建解析对象）
      * The array keys are the request `Content-Types`, and the array values are the
      * corresponding configurations for [[Yii::createObject|creating the parser objects]].
+     * 解析对象必须实现[[RequestParserInterface]].接口
      * A parser must implement the [[RequestParserInterface]].
-     *
+     *如果需要解析一个JSON请求的话，可以像下面的例子那样使用[[JsonParser]]类：
      * To enable parsing for JSON requests you can use the [[JsonParser]] class like in the following example:
      *
      * ```
@@ -163,26 +211,32 @@ class Request extends \yii\base\Request
      *     'application/json' => 'yii\web\JsonParser',
      * ]
      * ```
-     *
+     *如果想用一个解析器解析所有的请求类型，那就用"*"作为数组的key
      * To register a parser for parsing all request types you can use `'*'` as the array key.
+     * 这将在所有Content-type不匹配时作为备用
      * This one will be used as a fallback in case no other types match.
      *
-     * @see getBodyParams()
+     * @see getBodyParams()  参考
      */
     public $parsers = [];
 
     /**
+     * CookieCollection  请求的cookie集合类
      * @var CookieCollection Collection of request cookies.
      */
     private $_cookies;
     /**
+     * HeaderCollection http请求头部集合
      * @var HeaderCollection Collection of request headers.
      */
     private $_headers;
 
 
     /**
+     * 这是一个web请求继承父类base\request必须实现的方法
+     * 用来把当前的http请求解析成一个路由和关联的参数
      * Resolves the current request into a route and the associated parameters.
+     * 返回值，数组，第一个元素是路由；第二个元素是相关的参数
      * @return array the first element is the route, and the second is the associated parameters.
      * @throws NotFoundHttpException if the request cannot be resolved.
      */
