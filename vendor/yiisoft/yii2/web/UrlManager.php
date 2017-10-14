@@ -256,13 +256,18 @@ class UrlManager extends Component
     }
 
     /**
+     * 解析用户（客户端）的请求
      * Parses the user request.
-     * @param Request $request the request component
+     * @param Request $request the request component  $request 是组件
+     * 返回，数组或布尔。
+     * 数组里包含着路由和关联的参数。在enablePrettyUrl为false时，关联的参数总是空。
      * @return array|bool the route and the associated parameters. The latter is always empty
+     * 如果不能成功解析，则返回false。
      * if [[enablePrettyUrl]] is `false`. `false` is returned if the current request cannot be successfully parsed.
      */
     public function parseRequest($request)
     {
+        //开启时才能美化
         if ($this->enablePrettyUrl) {
             /* @var $rule UrlRule */
             foreach ($this->rules as $rule) {
@@ -311,13 +316,16 @@ class UrlManager extends Component
             } else {
                 return [$pathInfo, []];
             }
-        } else {//主要解析queryString中的r参数
+        } else {
+            //当未开启美化URL时（enablePrettyUrl为false)主要解析queryString中的r参数
             Yii::trace('Pretty URL not enabled. Using default URL parsing logic.', __METHOD__);
+            //路由参数名，是由组件的routeParam成员决定的，默认是"r"。
+            //从Request组件的getQueryParam方法里获取r参数
             $route = $request->getQueryParam($this->routeParam, '');
             if (is_array($route)) {
                 $route = '';
             }
-
+            //第二个参数，永远是空数组
             return [(string) $route, []];
         }
     }

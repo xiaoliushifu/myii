@@ -86,9 +86,12 @@ class SiteController extends Controller
             'error' => [
                 'class' => 'yii\web\ErrorAction',
             ],
+            //请求验证码的，是个独立动作，非行内动作
             'captcha' => [
                 'class' => 'yii\captcha\CaptchaAction',
-                'fixedVerifyCode' => YII_ENV_TEST ? 'testme' : null,
+                //当测试环境时，可以固定验证码，比如8888,testme等
+                //'fixedVerifyCode' => YII_ENV_TEST ? 'testme' : null,
+                'fixedVerifyCode' => YII_ENV_DEV? 'testme' : null,
             ],
         ];
     }
@@ -100,7 +103,7 @@ class SiteController extends Controller
      */
     public function actionIndex()
     {
-        echo "不在视图文件里的输出语句,因为输出量足够小，程序缓存，跟php没有关系";
+        echo "不在视图文件里的输出语句,因为输出量足够小，程序缓存，跟php没有关系，若换个phpinfo(),你看看输出不输出？";
         return $this->render('index');
     }
     

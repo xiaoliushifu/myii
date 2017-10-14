@@ -171,10 +171,13 @@ class Container extends Component
      */
     public function get($class, $params = [], $config = [])
     {
+        //如果是个单例，则从缓存里返回
         if (isset($this->_singletons[$class])) {
             // singleton
             return $this->_singletons[$class];
+            //没有预先定义在_definitions里
         } elseif (!isset($this->_definitions[$class])) {
+            //否则就去build
             return $this->build($class, $params, $config);
         }
 
@@ -445,27 +448,42 @@ class Container extends Component
         }
     }
 
-    /**保护方法，返回依赖项
+    /**
+     * protected的方法，返回$class的依赖项，要实例化时，构造函数所需的依赖
      * Returns the dependencies of the specified class.
+     * 通过代码可知，实现原理就是：通过php反射机制，优先得到它的构造函数反射对象
+     * 然后解析这个构造函数都需要哪几个什么类型的参数，是否是默认等。以此达到
+     * 获得依赖的目的。
      * @param string $class class name, interface name or alias name
      * @return array the dependencies of the specified class.
      */
     protected function getDependencies($class)
     {
+        //是否是曾经反射过的，缓存起来，避免下次再去反射，这就是缓冲思想
+        //因为反射的代价应该很大（估计会搜索硬盘，读取类文件什么的，属于C底层的实现）
         if (isset($this->_reflections[$class])) {
             return [$this->_reflections[$class], $this->_dependencies[$class]];
         }
 
+        //初始化依赖数组
         $dependencies = [];
+        //根据类名，创建对应类的反射对象ReflectionClass
         $reflection = new ReflectionClass($class);
 
+        //类反射对象获得类的构造函数反射对象（ReflectionMethod)
         $constructor = $reflection->getConstructor();
         if ($constructor !== null) {
+            //构造函数反射对象，
+            //再通过遍历获得函数参数反射对象(ReflectionParameter)数组
             foreach ($constructor->getParameters() as $param) {
+                //分别判断参数反射对象的性质
+                //1 默认值
                 if ($param->isDefaultValueAvailable()) {
                     $dependencies[] = $param->getDefaultValue();
+                    //2 不是默认值，则根据类名c，再去实例化之
                 } else {
                     $c = $param->getClass();
+                    //依赖的实例化，使用Instance::of()方法，暂不知
                     $dependencies[] = Instance::of($c === null ? null : $c->getName());
                 }
             }
