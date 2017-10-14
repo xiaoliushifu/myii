@@ -136,6 +136,7 @@ class CaptchaAction extends Action
             ];
         } else {
             $this->setHttpHeaders();
+            //验证码都是二进制流，无需再处理其他格式，故应该使用FORMAT_RAW
             Yii::$app->response->format = Response::FORMAT_RAW;
             return $this->renderImage($this->getVerifyCode());
         }
@@ -162,6 +163,7 @@ class CaptchaAction extends Action
      */
     public function getVerifyCode($regenerate = false)
     {
+        //固定的验证码字符串，看到了吧
         if ($this->fixedVerifyCode !== null) {
             return $this->fixedVerifyCode;
         }
@@ -251,6 +253,7 @@ class CaptchaAction extends Action
         } else {
             $imageLibrary = Captcha::checkRequirements();
         }
+        //分支判断两种图像处理库
         if ($imageLibrary === 'gd') {
             return $this->renderImageByGD($code);
         } elseif ($imageLibrary === 'imagick') {
@@ -351,7 +354,7 @@ class CaptchaAction extends Action
         return $image->getImageBlob();
     }
 
-    /**
+    /**设置验证码（图片数据流）这种http响应，需要的特殊的http响应头部信息
      * Sets the HTTP headers needed by image response.
      */
     protected function setHttpHeaders()

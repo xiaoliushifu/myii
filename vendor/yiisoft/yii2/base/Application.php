@@ -301,8 +301,19 @@ abstract class Application extends Module
         } else {
             // set "@vendor"
             //仅仅设置vendorPath
+            //虽然这里写的是getter方法，但是Yii框架的代码有一个特点
+            //那就是，在获得某个值的时候，一般都是php类的一个成员A，当这个成员值不存在时，
+            //会调用setter方法去设置，然后赋值给这个成员A,最终返回A达到获得值的目的
+            //这种方法里的代码格式比较一致，都是:
+            /**
+             * if($this->_A===false){                   //先判断
+             *     $this->setXXX()                          //值不存在时，调用setter
+             * }
+             * return  $this->_A                            //最终返回该值
+             */
             $this->getVendorPath();
         }
+        //一般不会主动配置runtimePath,而是基于BasePath生成
         if (isset($config['runtimePath'])) {
             //按照参数指定，设置根目录
             $this->setRuntimePath($config['runtimePath']);
@@ -460,7 +471,7 @@ abstract class Application extends Module
     {
         //在父类Module中设置应用主体的根目录
         parent::setBasePath($path);
-        //全局助手类Yii设置根目录别名
+        //全局助手类Yii设置根目录别名@app
         Yii::setAlias('@app', $this->getBasePath());
     }
 
@@ -534,8 +545,9 @@ abstract class Application extends Module
     }
 
     /**
-     * 设置runtime目录及别名（默认由应用主题启动之初调用，但该方法是public的，故如果修改runtime目录，
-     * 可以在外部直接调用该方法生效
+     * 设置runtime目录及别名，注意，该方法不长使用
+     * （因为runtime路径的设置，默认由应用主题启动之初的getRuntimePath()里间接调用该方法。
+     * 但该方法是public的，故如果修改默认runtime的路径， 可以在外部直接调用该方法生效）
      * Sets the directory that stores runtime files.
      * @param string $path the directory that stores runtime files.
      */

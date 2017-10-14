@@ -280,7 +280,8 @@ class View extends Component
 	 * 这个思想，就跟计算机底层的中断是一个思想吧？
      */
     public function renderFile($viewFile, $params = [], $context = null)
-    {//还有可能是带有别名的字符串吗？
+    {
+        //还有可能是带有别名的字符串吗？
         $viewFile = Yii::getAlias($viewFile);
 		
 		//有主题就应用主题

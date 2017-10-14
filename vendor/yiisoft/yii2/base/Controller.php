@@ -276,7 +276,7 @@ class Controller extends Component implements ViewContextInterface
             $methodName = 'action' . str_replace(' ', '', ucwords(implode(' ', explode('-', $id))));
             //方法不再当前的控制器时就返回null
             if (method_exists($this, $methodName)) {
-                //这里直接使用反射机制得到反射方法对象
+                //这里直接使用反射机制得到控制器动作的反射对象，从而解析整个动作对象的可访问性，参数啊什么的
                 $method = new \ReflectionMethod($this, $methodName);
                 //再次说明方法名要规范（虽然php的函数名是不区分大小写的）
                 if ($method->isPublic() && $method->getName() === $methodName) {
@@ -290,7 +290,8 @@ class Controller extends Component implements ViewContextInterface
     }
 
     /**
-     * 该方法就是为了触发beforeAction事件的
+     * 该方法就是为了触发beforeAction事件的（web\Controller里也有beforeAction()，但该方法里仍然调用父类的beforeAction,下面
+     * 的注释也说了，这是实现子类必须要做的）
      * This method is invoked right before an action is executed.
      *
      *方法的返回值，将会影响动作对象是否执行

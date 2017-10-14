@@ -686,16 +686,14 @@ class Module extends ServiceLocator
         // double slashes or leading/ending slashes may cause substr problem
         //去掉两端的斜杠
         $route = trim($route, '/');
-        //不能出现斜杠。奇怪了，那模块ID,控制器ID,动作ID是如何分割的呢？
-        //双斜杠，不是前者转义后者的那种。是我看反了，认为是"\\"呢
-        //是说不能出现连续的两个斜杠
+        //不能出现连续的两个斜杠
         if (strpos($route, '//') !== false) {
             return false;
         }
 
         //有斜杠，则说明有控制器ID，动作ID
         if (strpos($route, '/') !== false) {
-            //只取得第一段信息给$id，剩余的保留为数组的第二个元素，赋值为$route，还是使用PHP原生函数。
+            //只取得第一段信息给$id(因为第一个就是控制器的名字呗），剩余的保留为数组的第二个元素，赋值为$route，还是使用PHP原生函数。
             list ($id, $route) = explode('/', $route, 2);
         } else {
          //否则，估计就仅仅是控制器信息，而没有动作信息的那种（比如来自默认路由的site)

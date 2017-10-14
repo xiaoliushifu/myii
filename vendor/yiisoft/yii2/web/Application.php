@@ -77,8 +77,8 @@ class Application extends \yii\base\Application
     {
         //把request组件取出来，就为了设置两个别名吗，是的，这是web\application,不是console\application。
         $request = $this->getRequest();
-        Yii::setAlias('@webroot', dirname($request->getScriptFile()));
-        Yii::setAlias('@web', $request->getBaseUrl());
+        Yii::setAlias('@webroot', dirname($request->getScriptFile()));//可能是/
+        Yii::setAlias('@web', $request->getBaseUrl());//可能是空字符串
         //这才是关键的一步，由父类完成引导
         parent::bootstrap();
     }

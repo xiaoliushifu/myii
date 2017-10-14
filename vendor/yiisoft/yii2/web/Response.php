@@ -462,7 +462,7 @@ class Response extends \yii\base\Response
 		//种植cookie和服务端接收cookie来处理是一致的，不能种植cookie时不加密，但是服务端接收处理时解密，这就不一致。
 		//所以，需要request组件的enableCookieValidation属性判断，是否服务端种植cookie时需要加密。
         $request = Yii::$app->getRequest();
-		//默认是true,即客户端会解密cookie,那服务端种植是得配合，加密cookie。
+		//Request组件的这个属性默认是true,即客户端会解密cookie,那服务端种植是得配合，加密cookie（Validation应理解为加解密）。
         if ($request->enableCookieValidation) {
 			//加密时需要一个随机固定的字符串（盐），没有就报异常，说明这个盐非常重要！
             if ($request->cookieValidationKey == '') {
@@ -1228,7 +1228,7 @@ class Response extends \yii\base\Response
             } else {
                 throw new InvalidConfigException("The '{$this->format}' response formatter is invalid. It must implement the ResponseFormatterInterface.");
             }
-		//是否是FORMAT_RAW格式的
+		//是否是FORMAT_RAW格式的（比如验证码二进制流）
         } elseif ($this->format === self::FORMAT_RAW) {
             if ($this->data !== null) {
 				//这种格式，无需做格式处理，直接赋值即可。

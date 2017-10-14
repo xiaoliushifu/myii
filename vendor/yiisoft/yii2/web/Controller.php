@@ -197,7 +197,8 @@ class Controller extends \yii\base\Controller
      */
     public function beforeAction($action)
     {
-        //触发beforeAction事件
+        //触发父类，也就是base\Controller的beforeAction事件
+        //但是beforeAction的调用正是从父类而来，所以这次的parent::beforeAction()又回去了
         if (parent::beforeAction($action)) {
             //开启，没有报异常，验证出错时
             if ($this->enableCsrfValidation && Yii::$app->getErrorHandler()->exception === null && !Yii::$app->getRequest()->validateCsrfToken()) {
