@@ -329,11 +329,13 @@
         add: function (attribute) {
             var $form = $(this);
             attribute = $.extend({value: getValue($form, attribute)}, attributeDefaults, attribute);
+			//push进去的，也就是说加到最后
             $form.data('yiiActiveForm').attributes.push(attribute);
             watchAttribute($form, attribute);
         },
 
         // remove the attribute with the specified ID from the form
+		//删除一个表单项的验证（表单项的ID)。可以是原始的，可以是后期通过yiiActiveForm手动添加的
         remove: function (id) {
             var $form = $(this),
                 attributes = $form.data('yiiActiveForm').attributes,
@@ -346,8 +348,11 @@
                     return false;
                 }
             });
+			//真的删除掉了，index会大于0
             if (index >= 0) {
+				//从attributes里删除掉
                 attributes.splice(index, 1);
+				//解除这个表单项的监听事件
                 unwatchAttribute($form, attribute);
             }
             return attribute;
@@ -386,8 +391,10 @@
         },
 
         // validate all applicable inputs in the form
-		//该验证方法非手动调用，而是在事件监听者里调用（change,blur,type事件的监听者），属于底层，由$form对象调用
+		//该验证方法非手动调用，而是在事件监听者（change,blur,type事件的监听者）里的定时器（一般是200ms)调用
+		//validateAttribute，然后validateAttribute再调用这个validate方法。属于底层，由$form对象调用
 		//故方法里的this指向$form对象
+		//这是验证的最核心
         validate: function (forceValidate) {
             if (forceValidate) {
                 $(this).data('yiiActiveForm').submitting = true;
@@ -401,6 +408,7 @@
                 submitting = data.submitting && !forceValidate;
 
             if (data.submitting) {
+				//在整个表单开始验证之前，启动这个事件
                 var event = $.Event(events.beforeValidate);
                 $form.trigger(event, [messages, deferreds]);
 
@@ -460,7 +468,7 @@
                         }
                     }
                 }
-            });
+            });//each方法结束了
 
             // ajax validation
 			//需要一些Jquery的Deferred对象了解
@@ -673,7 +681,7 @@
         if (data.settings.timer !== undefined) {
             clearTimeout(data.settings.timer);
         }
-		//这是validationDelay配置项发挥作用的地方，所有验证并不是马上就调用validate方法
+		//这是validationDelay配置项发挥作用的地方，所有验证并不是马上就调用每个表单项自己的validate方法
 		//而是利用javascript的setTimeout设定一个毫秒级的延迟.
         data.settings.timer = setTimeout(function () {
             if (data.submitting || $form.is(':hidden')) {
@@ -748,6 +756,8 @@
     };
 
     /**
+	 * 更新错误信息，及表单项容器里所有的属性对象
+	 * 这个一般是在验证完之后调用，用来更新显示的错误信息
      * Updates the error messages and the input containers for all applicable attributes
      * @param $form the form jQuery object
      * @param messages array the validation error messages
@@ -769,7 +779,7 @@
             });
 
             $form.trigger(events.afterValidate, [messages, errorAttributes]);
-
+			//Summary（一般在表单对象的最上面）
             updateSummary($form, messages);
 
             if (errorAttributes.length) {
@@ -798,7 +808,9 @@
                     restoreButtonOptions($form);
                 }
             }
+		//单独验证时，不是submitting为真的情况
         } else {
+			//通过循环，更新每个表单项的错误信息（一般就是在输入框的下面显示）
             $.each(data.attributes, function () {
                 if (!this.cancelled && (this.status === 2 || this.status === 3)) {
                     updateInput($form, this, messages);
@@ -832,6 +844,7 @@
     };
 
     /**
+	* 更新错误信息，一般是具体的某个表单项的。由updateinputs来调用的
      * Updates the error message and the input container for a particular attribute.
      * @param $form the form jQuery object
      * @param attribute object the configuration for a particular attribute.
@@ -846,6 +859,7 @@
         if (!$.isArray(messages[attribute.id])) {
             messages[attribute.id] = [];
         }
+		//在这里触发afterValidateAttribute事件
         $form.trigger(events.afterValidateAttribute, [attribute, messages[attribute.id]]);
 
         attribute.status = 1;
@@ -873,6 +887,8 @@
     };
 
     /**
+	* 更新错误汇总（是在页面表单最上面的那几行显示）
+	* 一般是在updateInputs里调用，也就是说是验证完之后处理错误信息时才会调用这个方法来处理Summary信息。
      * Updates the error summary.
      * @param $form the form jQuery object
      * @param messages array the validation error messages
@@ -883,7 +899,15 @@
             $ul = $summary.find('ul').empty();
 
         if ($summary.length && messages) {
+			//依次遍历每个表单项的验证
             $.each(data.attributes, function () {
+				//注意，attributes的数量可能会比messages多（因为开发人员有可能通过yiiActiveForm('add')脚本
+				//来增加自定义的属性验证），这样就会造成在summary里错误信息的重复。
+				//（比如某项目的发货物流时,goods_num表单项）
+				//后来使用先删除yiiActiveForm('remove')，客户端再单独增加yiiActiveForm('add')的方式解决的。
+				//但是上述先删除后添加的办法，有个副作用，会使得后续的type,blur时，没有错误提示。不知为何
+				//后来根据‘验证，显示错误信息’跟踪代码流程，发现是自定义添加的goods_num表单项的container属性写错了，忘记加.了。
+				//导致$container一直找不到，自然就不能添加错误信息了。
                 if ($.isArray(messages[this.id]) && messages[this.id].length) {
                     var error = $('<li/>');
                     if (data.settings.encodeErrorSummary) {
