@@ -30,14 +30,20 @@ $config = [
         'errorHandler' => [
             'errorAction' => 'site/error',
         ],
-        /*
+        ///*
         'urlManager' => [
-            'enablePrettyUrl' => true,
-            'showScriptName' => false,
+            //所谓开启美化，就是使用Path Info而已。
+            //但是下面还有rules列表，给出url的特殊匹配模式，如果匹配就转换为对应的path info格式的字符串
+            //没有匹配，就仍然使用原始的pathinfo呗
+            'enablePrettyUrl' => true,  //开启第二种路由解析机制（所谓的美化URL)，而不使用默认的r
+            'showScriptName' => false,  //不显示index.php。需要web服务器的rewrite机制配合
+            //rules列出的，是和原始url的pathinfo部分进行匹配
+            //除非有特别的url匹配需要，否则只需开启enablePrettyUrl就行，无需写rules。
+            //当rules都没有匹配到时，将会使用pathinfo就是最终的路由了
             'rules' => [
             ],
         ],
-        */
+        //*/
     ],
     'params' => $params,
 ];
