@@ -9,6 +9,7 @@ use yii\filters\VerbFilter;
 use app\models\LoginForm;
 use app\models\ContactForm;
 use app\models\EntryForm;
+use yii\helpers\Url;
 
 class SiteController extends Controller
 {
@@ -167,7 +168,7 @@ class SiteController extends Controller
     public function actionLogout()
     {
         Yii::$app->user->logout();
-
+        
         //控制器的goHome()方法，其实是Response里redirect()方法的快捷方式
         return $this->goHome();
     }
@@ -207,6 +208,11 @@ class SiteController extends Controller
      */
     public function actionSay($message='Hello')
     {
+        //echo Url::home();//         /index.php
+        //echo Url::base();   //      通常都是空字符串。当yii的web目录不是web服务器配置的document_root时才有值
+        // see https://en.wikipedia.org/wiki/Canonical_link_element
+        //http://yiibasic.liu/index.php?r=site%2Fsay&message=Hello
+        echo Url::canonical();
         return $this->render('say',['message'=>$message]);
     }
     
