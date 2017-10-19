@@ -12,7 +12,8 @@ use yii\base\Component;
 use yii\helpers\Json;
 
 /**
- * JsonResponseFormatter 格式工具类，用来把data转换成JSON或者JSONP的响应内容
+ * JsonResponseFormatter 格式工具类，用来把data转换成JSON或者JSONP的响应内容,
+ * 注意，JSONP和JSON虽然名字相近，但其实是两种相差很远的概念
  * JsonResponseFormatter formats the given data into a JSON or JSONP response content.
  * 需要传递Response参数
  * It is used by [[Response]] to format response data.
@@ -95,6 +96,8 @@ class JsonResponseFormatter extends Component implements ResponseFormatterInterf
             if ($this->prettyPrint) {
                 $options |= JSON_PRETTY_PRINT;
             }
+			//在这里也不是直接写的json_encode，而是又使用了助手类yii\helpers\Json。
+			//可见php面向对象的封装性，无处不在呀
             $response->content = Json::encode($response->data, $options);
         }
     }
