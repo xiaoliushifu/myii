@@ -210,7 +210,7 @@ class BaseUrl
      */
     public static function to($url = '', $scheme = false)
     {
-        if (is_array($url)) {
+        if (is_array($url)) {//转移到toRoute方法
             return static::toRoute($url, $scheme);
         }
 

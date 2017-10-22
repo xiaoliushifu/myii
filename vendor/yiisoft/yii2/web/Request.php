@@ -245,7 +245,7 @@ class Request extends \yii\base\Request
         //不是request直接解析，还得靠UrlManager组件来帮忙
         //未开启美化功能，一般返回r参数和空数组
         $result = Yii::$app->getUrlManager()->parseRequest($this);
-        
+        //注意，这里是全不等，解析的结果也许是空字符串。比如访问首页的情况
         if ($result !== false) {
             //$route就是请求url里的r参数，$params永远是空数组
             list ($route, $params) = $result;
@@ -807,6 +807,9 @@ class Request extends \yii\base\Request
 	* 返回入口脚本的相对URL。相对的主体是谁呢？是相对于document_root的路径
 	* document_root是web服务器配置的，网站根目录。
 	*所以入口脚本的相对url。可以是/test/index.php,或者/index.php这样的字符串
+	*如果web服务器配置了虚拟主机，则一般是/index.php。
+	*如果没有配置虚拟主机，则一般使用localhost或IP地址访问，相对url的情况就多了去了。
+	*但此时最常见的，有可能是/xxxx/index.php
      * Returns the relative URL of the entry script.
 	 * 该方法的实现，参考了zend框架里的Zend_Controller_Request_Http控制器
      * The implementation of this method referenced Zend_Controller_Request_Http in Zend Framework.
@@ -824,9 +827,10 @@ class Request extends \yii\base\Request
 			//相对网站根目录（document_root是网站根目录）的路径,比如/test/index.php
             if (isset($_SERVER['SCRIPT_NAME']) && basename($_SERVER['SCRIPT_NAME']) === $scriptName) {
                 $this->_scriptUrl = $_SERVER['SCRIPT_NAME'];
-			//与上述$_SERVER['SCRIPT_NAME']的结果相同，但是不清楚含义的区别
+			//与上述$_SERVER['SCRIPT_NAME']的结果相同（使用localhost与web服务器配置虚拟主机两种情况下访问），但是不清楚含义的区别
             } elseif (isset($_SERVER['PHP_SELF']) && basename($_SERVER['PHP_SELF']) === $scriptName) {
                 $this->_scriptUrl = $_SERVER['PHP_SELF'];
+            //下面这个ORIG_SCRIPT_NAME没见过
             } elseif (isset($_SERVER['ORIG_SCRIPT_NAME']) && basename($_SERVER['ORIG_SCRIPT_NAME']) === $scriptName) {
                 $this->_scriptUrl = $_SERVER['ORIG_SCRIPT_NAME'];
             } elseif (isset($_SERVER['PHP_SELF']) && ($pos = strpos($_SERVER['PHP_SELF'], '/' . $scriptName)) !== false) {
@@ -934,14 +938,14 @@ class Request extends \yii\base\Request
      */
     protected function resolvePathInfo()
     {
-		//获得原始url信息
+        //获得原始url信息。一般是$_SERVER['REQUEST_URI']信息。REQUEST_URI' => string '/test/index.php/aaa/bbb?p=q&e=f'
         $pathInfo = $this->getUrl();
 		//是否有问号
         if (($pos = strpos($pathInfo, '?')) !== false) {
-		//取得问号之前的部分
+		//取得问号之前的部分，一步步解析。
             $pathInfo = substr($pathInfo, 0, $pos);
         }
-
+        //这时的信息，还带有urlencode的东西，所以需要urldecode一下
         $pathInfo = urldecode($pathInfo);
 
 		//这个处理是基于什么的呢？一下没有看明白。
@@ -972,7 +976,7 @@ class Request extends \yii\base\Request
         if (strpos($pathInfo, $scriptUrl) === 0) {
 			//pathinfo应该是去掉/index.php的部分
             $pathInfo = substr($pathInfo, strlen($scriptUrl));
-		//这是什么情况？
+		//这是什么情况？这是要去掉baseUrl
         } elseif ($baseUrl === '' || strpos($pathInfo, $baseUrl) === 0) {
             $pathInfo = substr($pathInfo, strlen($baseUrl));
 		//基本上这俩是相等的吧
@@ -1044,7 +1048,8 @@ class Request extends \yii\base\Request
             $requestUri = $_SERVER['HTTP_X_REWRITE_URL'];
 		//REQUEST_URI基本上也是相对于主机信息之后的全部部分（pathinfo,问号都包含）
         } elseif (isset($_SERVER['REQUEST_URI'])) {
-            $requestUri = $_SERVER['REQUEST_URI'];
+            $requestUri = $_SERVER['REQUEST_URI'];//比如，/?name=liu&KEY=1508632073。或者/test/index.php/aaa/bbb?p=q&e=f
+            //$requestUri[0]?明明是字符串，却使用数组形式，这是php字符串的特殊使用。获得字符串的第一个字符
             if ($requestUri !== '' && $requestUri[0] !== '/') {
 				//https://xxxx的部分全部替换为空
                 $requestUri = preg_replace('/^(http|https):\/\/[^\/]+/i', '', $requestUri);
