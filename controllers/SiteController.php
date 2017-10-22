@@ -104,7 +104,9 @@ class SiteController extends Controller
      */
     public function actionIndex()
     {
-        echo "不在视图文件里的输出语句,因为输出量足够小，程序缓存，跟php没有关系，若换个phpinfo(),你看看输出不输出？";
+        echo "不在视图文件里的输出语句,因为输出量足够小，程序缓存，跟php没有关系，若换个phpinfo(),你看看输出不输出？<BR>";
+        echo Url::to(['/test/admin','name'=>'shifu','family'=>'liu']);
+        
         return $this->render('index');
     }
     
