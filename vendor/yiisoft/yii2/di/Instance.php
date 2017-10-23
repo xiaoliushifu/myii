@@ -11,22 +11,28 @@ use Yii;
 use yii\base\InvalidConfigException;
 
 /**
+* Instance代表了一个引用，这个引用需要在DI或服务定位器中使用。
  * Instance represents a reference to a named object in a dependency injection (DI) container or a service locator.
- *
+ *可以在容器中通过get()方法获得实际的对象引用
  * You may use [[get()]] to obtain the actual object referenced by [[id]].
  *
+ *Instance  主要在两个地方使用：
  * Instance is mainly used in two places:
  *
+ 在配置依赖注入容器时，可以用Instance引用类名接口名或别名，该引用后续会被容器解析为实际的对象
  * - When configuring a dependency injection container, you use Instance to reference a class name, interface name
  *   or alias name. The reference can later be resolved into the actual object by the container.
+ 当用服务定位器获得依赖对象时
  * - In classes which use service locator to obtain dependent objects.
  *
+ 看下面的例子，配置一个带有Instance的DI容器
  * The following example shows how to configure a DI container with Instance:
  *
  * ```php
  * $container = new \yii\di\Container;
  * $container->set('cache', [
  *     'class' => 'yii\caching\DbCache',
+		//DbCache组件有一个成员db,是个对象。使用Instance可以用别名接口名或直接类名。
  *     'db' => Instance::of('db')
  * ]);
  * $container->set('db', [
@@ -45,6 +51,7 @@ use yii\base\InvalidConfigException;
  *     public function init()
  *     {
  *         parent::init();
+			//从服务定位器获得一个组件
  *         $this->db = Instance::ensure($this->db, 'yii\db\Connection');
  *     }
  * }
@@ -56,6 +63,7 @@ use yii\base\InvalidConfigException;
 class Instance
 {
     /**
+	* 组件ID，类名，接口名，别名都行。
      * @var string the component ID, class name, interface name or alias name
      */
     public $id;
@@ -71,6 +79,7 @@ class Instance
     }
 
     /**
+	* 创建一个Instance对象，其成员属性id为传递的参数$id。(一般就是组件id了）
      * Creates a new Instance object.
      * @param string $id the component ID
      * @return Instance the new Instance object.
@@ -80,9 +89,10 @@ class Instance
         return new static($id);
     }
 
-    /**
+    /**把指定的引用解析为实际的对象，并且确保它是指定的类型
      * Resolves the specified reference into the actual object and makes sure it is of the specified type.
-     *
+     * 
+	 引用可以是字符串或者Instance对象。如果是字符串，那么将表示组件ID；（类名，接口名，别名）根据容器类型
      * The reference may be specified as a string or an Instance object. If the former,
      * it will be treated as a component ID, a class/interface name or an alias, depending on the container type.
      *
@@ -153,8 +163,10 @@ class Instance
     public function get($container = null)
     {
         if ($container) {
+			//根据Instance的成员id，去获得实际的组件对象
             return $container->get($this->id);
         }
+		//没有参数的，就直接用助手类的
         if (Yii::$app && Yii::$app->has($this->id)) {
             return Yii::$app->get($this->id);
         } else {
