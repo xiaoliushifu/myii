@@ -177,19 +177,21 @@ class Container extends Component
             return $this->_singletons[$class];
             //没有预先定义在_definitions里
         } elseif (!isset($this->_definitions[$class])) {
-            //否则就去build
+            //否则就直接去build
             return $this->build($class, $params, $config);
         }
-
+		//定义在_definitions里的情况。分为四种：
         $definition = $this->_definitions[$class];
 
+		//可调用的回调函数，第二个参数true表示仅仅验证函数名的合法性
         if (is_callable($definition, true)) {
             $params = $this->resolveDependencies($this->mergeParams($class, $params));
             $object = call_user_func($definition, $this, $params, $config);
+		//数组
         } elseif (is_array($definition)) {
             $concrete = $definition['class'];
             unset($definition['class']);
-
+			//合并配置信息
             $config = array_merge($definition, $config);
             $params = $this->mergeParams($class, $params);
 
@@ -198,12 +200,13 @@ class Container extends Component
             } else {
                 $object = $this->get($concrete, $params, $config);
             }
+		//对象
         } elseif (is_object($definition)) {
             return $this->_singletons[$class] = $definition;
         } else {
             throw new InvalidConfigException('Unexpected object definition type: ' . gettype($definition));
         }
-
+		//单例里有的话，还要把本次实例化的对象从新保存一份（覆盖旧的）
         if (array_key_exists($class, $this->_singletons)) {
             // singleton
             $this->_singletons[$class] = $object;
@@ -348,22 +351,28 @@ class Container extends Component
     }
 
     /**正常化类的定义，不太明白呀
+	现在看看，大概是保证设置的信息，要么是字符串，要么是数组，要么是可调用。组成数组返回去。
+	类似于格式化。
      * Normalizes the class definition.
-     * @param string $class class name
-     * @param string|array|callable $definition the class definition
-     * @return array the normalized class definition
+     * @param string $class class name  类名
+     * @param string|array|callable $definition the class definition  类定义信息（字符串，数组，可调用）
+     * @return array the normalized class definition  数组，正常化的类定义
      * @throws InvalidConfigException if the definition is invalid.
      */
     protected function normalizeDefinition($class, $definition)
     {
         if (empty($definition)) {
+			//可见一斑，所谓正常化，就是弄个带有class下标的关联数组呀
             return ['class' => $class];
         } elseif (is_string($definition)) {
             return ['class' => $definition];
+		//对象或可调用，则直接返回，无需封装成数组
         } elseif (is_callable($definition, true) || is_object($definition)) {
             return $definition;
         } elseif (is_array($definition)) {
+			//没有class下标
             if (!isset($definition['class'])) {
+				//本次带有命名空间
                 if (strpos($class, '\\') !== false) {
                     $definition['class'] = $class;
                 } else {
@@ -390,34 +399,39 @@ class Container extends Component
 	 * 这个方法是protected，是它实现依赖注入的解析，实例化这些依赖，注入到新创建的对象里
      * This method will resolve dependencies of the specified class, instantiate them, and inject
      * them into the new instance of the specified class.
-     * @param string $class the class name
-     * @param array $params constructor parameters
-     * @param array $config configurations to be applied to the new instance
-     * @return object the newly created instance of the specified class
+     * @param string $class the class name   类名
+     * @param array $params constructor parameters  构造函数的参数
+     * @param array $config configurations to be applied to the new instance  配置信息（应用到新实例中的）
+     * @return object the newly created instance of the specified class 返回根据指定类创建的实例
      * @throws NotInstantiableException If resolved to an abstract class or an interface (since 2.0.9)
      */
     protected function build($class, $params, $config)
     {
         /* @var $reflection ReflectionClass */
+		//获得$class的反射对象，及它的依赖（构造函数的参数们）
         list ($reflection, $dependencies) = $this->getDependencies($class);
 
+		//实参添加到依赖里，有可能会覆盖之前重复的。
         foreach ($params as $index => $param) {
             $dependencies[$index] = $param;
         }
-
+		//把getDependencies()解析出的依赖，去实例化。
         $dependencies = $this->resolveDependencies($dependencies, $reflection);
         if (!$reflection->isInstantiable()) {
             throw new NotInstantiableException($reflection->name);
         }
+		//没有$class的配置信息时，直接走该方法完成实例化即可
         if (empty($config)) {
             return $reflection->newInstanceArgs($dependencies);
         }
-
+		
         if (!empty($dependencies) && $reflection->implementsInterface('yii\base\Configurable')) {
             // set $config as the last parameter (existing one will be overwritten)
+			//把配置信息，合并到依赖里，这有点不理解了。
             $dependencies[count($dependencies) - 1] = $config;
             return $reflection->newInstanceArgs($dependencies);
         } else {
+			//根据依赖实例化对象，然后再去那$config参数去配置刚刚实例化的对象
             $object = $reflection->newInstanceArgs($dependencies);
 			//注意，刚实例化$object,就立马遍历配置项进行类的初始化了呀，哈哈
             foreach ($config as $name => $value) {
@@ -427,7 +441,8 @@ class Container extends Component
         }
     }
 
-    /**合并用户指定的构造函数参数到一个先前通过set注册的对象
+    /**合并用户指定的构造函数参数到一个先前通过set注册的对象。
+	参数重复的，已实参优先。
      * Merges the user-specified constructor parameters with the ones registered via [[set()]].
      * @param string $class class name, interface name or alias name
      * @param array $params the constructor parameters
@@ -435,12 +450,16 @@ class Container extends Component
      */
     protected function mergeParams($class, $params)
     {
+		//成员里该$class的参数为空，直接返回$params
         if (empty($this->_params[$class])) {
             return $params;
+		//本次实参$params为空，则直接返回成员里的该$class的参数
         } elseif (empty($params)) {
             return $this->_params[$class];
+		//否则，两者都有，那就得进行合并了
         } else {
             $ps = $this->_params[$class];
+			//遍历实参，填充到成员参数里，有可能覆盖。可以看成优先使用实参里的内容
             foreach ($params as $index => $value) {
                 $ps[$index] = $value;
             }
@@ -449,17 +468,18 @@ class Container extends Component
     }
 
     /**
-     * protected的方法，返回$class的依赖项，要实例化时，构造函数所需的依赖
+     * protected的方法，返回$class的依赖项，也就是要实例化某个类时，构造函数所需的依赖
      * Returns the dependencies of the specified class.
      * 通过代码可知，实现原理就是：通过php反射机制，优先得到它的构造函数反射对象
      * 然后解析这个构造函数都需要哪几个什么类型的参数，是否是默认等。以此达到
      * 获得依赖的目的。
+	 这个方法涉及了：类反射对象，构造函数反射对象，函数参数反射对象
      * @param string $class class name, interface name or alias name
      * @return array the dependencies of the specified class.
      */
     protected function getDependencies($class)
     {
-        //是否是曾经反射过的，缓存起来，避免下次再去反射，这就是缓冲思想
+        //是否是曾经反射过的，缓存起来，避免下次再去反射，这就是缓存思想
         //因为反射的代价应该很大（估计会搜索硬盘，读取类文件什么的，属于C底层的实现）
         if (isset($this->_reflections[$class])) {
             return [$this->_reflections[$class], $this->_dependencies[$class]];
@@ -467,7 +487,7 @@ class Container extends Component
 
         //初始化依赖数组
         $dependencies = [];
-        //根据类名，创建对应类的反射对象ReflectionClass
+        //根据类名，创建对应类的反射对象ReflectionClass，属于php高级语法
         $reflection = new ReflectionClass($class);
 
         //类反射对象获得类的构造函数反射对象（ReflectionMethod)
@@ -483,13 +503,15 @@ class Container extends Component
                     //2 不是默认值，则根据类名c，再去实例化之
                 } else {
                     $c = $param->getClass();
-                    //依赖的实例化，使用Instance::of()方法，暂不知
+                    //依赖的实例化，使用Instance::of()方法，只是生成$c的引用而已。或者说是临时信息
+					//而是在resolveDependencies方法里实例化这些依赖
                     $dependencies[] = Instance::of($c === null ? null : $c->getName());
                 }
             }
         }
-
+		//保存类反射对象
         $this->_reflections[$class] = $reflection;
+		//保存好解析出的依赖（构造函数的参数们）
         $this->_dependencies[$class] = $dependencies;
 
         return [$reflection, $dependencies];
@@ -506,8 +528,12 @@ class Container extends Component
     {
         foreach ($dependencies as $index => $dependency) {
 			//这个Instance,并没有被导入，是如何找到它的呢？是自动加载吗？
+			//同一个命名空间下，无需自动导入
             if ($dependency instanceof Instance) {
                 if ($dependency->id !== null) {
+					//因为上个方法getDependencies里获得依赖时，是使用Instance::of()只是一个临时状态
+					//故这里使用id才去真正的实例化依赖对象，这里仍然使用get()，依赖是个相对的概念，本质还是一个
+					//对象，故实例化这个对象时，还是会走DI的过程。
                     $dependencies[$index] = $this->get($dependency->id);
                 } elseif ($reflection !== null) {
                     $name = $reflection->getConstructor()->getParameters()[$index]->getName();
@@ -555,6 +581,7 @@ class Container extends Component
     }
 
     /**
+	解析一个方法的依赖
      * Resolve dependencies for a function.
      *这个方法实现了类似invoke的功能。
      * This method can be used to implement similar functionality as provided by [[invoke()]] in other
@@ -569,9 +596,11 @@ class Container extends Component
      */
     public function resolveCallableDependencies(callable $callback, $params = [])
     {
+		//数组，用函数反射对象
         if (is_array($callback)) {
             $reflection = new \ReflectionMethod($callback[0], $callback[1]);
         } else {
+		//否则用方法反射对象
             $reflection = new \ReflectionFunction($callback);
         }
 
@@ -579,6 +608,7 @@ class Container extends Component
 
         $associative = ArrayHelper::isAssociative($params);
 
+		//遍历反射对象的参数们，每个参数也是反射对象哦
         foreach ($reflection->getParameters() as $param) {
             $name = $param->getName();
             if (($class = $param->getClass()) !== null) {

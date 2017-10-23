@@ -126,7 +126,7 @@ class ServiceLocator extends Component
      * Returns the component instance with the specified ID.
      *
      * @param string $id component ID (e.g. `db`).
-	 * 第二个参数默认是true,也就是如果找不到组件的话，会返回一个异常
+	 * 第二个参数默认是true,也就是如果找不到组件的话，会返回一个异常（可见这个组件很重要，找不到的话程序不能往下进行）
 	 * 如果是false的话，就不返回异常，而是返回一个null
      * @param bool $throwException whether to throw an exception if `$id` is not registered with the locator before.
      * @return object|null the component of the specified ID. If `$throwException` is false and `$id`
@@ -143,8 +143,11 @@ class ServiceLocator extends Component
 
         if (isset($this->_definitions[$id])) {
             $definition = $this->_definitions[$id];
+			//是对象，且不是回调类型，那么直接返回就行了
             if (is_object($definition) && !$definition instanceof Closure) {
                 return $this->_components[$id] = $definition;
+			//否则就要使用助手类根据配置信息去实例化。助手类Yii的Container属性就是Container容器对象的引用
+			//故最终还是会转移到Container里去操作。可见服务定位器是建立在Container容器对象之上的。容器对象更底层。
             } else {
                 return $this->_components[$id] = Yii::createObject($definition);
             }
