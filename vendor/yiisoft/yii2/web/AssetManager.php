@@ -66,10 +66,12 @@ class AssetManager extends Component
      */
     public $bundles = [];
     /**
+	* 存储发布过的assetfiles文件的文件系统目录（对内的）
      * @var string the root directory storing the published asset files.
      */
     public $basePath = '@webroot/assets';
     /**
+	* 访问这些assetfiles文件的URL地址（对外的）
      * @var string the base URL through which the published asset files can be accessed.
      */
     public $baseUrl = '@web/assets';
