@@ -20,8 +20,11 @@ use Yii;
  */
 class BaseStringHelper
 {
-    /**
+    /**返回给定字符串的字节长度，注意是字节长度（字母数字都被各大字符集兼容为ascii，
+	故这些个字符，一个字符就是一个字节；如果涉及中文的话，那就得看是gbk还是utf8了。
+	一个utf-8的汉字是三个字节，一个gbk的则是两个字节）
      * Returns the number of bytes in the given string.
+	 该方法使用mb_strlen的底层php函数。第二个参数8bit,意味着按照字节长度读取字符串
      * This method ensures the string is treated as a byte array by using `mb_strlen()`.
      * @param string $string the string being measured for length
      * @return int the number of bytes in the given string.
