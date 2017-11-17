@@ -8,10 +8,13 @@
 namespace yii\caching;
 
 /**
+* DummyCache是缓存组件的一个填充器（待填充）（不太明白，没读懂）
  * DummyCache is a placeholder cache component.
- *
+ *DummyCache不缓存任何数据项，它被提供是为了满足开发人员仅仅配置一个叫做Cache的应用组件即可
  * DummyCache does not cache anything. It is provided so that one can always configure
+ 它只保存一个对cache对象的检测结果。不错，保存一个检测结果而已。
  * a 'cache' application component and save the check of existence of `\Yii::$app->cache`.
+ 开发人员可以通过用其他缓存组件替换DummyCache的方法，来随意在无缓存和有缓存两个模式下切换
  * By replacing DummyCache with some other cache component, one can quickly switch from
  * non-caching mode to caching mode.
  *
