@@ -8,6 +8,7 @@
 namespace yii\caching;
 
 /**
+* ArrayCache提供的缓存特性是，紧紧在当前请求中生效。
  * ArrayCache provides caching for the current request only by storing the values in an array.
  *
  * See [[Cache]] for common cache operations that ArrayCache supports.
