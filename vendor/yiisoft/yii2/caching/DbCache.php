@@ -187,6 +187,8 @@ class DbCache extends Cache
     }
 
     /**
+	 * 这就是数据库缓存驱动的劣势，对于重复的设置缓存，会报错。而FileCache就可以，没有问题。
+	 * 有么有解决办法呢？有的，那就是在addValue之前，执行一次对应key的删除就行了。
      * Stores a value identified by a key in cache.
      * This is the implementation of the method declared in the parent class.
      *
@@ -200,16 +202,20 @@ class DbCache extends Cache
         $command = $this->db->createCommand()
             ->update($this->cacheTable, [
                 'expire' => $duration > 0 ? $duration + time() : 0,
-                'data' => [$value, \PDO::PARAM_LOB],
+                'data' => [$value, \PDO::PARAM_LOB],//大对象数据类型
             ], ['id' => $key]);
 
 		//执行成功，认为更新没有问题。否则认为没有数据在里面。这也太大胆了吧？更新返回0就是没有key存在吗？
-		//不能有别的原因吗？
+		//不能有别的原因吗,比如，数据库里已经存在的一模一样的记录。这也会报错呀！
+		//比如连续两次set同一个数据项，肯定报错。
         if ($command->execute()) {
             $this->gc();
 
             return true;
         } else {
+			/*======下面这行代码是后来加的，并不是DbCache的源码===========*/
+			$this->deleteValue($key);
+			/*========================*/
             return $this->addValue($key, $value, $duration);
         }
     }
