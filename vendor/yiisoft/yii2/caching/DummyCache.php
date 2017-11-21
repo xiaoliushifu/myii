@@ -14,7 +14,10 @@ namespace yii\caching;
  * DummyCache does not cache anything. It is provided so that one can always configure
  它只保存一个对cache对象的检测结果。不错，保存一个检测结果而已。
  * a 'cache' application component and save the check of existence of `\Yii::$app->cache`.
- 开发人员可以通过用其他缓存组件替换DummyCache的方法，来随意在无缓存和有缓存两个模式下切换
+ 开发人员可以通过用其他缓存组件替换DummyCache的方法，来随意在无缓存和有缓存两个模式下切换。
+ 有意思吧？在不改变原有代码的基础上，切换DummyCache，仍然可以走通涉及cache操作的代码，而并没有
+ 什么逻辑执行（get获取永远false，set永远返回true而实际啥也没有存入缓存）
+ 这就是DummyCache的真谛。而使用场景应该是临时切换或者临时测试使用吧。？
  * By replacing DummyCache with some other cache component, one can quickly switch from
  * non-caching mode to caching mode.
  *
