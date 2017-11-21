@@ -38,7 +38,8 @@ class TestController extends Controller
     //第二个调用的方法，且返回false时后续不再执行，直接返回响应
     public function beforeAction($action)
     {
-        var_dump($action);
+        //var_dump($action);
+		return true;
     }
     /**
      * Lists all Test models.
@@ -132,4 +133,12 @@ class TestController extends Controller
             throw new NotFoundHttpException('The requested page does not exist.');
         }
     }
+
+	public function actionTest()
+	{
+		$cache = Yii::$app->getCache();
+		//如果使用DbCache的话，会报重复的key,所以在使用上，应该每次先判断可以存在否，比如$cache->exists('hello');
+		$cache->set('hello','i am a boy');
+		var_dump($cache->get('hello'));
+	}
 }
