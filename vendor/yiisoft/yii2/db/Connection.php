@@ -440,6 +440,7 @@ class Connection extends Component
      */
     public function cache(callable $callable, $duration = null, $dependency = null)
     {
+		//单独看这个方法，看不出来如何缓存，还得去看Command.php的queryInternal()方法才行。
         $this->_queryCacheInfo[] = [$duration === null ? $this->queryCacheDuration : $duration, $dependency];
         try {
             $result = call_user_func($callable, $this);
