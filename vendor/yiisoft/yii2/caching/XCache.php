@@ -9,7 +9,8 @@ namespace yii\caching;
 
 /**
  * XCache provides XCache caching in terms of an application component.
- *
+ *  
+ * 这个php扩展，难道是只支持在lighttpdweb 服务器上，才能加载对应的php扩展。
  * To use this application component, the [XCache PHP extension](http://xcache.lighttpd.net/) must be loaded.
  * Also note that the [[flush()]] functionality will work correctly only if "xcache.admin.enable_auth"
  * is set to "Off" in php.ini.
