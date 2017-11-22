@@ -588,9 +588,10 @@ class View extends Component
         $properties['id'] = $id;
 		//把视图组件传递到片段缓存对象中
         $properties['view'] = $this;
-        /* @var $cache FragmentCache */
+        /* @var $cache FragmentCache 从代码看，begin，end这些方法，明显是小部件widget的使用习惯，所以可以看出FragmentCache属于小部件的子类*/
         $cache = FragmentCache::begin($properties);
-		//如果有曾经缓存的内容，则返回false
+		//如果有曾经缓存的内容，则返回数据。这表示至少是第二次调用了；
+		//而如果是第一次调用beginCache，肯定还没有缓存内容，故直接return true，等待endCache来确定片段缓存的页面范围。
         if ($cache->getCachedContent() !== false) {
             $this->endCache();
 

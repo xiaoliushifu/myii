@@ -11,6 +11,7 @@ use Yii;
 use ReflectionClass;
 
 /**
+* Widget是小部件的基类
  * Widget is the base class for widgets.
  *
  * For more details and usage information on Widget, see the [guide article on widgets](guide:structure-widgets).
@@ -54,6 +55,7 @@ class Widget extends Component implements ViewContextInterface
      */
     public static $autoIdPrefix = 'w';
     /**
+	* 用数组实现的栈逻辑，静态。一般保存当前正被渲染的小部件对象，主要在begin和end方法里使用
      * @var Widget[] the widgets that are currently being rendered (not ended). This property
      * is maintained by [[begin()]] and [[end()]] methods.
      * @internal
@@ -106,6 +108,7 @@ class Widget extends Component implements ViewContextInterface
             if (get_class($widget) === get_called_class()) {
                 /* @var $widget Widget */
                 if ($widget->beforeRun()) {
+					//小部件的核心方法，就是run
                     $result = $widget->run();
                     $result = $widget->afterRun($result);
                     echo $result;
@@ -203,6 +206,7 @@ class Widget extends Component implements ViewContextInterface
     }
 
     /**
+	* 执行run，需要每个小部件子类各自完成，这个虽然是个空实现，其实是个接口。
      * Executes the widget.
      * @return string the result of widget execution to be outputted.
      */
