@@ -13,6 +13,7 @@ use yii\helpers\FileHelper;
 
 /**
  * FileMutex implements mutex "lock" mechanism via local file system files.
+ 依赖于php的flock函数，果然不出余之所料
  * This component relies on PHP `flock()` function.
  *
  * Application configuration example:
@@ -73,6 +74,7 @@ class FileMutex extends Mutex
     public function init()
     {
         $this->mutexPath = Yii::getAlias($this->mutexPath);
+		//首先创建文件所在路径
         if (!is_dir($this->mutexPath)) {
             FileHelper::createDirectory($this->mutexPath, $this->dirMode, true);
         }
@@ -94,15 +96,19 @@ class FileMutex extends Mutex
             @chmod($this->getLockFilePath($name), $this->fileMode);
         }
         $waitTime = 0;
+		//LOCK_EX是进行排他锁，LOCK_NB暂不理解。是在进行锁操作时也不阻塞？（谁都可以抢锁吗？）直到谁最终抢到？
         while (!flock($file, LOCK_EX | LOCK_NB)) {
             $waitTime++;
+			//尝试是有次数限制的，
             if ($waitTime > $timeout) {
                 fclose($file);
 
                 return false;
             }
+			//而且休眠一秒
             sleep(1);
         }
+		//锁定后的文件存到内存中
         $this->_files[$name] = $file;
 
         return true;
@@ -115,11 +121,16 @@ class FileMutex extends Mutex
      */
     protected function releaseLock($name)
     {
+		//没有这个锁，或释放锁失败。否则就是释放锁成功。
+		//接着再进行else。
         if (!isset($this->_files[$name]) || !flock($this->_files[$name], LOCK_UN)) {
             return false;
         } else {
+			//关闭这个文件
             fclose($this->_files[$name]);
+			//文件系统删除这个文件
             unlink($this->getLockFilePath($name));
+			//内存中删除这个文件
             unset($this->_files[$name]);
 
             return true;
@@ -127,6 +138,8 @@ class FileMutex extends Mutex
     }
 
     /**
+	* 文件路径+锁名+.lock。
+	* 锁名需进行md5散列。
      * Generate path for lock file.
      * @param string $name
      * @return string

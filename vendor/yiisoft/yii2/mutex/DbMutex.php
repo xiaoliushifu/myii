@@ -13,6 +13,7 @@ use yii\base\InvalidConfigException;
 use yii\di\Instance;
 
 /**
+* DbMutex也是一个抽象类，实现的有Oracle,Pgsql。
  * DbMutex is the base class for classes, which relies on database while implementing mutex "lock" mechanism.
  *
  * @see Mutex
