@@ -140,7 +140,7 @@ class TestController extends Controller
 		//如果使用DbCache的话，会报重复的key,所以在使用上，应该每次先判断key存在否，比如$cache->exists('hello');
 		//$cache->set('hello','i am a boy');
 		//var_dump($cache->get('hello'));
-
+		/*
 		$db = Yii::$app->getDb();
 
 		Yii::beginProfile('b');
@@ -148,6 +148,7 @@ class TestController extends Controller
 			return $db->createCommand('SELECT * FROM t2 limit 100000')->queryAll();
 		});
 		Yii::endProfile('b');
-		print_r($result);
+		*/
+		return $this->render('test');
 	}
 }

@@ -13,9 +13,9 @@ use ReflectionClass;
 /**
 * Widget是小部件的基类
  * Widget is the base class for widgets.
- *
+ *小部件是在视图view中使用的可重复单元，就是用来生成对应视图代码（HTML）的php封装。
  * For more details and usage information on Widget, see the [guide article on widgets](guide:structure-widgets).
- *
+ * 小部件与视图文件相比，就是小巧型的，可重用的。不像普通的视图文件，大部分是php脚本。
  * @property string $id ID of the widget.
  * @property \yii\web\View $view The view object that can be used to render views or view files. Note that the
  * type of this property differs in getter and setter. See [[getView()]] and [[setView()]] for details.
@@ -28,6 +28,7 @@ use ReflectionClass;
 class Widget extends Component implements ViewContextInterface
 {
     /**
+	 * 事件名，见名之意，init自然是在init方法里触发
      * @event Event an event that is triggered when the widget is initialized via [[init()]].
      * @since 2.0.11
      */
@@ -71,7 +72,7 @@ class Widget extends Component implements ViewContextInterface
     public function init()
     {
         parent::init();
-        $this->trigger(self::EVENT_INIT);
+        $this->trigger(self::EVENT_INIT);//触发init事件
     }
 
     /**
@@ -86,10 +87,12 @@ class Widget extends Component implements ViewContextInterface
      */
     public static function begin($config = [])
     {
+		//自动填充当前调用的类（不是父类，而是实际发挥作用的子类），组成完整的配置信息。
+		//因为该方法是静态，故调用时并未实例化对象，这里class下标是实例化的关键
         $config['class'] = get_called_class();
         /* @var $widget Widget */
-        $widget = Yii::createObject($config);
-        static::$stack[] = $widget;
+        $widget = Yii::createObject($config);//用反射机制去实例化
+        static::$stack[] = $widget;//存储到当前栈中
 
         return $widget;
     }
@@ -104,6 +107,7 @@ class Widget extends Component implements ViewContextInterface
     public static function end()
     {
         if (!empty(static::$stack)) {
+			//取出刚才的小部件对象
             $widget = array_pop(static::$stack);
             if (get_class($widget) === get_called_class()) {
                 /* @var $widget Widget */
@@ -123,6 +127,7 @@ class Widget extends Component implements ViewContextInterface
     }
 
     /**
+	 * 一个方法完成小部件的渲染（与上述的begin(),end()相比是另一种渲染方式）
      * Creates a widget instance and runs it.
      * The widget rendering result is returned by this method.
      * @param array $config name-value pairs that will be used to initialize the object properties
@@ -139,6 +144,7 @@ class Widget extends Component implements ViewContextInterface
             $widget = Yii::createObject($config);
             $out = '';
             if ($widget->beforeRun()) {
+				//直接调用run()完事。
                 $result = $widget->run();
                 $out = $widget->afterRun($result);
             }

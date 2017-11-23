@@ -98,15 +98,15 @@ class View extends Component
      */
     public $blocks;
     /**
-	* 不太懂。
-	* 片段缓存widget。用于内部实现内容缓存特性的
+	* 
+	* 片段缓存功能应用在视图中，该属性用来保存活跃的widget。用于内部实现内容缓存特性的
      * @var array a list of currently active fragment cache widgets. This property
      * is used internally to implement the content caching feature. Do not modify it directly.
      * @internal
      */
     public $cacheStack = [];
     /**不太懂。
-     * 用于嵌入动态内容的小洞
+     * 用于嵌入动态内容的小洞，这是片段缓存实现嵌套特性的基础
      * @var array a list of placeholders for embedding dynamic contents. This property
      * 也是内部使用来实现内容缓存特性的
      * is used internally to implement the content caching feature. Do not modify it directly.
