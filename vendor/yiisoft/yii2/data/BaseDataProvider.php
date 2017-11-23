@@ -33,6 +33,7 @@ use yii\base\InvalidParamException;
 abstract class BaseDataProvider extends Component implements DataProviderInterface
 {
     /**
+	 * 组件ID，在数据提供器界是唯一的
      * @var string an ID that uniquely identifies the data provider among all data providers.
      * You should set this property if the same page contains two or more different data providers.
      * Otherwise, the [[pagination]] and [[sort]] may not work properly.

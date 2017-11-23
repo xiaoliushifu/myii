@@ -7,9 +7,9 @@
 
 namespace yii\data;
 
-/**
+/**DataProviderInterface定义了所有数据提供器必须实现的方法
  * DataProviderInterface is the interface that must be implemented by data provider classes.
- *
+ *数据提供器是组件（封装了排序和分页功能。分页，排序是非常常见的业务），可以在小部件（比如GridView,ListView)里使用。
  * Data providers are components that sort and paginate data, and provide them to widgets
  * such as [[\yii\grid\GridView]], [[\yii\widgets\ListView]].
  *
@@ -33,7 +33,9 @@ interface DataProviderInterface
     public function prepare($forcePrepare = false);
 
     /**
+	 * 返回数据模型的数量
      * Returns the number of data models in the current page.
+	 等效于count($provider->getModels())
      * This is equivalent to `count($provider->getModels())`.
      * When [[getPagination|pagination]] is false, this is the same as [[getTotalCount|totalCount]].
      * @return int the number of data models in the current page.
@@ -48,6 +50,7 @@ interface DataProviderInterface
     public function getTotalCount();
 
     /**
+	* 返回当前页的数据模型（多个）
      * Returns the data models in the current page.
      * @return array the list of data models in the current page.
      */
@@ -61,11 +64,12 @@ interface DataProviderInterface
     public function getKeys();
 
     /**
+	* 排序
      * @return Sort the sorting object. If this is false, it means the sorting is disabled.
      */
     public function getSort();
 
-    /**
+    /**分页对象
      * @return Pagination the pagination object. If this is false, it means the pagination is disabled.
      */
     public function getPagination();
