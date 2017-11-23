@@ -79,7 +79,7 @@ class FragmentCache extends Widget
      * the fragment cache according to specific setting (e.g. enable fragment cache only for GET requests).
      */
     public $enabled = true;
-    /**该属性内部使用，暂不必理会
+    /**该属性内部使用，用来嵌入动态内容的。片段缓存支持内部嵌套
      * @var array a list of placeholders for embedding dynamic contents. This property
      * is used internally to implement the content caching feature. Do not modify it.
      */
@@ -96,7 +96,7 @@ class FragmentCache extends Widget
         $this->cache = $this->enabled ? Instance::ensure($this->cache, Cache::className()) : null;
 
         if ($this->cache instanceof Cache && $this->getCachedContent() === false) {
-			//把片段缓存对象，放到视图对象中引用
+			//把片段缓存对象，放到视图对象中，专门存放片段缓存对象的属性cacheStack中
             $this->getView()->cacheStack[] = $this;
 			//新开启一段ob缓冲区（输出缓冲区），因为这是处理有关页面的缓存，故涉及echo print等语句的，开启ob后，
 			//会临时存储于php内存中，而不是返回给web服务器。
@@ -116,19 +116,23 @@ class FragmentCache extends Widget
     {
         if (($content = $this->getCachedContent()) !== false) {
             echo $content;
+		//缓存驱动，必须是实现Cache接口的类（缓存的key才符合规律，操作一致）
         } elseif ($this->cache instanceof Cache) {
 			//这里把初始化片段缓存对象时，放到cacheStack里的家伙弹出来，这是为何？
-			//不需要了吗？
+			//不需要了吗？应该是的，因为运行到run方法
             array_pop($this->getView()->cacheStack);
             
             $content = ob_get_clean();
             if ($content === false || $content === '') {
                 return;
             }
+			//缓存依赖判断
             if (is_array($this->dependency)) {
                 $this->dependency = Yii::createObject($this->dependency);
             }
+			//注意看，片段的数据格式。是个数组:元素0是片段内容，元素1是继承自父类的动态小坑
             $data = [$content, $this->dynamicPlaceholders];
+			//放到缓存中
             $this->cache->set($this->calculateKey(), $data, $this->duration, $this->dependency);
 
             if (empty($this->getView()->cacheStack) && !empty($this->dynamicPlaceholders)) {
@@ -156,6 +160,7 @@ class FragmentCache extends Widget
                 $key = $this->calculateKey();
 				//这里还是利用缓存对象，获得曾经缓存的数据
                 $data = $this->cache->get($key);
+				//元素0是片段内容，元素1是小洞
                 if (is_array($data) && count($data) === 2) {
                     list ($content, $placeholders) = $data;
                     if (is_array($placeholders) && count($placeholders) > 0) {
