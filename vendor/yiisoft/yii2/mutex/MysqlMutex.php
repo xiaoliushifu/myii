@@ -11,6 +11,8 @@ use Yii;
 use yii\base\InvalidConfigException;
 
 /**
+ * 实现互斥锁机制，使用的是mysql的锁
+ * 但是仍然是在单一php进程中使用，因为多个php进程都有各自的数据库连接，互不干扰。
  * MysqlMutex implements mutex "lock" mechanism via MySQL locks.
  *
  * Application configuration example:
