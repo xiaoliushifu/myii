@@ -13,7 +13,13 @@ $this->params['breadcrumbs'][] = $this->title;
     <h1><?= Html::encode($this->title) ?></h1>
 
     <p>
-		<?= HelloWidget::widget(['message'=>'你好2呀']); ?>
+		<?php
+			HelloWidget::begin(['message'=>'你好2呀']); 
+		?>
+		<?= rand(2,10);?>
+		<?php
+			HelloWidget::end(); 
+		?>
 	</p>
 
     <div class="form-group">
