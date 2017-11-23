@@ -15,6 +15,7 @@ use yii\db\QueryInterface;
 use yii\di\Instance;
 
 /**
+ *ActiveDataProvider实现了基于Query和ActiveQuery的数据提供（一般生成table标签）
  * ActiveDataProvider implements a data provider based on [[\yii\db\Query]] and [[\yii\db\ActiveQuery]].
  *
  * ActiveDataProvider provides data by performing DB queries using [[query]].
@@ -30,6 +31,7 @@ use yii\di\Instance;
  * ]);
  *
  * // get the posts in the current page
+ 获得AR实例
  * $posts = $provider->getModels();
  * ```
  *
@@ -73,6 +75,7 @@ class ActiveDataProvider extends BaseDataProvider
      */
     public $key;
     /**
+	* 数据库组件的引用
      * @var Connection|array|string the DB connection object or the application component ID of the DB connection.
      * If not set, the default DB connection will be used.
      * Starting from version 2.0.2, this can also be a configuration array for creating the object.
