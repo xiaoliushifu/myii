@@ -12,18 +12,23 @@ use yii\db\Exception;
 use yii\helpers\Inflector;
 
 /**
+ * 单独定义一个php类，来实现与redis服务器的连接
  * The redis connection class is used to establish a connection to a [redis](http://redis.io/) server.
- *
+ * 默认情况下，假设本地服务器的6379端口有个redis守护进程，使用0号数据库
  * By default it assumes there is a redis server running on localhost at port 6379 and uses the database number 0.
- *
+ * 可以通过hostname,port方式，也可以使用unixSocket套接字方式。
  * It is possible to connect to a redis server using [[hostname]] and [[port]] or using a [[unixSocket]].
- *
+ * 支持redis的AUTH命令，当服务器需要认证时，需配置password成员属性。认证是在连接完成之后。
  * It also supports [the AUTH command](http://redis.io/commands/auth) of redis.
  * When the server needs authentication, you can set the [[password]] property to
  * authenticate with the server after connect.
  *
+ * 所有的redis命令，通过executeCommand()方法完成。
  * The execution of [redis commands](http://redis.io/commands) is possible with via [[executeCommand()]].
  *
+	接下来这些操作，需要了解下redis服务器的基础知识才能看得懂，比如：
+	如何连接，哪些增删改查基本命令，缓存数据如何同步到文件系统等。
+
  * @method mixed append($key, $value) Append a value to a key. <https://redis.io/commands/append>
  * @method mixed auth($password) Authenticate to the server. <https://redis.io/commands/auth>
  * @method mixed bgrewriteaof() Asynchronously rewrite the append-only file. <https://redis.io/commands/bgrewriteaof>
