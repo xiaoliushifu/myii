@@ -253,8 +253,10 @@ class Connection extends Component
      */
     public $port = 6379;
     /**
+	* 字符串，unix套接字路径，（比如/var/run/redis/redis.sock),也是连接redis服务器的一种方式
      * @var string the unix socket path (e.g. `/var/run/redis/redis.sock`) to use for connecting to the redis server.
      * This can be used instead of [[hostname]] and [[port]] to connect to the server using a unix socket.
+	 如果套接字指定了，那主机名端口的方式就会忽略
      * If a unix socket path is specified, [[hostname]] and [[port]] will be ignored.
      * @since 2.0.1
      */
@@ -269,15 +271,16 @@ class Connection extends Component
      * Since version 2.0.6 you can disable the SELECT command sent after connection by setting this property to `null`.
      */
     public $database = 0;
-    /**
+    /**支持浮点数，连接redis服务器的超时时间。若不设置则从php.ini里读取ini_get("default_socket_timeout")
      * @var float timeout to use for connection to redis. If not set the timeout set in php.ini will be used: `ini_get("default_socket_timeout")`.
      */
     public $connectionTimeout = null;
-    /**
+    /**操作超时时间，浮点数。也就是向redis存入数据或者从redis获取数据超时的时间。php默认值，是哪个呢？稍后再续。
      * @var float timeout to use for redis socket when reading and writing data. If not set the php default value will be used.
      */
     public $dataTimeout = null;
     /**
+	* 因为是使用php的stream_socket_client()函数连接，所以下面的是配置该函数的参数
      * @var integer Bitmask field which may be set to any combination of connection flags passed to [stream_socket_client()](http://php.net/manual/en/function.stream-socket-client.php).
      * Currently the select of connection flags is limited to `STREAM_CLIENT_CONNECT` (default), `STREAM_CLIENT_ASYNC_CONNECT` and `STREAM_CLIENT_PERSISTENT`.
      * @see http://php.net/manual/en/function.stream-socket-client.php
@@ -285,6 +288,7 @@ class Connection extends Component
      */
     public $socketClientFlags = STREAM_CLIENT_CONNECT;
     /**
+	* 当前redis支持哪些命令呢？还专门弄了个列表。
      * @var array List of available redis commands.
      * @see http://redis.io/commands
      */
@@ -496,6 +500,9 @@ class Connection extends Component
 
 
     /**
+	* 魔术方法__sleep何时被调用？就是在序列化时被php自动调用，
+	调用时，返回的结果给出序列对象需要序列化的属性，某些不需要的则在反序列化时用默认值
+	这是一个异步保存对象的方式，保存好的对象可以网络传输。
      * Closes the connection when this component is being serialized.
      * @return array
      */
@@ -506,6 +513,7 @@ class Connection extends Component
     }
 
     /**
+	* 是否已经建立了连接，所谓已经建立了连接，就是_socket有连接资源
      * Returns a value indicating whether the DB connection is established.
      * @return bool whether the DB connection is established
      */
@@ -515,6 +523,7 @@ class Connection extends Component
     }
 
     /**
+	* 从无到有建立redis连接的过程
      * Establishes a DB connection.
      * It does nothing if a DB connection has already been established.
      * @throws Exception if connection fails
@@ -524,25 +533,35 @@ class Connection extends Component
         if ($this->_socket !== false) {
             return;
         }
+		//使用新版的三元运算符?:，优先判断套接字unixSocket
         $connection = ($this->unixSocket ?: $this->hostname . ':' . $this->port) . ', database=' . $this->database;
         \Yii::trace('Opening redis DB connection: ' . $connection, __METHOD__);
+		
+		//stream_socket_client函数，建立连接时需要给出五个参数
         $this->_socket = @stream_socket_client(
+			//要不就是unix://xxxxx，要不就是tcp://host:port，属于流封装协议吗？
             $this->unixSocket ? 'unix://' . $this->unixSocket : 'tcp://' . $this->hostname . ':' . $this->port,
-            $errorNumber,
-            $errorDescription,
-            $this->connectionTimeout ? $this->connectionTimeout : ini_get('default_socket_timeout'),
-            $this->socketClientFlags
+            $errorNumber,//连接失败时，系统界别的错误号
+            $errorDescription,//连接失败时，错误信息
+            $this->connectionTimeout ? $this->connectionTimeout : ini_get('default_socket_timeout'),//超时时间
+            $this->socketClientFlags//连接选项（详情请看手册）
         );
+		//建立了连接之后，接下来看看有什么要干的呢？
         if ($this->_socket) {
+			//设置存取的超时（与连接超时不是一回事）
             if ($this->dataTimeout !== null) {
+				//需要三个参数，超时需要两个参数，一个是秒，一个是毫秒，两个相加之和才是超时的时间
                 stream_set_timeout($this->_socket, $timeout = (int) $this->dataTimeout, (int) (($this->dataTimeout - $timeout) * 1000000));
             }
+			//是否需要认证？
             if ($this->password !== null) {
                 $this->executeCommand('AUTH', [$this->password]);
             }
+			//是否指定了数据库？
             if ($this->database !== null) {
                 $this->executeCommand('SELECT', [$this->database]);
             }
+			//初始化连接（目前没啥实现的，主要留给开发人员做事件响应处理）
             $this->initConnection();
         } else {
             \Yii::error("Failed to open redis DB connection ($connection): $errorNumber - $errorDescription", __CLASS__);
@@ -552,6 +571,7 @@ class Connection extends Component
     }
 
     /**
+	* 关闭当前的redis连接
      * Closes the currently active DB connection.
      * It does nothing if the connection is already closed.
      */
@@ -560,13 +580,15 @@ class Connection extends Component
         if ($this->_socket !== false) {
             $connection = ($this->unixSocket ?: $this->hostname . ':' . $this->port) . ', database=' . $this->database;
             \Yii::trace('Closing DB connection: ' . $connection, __METHOD__);
+			//断开连接，就是执行QUIT命令
             $this->executeCommand('QUIT');
+			//然后关闭本地的php连接资源
             stream_socket_shutdown($this->_socket, STREAM_SHUT_RDWR);
             $this->_socket = false;
         }
     }
 
-    /**
+    /**触发了个事件而已，没啥可做的目前
      * Initializes the DB connection.
      * This method is invoked right after the DB connection is established.
      * The default implementation triggers an [[EVENT_AFTER_OPEN]] event.
@@ -586,6 +608,7 @@ class Connection extends Component
     }
 
     /**
+	* 返回Lua脚本构造器（Lua脚本是redis服务器支持的命令脚本语言）
      * @return LuaScriptBuilder
      */
     public function getLuaScriptBuilder()
@@ -594,6 +617,9 @@ class Connection extends Component
     }
 
     /**
+	* 这个魔术方法非常重要，当调用连接类不存在的方法时，最后会调用到__call()方法。并且传递方法名和参数。
+	这里就是利用这个原理执行redis的命令。而支持的命令早已在redisCommands里列出来了。
+	如果不在列表里，则继续往上找
      * Allows issuing all supported commands via magic methods.
      *
      * ```php
@@ -606,18 +632,22 @@ class Connection extends Component
      */
     public function __call($name, $params)
     {
+		//当然，需要考虑大小写
         $redisCommand = strtoupper(Inflector::camel2words($name, false));
         if (in_array($redisCommand, $this->redisCommands)) {
             return $this->executeCommand($redisCommand, $params);
         } else {
+			//父级的组件
             return parent::__call($name, $params);
         }
     }
 
-    /**
+    /**执行redis命令
      * Executes a redis command.
      * For a list of available commands and their parameters see http://redis.io/commands.
      *
+	 *执行命令时的参数，参数之间用空格隔开。比如SET mykey somevalue NX。
+	 则调用时的格式是：$redis->executeCommand('SET',['mykey','somevalue','NX']);
      * The params array should contain the params separated by white space, e.g. to execute
      * `SET mykey somevalue NX` call the following:
      *
@@ -625,17 +655,18 @@ class Connection extends Component
      * $redis->executeCommand('SET', ['mykey', 'somevalue', 'NX']);
      * ```
      *
-     * @param string $name the name of the command
-     * @param array $params list of parameters for the command
+     * @param string $name the name of the command  参数1是redis命令名
+     * @param array $params list of parameters for the command  参数2是redis命令的参数
      * @return array|bool|null|string Dependent on the executed command this method
      * will return different data types:
-     *
-     * - `true` for commands that return "status reply" with the message `'OK'` or `'PONG'`.
+     *返回的类型，有以下这些个：
+     * - `true` for commands that return "status reply" with the message `'OK'` or `'PONG'`. 返回真。
      * - `string` for commands that return "status reply" that does not have the message `OK` (since version 2.0.1).
+	 状态字符串
      * - `string` for commands that return "integer reply"
-     *   as the value is in the range of a signed 64 bit integer.
-     * - `string` or `null` for commands that return "bulk reply".
-     * - `array` for commands that return "Multi-bulk replies".
+     *   as the value is in the range of a signed 64 bit integer.整数字符串
+     * - `string` or `null` for commands that return "bulk reply".字符串
+     * - `array` for commands that return "Multi-bulk replies".数组
      *
      * See [redis protocol description](http://redis.io/topics/protocol)
      * for details on the mentioned reply types.
@@ -644,16 +675,19 @@ class Connection extends Component
     public function executeCommand($name, $params = [])
     {
         $this->open();
-
+		//把命令和参数合并到一个数组里
         $params = array_merge(explode(' ', $name), $params);
+		//数组元素的个数
         $command = '*' . count($params) . "\r\n";
+		//每个元素的长度，及每个元素本身字符,比如："$3\r\nSET\r\n"
         foreach ($params as $arg) {
             $command .= '$' . mb_strlen($arg, '8bit') . "\r\n" . $arg . "\r\n";
         }
 
         \Yii::trace("Executing Redis Command: {$name}", __METHOD__);
+		//向连接中输入命令
         fwrite($this->_socket, $command);
-
+		//解析redis服务器的响应，参数以空格连接成字符串
         return $this->parseResponse(implode(' ', $params));
     }
 
@@ -664,42 +698,52 @@ class Connection extends Component
      */
     private function parseResponse($command)
     {
+		//尝试读取响应，否则就抛异常，这可是大事。
+		//fgets读取的长度默认是1024字节
         if (($line = fgets($this->_socket)) === false) {
             throw new Exception("Failed to read from socket.\nRedis command was: " . $command);
         }
+		//注意，$line[0]虽然这么用，好像是数组，其实别忘记了字符串这么用就是取整个字符串的第一个字符
         $type = $line[0];
+		//从第二位开始到倒数第二位为止
         $line = mb_substr($line, 1, -2, '8bit');
+		//分支判断响应的第一个字符
         switch ($type) {
-            case '+': // Status reply
+            case '+': // Status reply  加号，说明是状态响应
                 if ($line === 'OK' || $line === 'PONG') {
                     return true;
                 } else {
                     return $line;
                 }
-            case '-': // Error reply
+            case '-': // Error reply 减号，说明是报错反馈
                 throw new Exception("Redis error: " . $line . "\nRedis command was: " . $command);
-            case ':': // Integer reply
+            case ':': // Integer reply  冒号，直接返回
                 // no cast to int as it is in the range of a signed 64 bit integer
                 return $line;
-            case '$': // Bulk replies
+            case '$': // Bulk replies  美元符。块反馈，需要继续读取。需要了解详情才知道为啥这么写
+				//看来，还得去redis官网看看才能了解
                 if ($line == '-1') {
                     return null;
                 }
                 $length = (int)$line + 2;
                 $data = '';
+				//循环读取
                 while ($length > 0) {
+					//按照$length指定的长度，读取一定的字节
                     if (($block = fread($this->_socket, $length)) === false) {
                         throw new Exception("Failed to read from socket.\nRedis command was: " . $command);
                     }
                     $data .= $block;
+					//减去刚刚读取的数据长度，方便下回再读
                     $length -= mb_strlen($block, '8bit');
                 }
 
                 return mb_substr($data, 0, -2, '8bit');
-            case '*': // Multi-bulk replies
+            case '*': // Multi-bulk replies  多块响应。
                 $count = (int) $line;
                 $data = [];
                 for ($i = 0; $i < $count; $i++) {
+					//递归调用自己
                     $data[] = $this->parseResponse($command);
                 }
 
