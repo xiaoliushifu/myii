@@ -350,7 +350,7 @@ class BaseInflector
         return str_replace(' ', '', ucwords(preg_replace('/[^A-Za-z0-9]+/', ' ', $word)));
     }
 
-    /**
+    /**把大驼峰转换成空格分割的字符串。比如PostTag转换成"Post Tag"
      * Converts a CamelCase name into space-separated words.
      * For example, 'PostTag' will be converted to 'Post Tag'.
      * @param string $name the string to be converted
@@ -363,6 +363,10 @@ class BaseInflector
             '-',
             '_',
             '.',
+				//这里使用了高级正则，负向后查找。(?<![A-Z])[A-Z]表示查找大写字母,但是大写字母的签名不能是大写字母
+				//比如"@#$ABC"，匹配到\0表示ABC。替换为"@#$ ABC"；
+				//"eedDDDaUUU"匹配两次，最终换成eed DDDa UUU"。因为preg_replace会无限匹配替换，直到字符串结尾。
+				//每次匹配时都有新的\0
         ], ' ', preg_replace('/(?<![A-Z])[A-Z]/', ' \0', $name))));
 
         return $ucwords ? ucwords($label) : $label;
