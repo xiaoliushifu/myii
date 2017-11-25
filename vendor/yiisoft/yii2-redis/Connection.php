@@ -632,7 +632,7 @@ class Connection extends Component
      */
     public function __call($name, $params)
     {
-		//当然，需要考虑大小写
+		//命令拆分，且转换成大写的。比如PostTag转换成"POST TAG"
         $redisCommand = strtoupper(Inflector::camel2words($name, false));
         if (in_array($redisCommand, $this->redisCommands)) {
             return $this->executeCommand($redisCommand, $params);
@@ -642,7 +642,7 @@ class Connection extends Component
         }
     }
 
-    /**执行redis命令
+    /**执行redis命令，注意，这不是命令行执行，而是网络协议。命令格式有要求
      * Executes a redis command.
      * For a list of available commands and their parameters see http://redis.io/commands.
      *
@@ -675,6 +675,19 @@ class Connection extends Component
     public function executeCommand($name, $params = [])
     {
         $this->open();
+		/*
+			如果要看明白下面的操作，你一定得知道redis协议和redis命令才行。光知道redis命令不行，因为redis命令
+			好多都是针对命令行执行的，这也是我们初学时的重点。而下面的操作是在建立网络tcp连接的基础上，由A端向
+			redis端发送redis命令，redis端执行，返回响应结果到A端。这如何发送命令，格式是什么？响应的格式又有哪些？这不就是cs通讯网络协议的内容嘛？是的，redis也有协议。http://www.redis.cn/topics/protocol.html
+			星号开头的是参数的数量
+			美元符开头的是每个参数
+			比如SET mykey  myvalue。使用网络协议传送的话，最终组成的字符串的格式如下：
+			*3\r\n
+			$3\r\nSET\r\n
+			$5\r\nmykey\r\n
+			$7\r\nmyvalue\r\n
+			统一为一个字符串就是："*3\r\n$3\r\nSET\r\n$5\r\nmykey\r\n$7\r\nmyvalue\r\n"
+		*/
 		//把命令和参数合并到一个数组里
         $params = array_merge(explode(' ', $name), $params);
 		//数组元素的个数
@@ -692,6 +705,7 @@ class Connection extends Component
     }
 
     /**
+	* 解析还真得看看官网的redis协议，才能明白。
      * @param string $command
      * @return mixed
      * @throws Exception on error
@@ -699,13 +713,24 @@ class Connection extends Component
     private function parseResponse($command)
     {
 		//尝试读取响应，否则就抛异常，这可是大事。
-		//fgets读取的长度默认是1024字节
+		//fgets读取的内容有三种情况：碰到换行符，碰到EOF,读取长度为1024-1字节。
+		//看先遇到哪种情况吧。
         if (($line = fgets($this->_socket)) === false) {
             throw new Exception("Failed to read from socket.\nRedis command was: " . $command);
         }
-		//注意，$line[0]虽然这么用，好像是数组，其实别忘记了字符串这么用就是取整个字符串的第一个字符
+		/*
+			同样，如果不熟悉redis协议，而只知道redis命令，你会怀疑为什么这样解析redis的响应。
+			redis根据响应（回复）的不同，设置了如下五种类型，可以从响应的第一个字节来判断。
+			1用单行回复，也叫状态回复，回复的第一个字节将是“+”
+			2错误消息，回复的第一个字节将是“-”
+			3整型数字，回复的第一个字节将是“:”
+			4批量回复，回复的第一个字节将是“$”
+			5多个批量回复，回复的第一个字节将是“*”
+			
+		*/
         $type = $line[0];
-		//从第二位开始到倒数第二位为止
+		//php官网手册没有说明mb_substr函数第三个参数是负数的情况。
+		//这里通过计算结果反推，是获得$line从第二位开始到倒数第三位为止的子串
         $line = mb_substr($line, 1, -2, '8bit');
 		//分支判断响应的第一个字符
         switch ($type) {
@@ -717,15 +742,22 @@ class Connection extends Component
                 }
             case '-': // Error reply 减号，说明是报错反馈
                 throw new Exception("Redis error: " . $line . "\nRedis command was: " . $command);
-            case ':': // Integer reply  冒号，直接返回
+            case ':': // Integer reply  冒号，直接返回。这样的命令有INCR,MOVE,SADD,DEL等
                 // no cast to int as it is in the range of a signed 64 bit integer
                 return $line;
-            case '$': // Bulk replies  美元符。块反馈，需要继续读取。需要了解详情才知道为啥这么写
-				//看来，还得去redis官网看看才能了解
+            case '$': // Bulk replies  美元符。块反馈，一般需要多次读取
+				/*
+					如下是一个客户端命令，服务端响应的例子：
+					C: GET mykey
+					S: $6\r\nfoobar\r\n
+
+					根据fgets读取响应的规则，肯定是碰到了换行符才读取完毕的，也就是说，fgets读取的是:$6\r\n
+				*/
+				//-1表示请求的值不存在
                 if ($line == '-1') {
                     return null;
                 }
-                $length = (int)$line + 2;
+                $length = (int)$line + 2;//为啥加2，是因为实际数据后面有个\r\n。也就是说，下次读取应该是foobar\r\n。
                 $data = '';
 				//循环读取
                 while ($length > 0) {
@@ -734,16 +766,37 @@ class Connection extends Component
                         throw new Exception("Failed to read from socket.\nRedis command was: " . $command);
                     }
                     $data .= $block;
-					//减去刚刚读取的数据长度，方便下回再读
+					//减去刚刚读取的数据长度，方便下回再读。
+					//正常情况下，一次就读取$length字节就完毕。但是有可能上一步的fread并不如期待那般真正读取到了
+					//$length个字节。而是提前遇到了换行符，EOF也是有可能的。故这种情况下，需要判断length是否为0，多次读取。
                     $length -= mb_strlen($block, '8bit');
                 }
-
+				//始终排除掉最后那两个换行符
                 return mb_substr($data, 0, -2, '8bit');
             case '*': // Multi-bulk replies  多块响应。
+				/*
+					有的命令可以明显的返回多行数据，比如：
+					C: LRANGE mylist 0 3
+					s: *4
+					s: $3
+					s: foo
+					s: $3
+					s: bar
+					s: $5
+					s: Hello
+					s: $5
+					s: World
+					这种情况总是以*号开头，后面的数字4表示后续有四个值。
+					如果指定的key比如mylist不存在，则返回*0\r\n。
+					如果命令在服务端执行超时，则返回*-1\r\n
+				*/
+				
+
                 $count = (int) $line;
                 $data = [];
+				//key不存在，或者命令超时都不会进入循环。
                 for ($i = 0; $i < $count; $i++) {
-					//递归调用自己
+					//递归调用自己，这时候，应该就是$开头的那些整型返回值了
                     $data[] = $this->parseResponse($command);
                 }
 
