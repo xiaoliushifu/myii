@@ -297,7 +297,7 @@ class Component extends Object
      * 这个方法将检测行为类中是否有$name指定的方法，有则执行之
      * This method will check if any attached behavior has
      * the named method and will execute it if available.
-     *
+     *这是实现为组件扩展行为方法（不是行为属性）的关键
      * Do not call this method directly as it is a PHP magic method that
      * will be implicitly called when an unknown method is being invoked.
      * @param string $name the method name
@@ -781,6 +781,7 @@ class Component extends Object
 		//整数，直接绑定
         if (is_int($name)) {
             $behavior->attach($this);
+			//互为引用，行为放到了组件的数组_behaviors；组件放到了行为的owner属性中。
             $this->_behaviors[] = $behavior;
         } else {
 			//重名的行为类，先解绑旧的，然后再绑新的，最终其实就是覆盖

@@ -14,11 +14,19 @@ namespace yii\base;
  * A behavior can be used to enhance the functionality of an existing component without modifying its code.
  * 特别的情况下，可以注入行为类的属性和方法到组件中去，让组件直接访问这些属性和方法
  * In particular, it can "inject" its own methods and properties into the component
- * 行为也能响应在组件中触发的时机（有待确认）
+ * 行为也能响应在组件中触发的事件（有待确认）
  * and make them directly accessible via the component. It can also respond to the events triggered in the component
  * 因此可以中断正常的代码执行流程
  * and thus intercept the normal code execution.
  *
+
+ * 注意行为类的属性和方法的扩展是不同的，如果想扩展行为类的方法到组件中，必须把行为类附加到组件中，也就是继承组件
+ 而不是继承Object（这是因为组件中有__call魔术方法而Object没有）。
+ 如果只扩展组件的属性，则可以直接继承行为父类Behavior即可。这一点要注意。
+ 平常情况下，行为类一般只需继承组件就行了，这样就不必考虑到底能不能扩展自己的方法到组件了。
+
+ 不对，我理解错了：只要行为类通过behavior方法加入到组件类（子类）里的，那么在组件里就可以使用，因为组件的__call方法
+ 会遍历行为来判断执行方法。所以，行为不必非得继承组件，只需注入到组件就行，如何注入？那就是组件里的behavior方法呀。
  * For more details and usage information on Behavior, see the [guide article on behaviors](guide:concept-behaviors).
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
@@ -105,6 +113,7 @@ class Behavior extends Object
             foreach ($this->events() as $event => $handler) {
                 $this->owner->off($event, is_string($handler) ? [$this, $handler] : $handler);
             }
+			//最后owner置空完事
             $this->owner = null;
         }
     }

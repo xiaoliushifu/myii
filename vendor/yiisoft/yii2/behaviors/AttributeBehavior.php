@@ -106,6 +106,7 @@ class AttributeBehavior extends Behavior
     public function events()
     {
 		//新认识一个php函数，array_fill_keys($arr,$val);为某个数组$arr的val作为新数组的key,新数组的val都是$val。
+		//也就是下标key不同，但是所有的下标值都一样是$val的php函数
 		//返回新数组
         return array_fill_keys(
             array_keys($this->attributes),
@@ -116,6 +117,7 @@ class AttributeBehavior extends Behavior
     }
 
     /**
+	 * 真正的事件处理者
      * Evaluates the attribute value and assigns it to the current attributes.
      * @param Event $event
      */
