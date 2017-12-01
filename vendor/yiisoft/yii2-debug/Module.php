@@ -18,6 +18,8 @@ use yii\web\View;
 use yii\web\ForbiddenHttpException;
 
 /**
+ * 注意，这是一个模块，所以它才有控制器，模型，视图。
+ 可以说是第四个应用。1是web应用，2API应用，3console应用，4就是debug应用了
  * The Yii Debug Module provides the debug toolbar and debugger
  *
  * @author Qiang Xue <qiang.xue@gmail.com>

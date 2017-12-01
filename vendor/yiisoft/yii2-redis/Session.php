@@ -122,6 +122,7 @@ class Session extends \yii\web\Session
 	 * 父类的这个方法是false,代表把存储引擎配置交给php.ini；
 	 * 这里redis Session既然继承了Session，自然要使用redis来保存session数据。
 	 * 所以肯定会覆盖父类的方法，并实现那六个方法。
+	 * 所以这里返回true，就是告诉父类session，开发人员配置使用了自定义的存储引擎redis了。
      * Returns a value indicating whether to use custom session storage.
      * This method overrides the parent implementation and always returns true.
      * @return bool whether to use custom storage.
