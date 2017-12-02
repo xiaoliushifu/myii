@@ -122,6 +122,10 @@ class Application extends \yii\base\Application
             //然后删除第一个元素
             unset($params[0]);
         }
+		/*
+			上面处理好了路由信息，其实就是一个“控制器ID/动作ID”的字符串而已。接下来干什么呢？
+			执行Action呗，获得响应，返回，完事
+		*/
         try {
             //打个日志
             Yii::trace("Route requested: '$route'", __METHOD__);
@@ -129,6 +133,7 @@ class Application extends \yii\base\Application
             $this->requestedRoute = $route;
             //应用主体在搞定了路由之后，从这里开始真正处理http请求了
             //包含实例化控制器，再由控制器实例化动作对象，再去执行动作对象关联的方法，最后由视图组件渲染视图，返回渲染后的结果（字符串或响应组件对象Response）
+			//runAction方法在父类Module中
             $result = $this->runAction($route, $params);
             //如果$result是个response组件对象，则直接返回。从整个流程来看，这里应该是response组件正式开始工作的地方吧？
             //之前的地方可能会出现echo,var_dump,print等，但都会因为开启输出缓存机制，而临时存储在php的输出缓存区里，并不是直接交给web服务器

@@ -194,13 +194,14 @@ class Controller extends \yii\base\Controller
     /**
      * beforeAction
      * @inheritdoc  csrf是在beforeAction中完成的。每个action都有判断
+	 * csrf只是其次，重要的是通过parent::beforeAction()触发了BEFORE_ACTION_EVENT这个事件，进而引发了好多功能
      */
     public function beforeAction($action)
     {
         //触发父类，也就是base\Controller的beforeAction事件
-        //但是beforeAction的调用正是从父类而来，所以这次的parent::beforeAction()又回去了
+        //yii\base\Controller注释里已经说明，必须调用父类的beforeAction，因为要触发beforeAction事件，该事件涉及了很多功能。
         if (parent::beforeAction($action)) {
-            //开启，没有报异常，验证出错时
+            //开启csrf，没有其他异常或错误时，就去验证csrf
             if ($this->enableCsrfValidation && Yii::$app->getErrorHandler()->exception === null && !Yii::$app->getRequest()->validateCsrfToken()) {
                 throw new BadRequestHttpException(Yii::t('yii', 'Unable to verify your data submission.'));
             }

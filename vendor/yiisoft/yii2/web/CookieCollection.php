@@ -138,7 +138,9 @@ class CookieCollection extends Object implements \IteratorAggregate, \ArrayAcces
      */
     public function has($name)
     {
+				//该cookie对象存在，且有值
         return isset($this->_cookies[$name]) && $this->_cookies[$name]->value !== ''
+			//永不过期，或者仍未过期
             && ($this->_cookies[$name]->expire === null || $this->_cookies[$name]->expire >= time());
     }
 

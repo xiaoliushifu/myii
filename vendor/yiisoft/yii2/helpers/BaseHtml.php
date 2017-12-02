@@ -283,7 +283,9 @@ class BaseHtml
         return "<!--[if $condition]>\n" . $content . "\n<![endif]-->";
     }
 
-    /**
+    /**在HTML的head部分，写上两个meta。
+     * <meta name='csrf-param' content='_csrf'>这个是csrf的名字
+     * <meta name='csrf-token' content='xxxxx'>这个是csrf的含有掩码的令牌。名字和令牌组成键值对
      * Generates the meta tags containing CSRF token information.
      * @return string the generated meta tags
      * @see Request::enableCsrfValidation
@@ -331,6 +333,7 @@ class BaseHtml
                 $hiddenInputs[] = static::hiddenInput($request->methodParam, $method);
                 $method = 'post';
             }
+            //是否需要csrf,并调用Request组件去生成
             $csrf = ArrayHelper::remove($options, 'csrf', true);
 
             if ($csrf && $request->enableCsrfValidation && strcasecmp($method, 'post') === 0) {

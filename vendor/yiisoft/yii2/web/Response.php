@@ -282,7 +282,7 @@ class Response extends \yii\base\Response
      */
     private $_statusCode = 200;
     /**
-     * 存储处理response过程中的头信息
+     * 存储处理response过程中涉及的http响应头信息，待最终向客户端发送响应时才交由header()函数处理
      * @var HeaderCollection
      */
     private $_headers;
@@ -409,6 +409,7 @@ class Response extends \yii\base\Response
 
     /**
 	 *  单独发送响应头部，如何发送？其实就是php的原生函数header了。
+	 * 内部还调用了sendCookies()方法，因为响应cookie在http响应头中比较特殊，故单独写个方法，可见其重视cookie。
      * Sends the response headers to the client
      */
     protected function sendHeaders()
@@ -459,8 +460,8 @@ class Response extends \yii\base\Response
         if ($this->_cookies === null) {
             return;
         }
-		//种植cookie和服务端接收cookie来处理是一致的，不能种植cookie时不加密，但是服务端接收处理时解密，这就不一致。
-		//所以，需要request组件的enableCookieValidation属性判断，是否服务端种植cookie时需要加密。
+		//种植cookie和服务端接收cookie来处理是一致的，不能种植cookie时不加密，但是服务端接收处理时解密，这就不一致了。
+		//所以，需要request组件的enableCookieValidation属性判断，进而判断服务端种植cookie时是否需要加密。
         $request = Yii::$app->getRequest();
 		//Request组件的这个属性默认是true,即客户端会解密cookie,那服务端种植是得配合，加密cookie（Validation应理解为加解密）。
         if ($request->enableCookieValidation) {
@@ -474,7 +475,8 @@ class Response extends \yii\base\Response
 		//复习一下，我们知道，遍历出的$cookie其实是一个web\cookie对象。
         foreach ($this->getCookies() as $cookie) {
             $value = $cookie->value;
-            //不过期，且配置了认证key，则对发送到客户端的cookie进行加密
+            //不过期(服务端如果想让客户端的cookie过期，不可能直接去客户端删除，而是更新它的过期值为1,当然其他历史的时间值都行，客户端会认为该cookie过期而删除。1是Yii框架特意取的而已）。
+			//且配置了认证key，则对发送到客户端的cookie进行加密
             if ($cookie->expire != 1  && isset($validationKey)) {
                 //使用Security组件为每个cookie值进行加密，加密参数$validationKey由$request组件自行提供
                 //Security组件在哪配置的呢？在Application的核心组件里就有

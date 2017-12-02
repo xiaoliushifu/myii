@@ -12,7 +12,7 @@ namespace yii\web;
  * Cookie represents information related with a cookie, such as [[name]], [[value]], [[domain]], etc.
  * cookie一般在http请求和响应中使用，在request和response组件中维护一个cookies属性，它是一个cookie集合，其中的每个成员
  * 就是yii\web\cookie对象。
- *先前官网看一遍再说
+ *先去官网看一遍再说
  * For more details and usage information on Cookie, see the [guide article on handling cookies](guide:runtime-sessions-cookies).
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
@@ -57,7 +57,8 @@ class Cookie extends \yii\base\Object
     public $httpOnly = true;
 
 
-    /**
+    /**魔术方法：__toString()何时被调用？当一个php对象被当做字符串输出时，比如echo $obj;
+	* 这里就是echo yii\web\Cookie对象了。
      * Magic method to turn a cookie object into a string without having to explicitly access [[value]].
      *
      * ```php

@@ -418,7 +418,7 @@ class View extends Component
      */
     public function renderPhpFile($_file_, $_params_ = [])
     {
-        //开启输出缓存阀门
+        //开启一个输出缓冲
         ob_start();
         //关闭绝对输出选项
         ob_implicit_flush(false);
