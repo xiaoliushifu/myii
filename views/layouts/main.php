@@ -19,7 +19,7 @@ AppAsset::register($this);
 <head>
     <meta charset="<?= Yii::$app->charset ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- 扩展请求伪造也是共享的，故写在了布局视图文件里 -->
+    <!-- 跨站请求伪造也是共享的，故写在了布局视图文件里 -->
     <?= Html::csrfMetaTags() ?>
     <title><?= Html::encode($this->title) ?></title><!-- 应用View组件的title。这下明白为啥在普通视图中设置了吧， 因为布局视图文件是共用的，所以每个页面的不同，其实
     都是由普通视图文件决定的，所以应该在普通视图文件里设置title,一般不会重复的-->

@@ -120,7 +120,7 @@ use yii\helpers\StringHelper;
 class Request extends \yii\base\Request
 {
     /**
-     * 发送CSRF字符串的http头字段的名字（请求还是响应？）
+     * 发送CSRF字符串的http头字段的名字（请求还是响应，应该是请求？）
      * The name of the HTTP header for sending CSRF token.
      */
     const CSRF_HEADER = 'X-CSRF-Token';
@@ -563,7 +563,7 @@ class Request extends \yii\base\Request
     /**
      * 获取指定的http请求实体参数
      * Returns the named request body parameter value.
-     * //如果参数不存在，则使用第二个参数返回（有点多次一举吧？）
+     * //如果参数不存在，则使用第二个参数返回（有点多此一举吧？）
      * If the parameter does not exist, the second parameter passed to this method will be returned.
      * @param string $name the parameter name
      * @param mixed $defaultValue the default parameter value if the parameter does not exist.
@@ -1579,29 +1579,41 @@ class Request extends \yii\base\Request
         return $cookies;
     }
 
+	/**
+	这个成员属性，保存生成后的Csrf令牌值，是带有掩码的令牌值。用于HTML页面的meta和表单的隐藏域
+	什么时候生成？meta是在渲染布局视图时；而表单隐藏域在渲染普通视图时。
+	不是每个页面都有表单，但是每个页面都有meta。
+	所以如果有表单的页面生成了Csrf,那么后来的meta就可以直接使用了。
+	*/
     private $_csrfToken;
 
     /**
-	* 返回令牌（生成令牌），用于后续的CSRF验证
+	* （如果从布局视图里通过助手方法调用，则是生成令牌）。
+	如果是处理请求时调用，则是返回令牌用于CSRF验证，令牌值在_csrfToken中保存
      * Returns the token used to perform CSRF validation.
      * 该令牌的生成比较安全。
      * This token is generated in a way to prevent [BREACH attacks](http://breachattack.com/). It may be passed
-	 令牌从客户端传递而来有两种：通过隐藏表单域，或者http请求的头字段里
+	 令牌从客户端传递而来有两种：通过隐藏表单域，或者http请求的头字段里(可以是自定义的header,也可以是cookie)
      * along via a hidden field of an HTML form or an HTTP header value to support CSRF validation.
+	 * 当参数$regenerate为true的话，一般是需要生成csrf的令牌
      * @param bool $regenerate whether to regenerate CSRF token. When this parameter is true, each time
      * this method is called, a new CSRF token will be generated and persisted (in session or cookie).
      * @return string the token used to perform CSRF validation.
      */
     public function getCsrfToken($regenerate = false)
     {
+		//
         if ($this->_csrfToken === null || $regenerate) {
             if ($regenerate || ($token = $this->loadCsrfToken()) === null) {
-                $token = $this->generateCsrfToken();
+                $token = $this->generateCsrfToken();//一般
             }
             // the mask doesn't need to be very random
             $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-.';
+            //五倍重复，随机打乱，取前8位
             $mask = substr(str_shuffle(str_repeat($chars, 5)), 0, static::CSRF_MASK_LENGTH);
             // The + sign may be decoded as blank space later, which will fail the validation
+            //$token和$mask进行亦或，左边拼接上原始的$mask(验证时有用），然后base64编码，替换+号
+            //注意这里操作的流程，待后续验证csrftoken时会进行逆操作
             $this->_csrfToken = str_replace('+', '.', base64_encode($mask . $this->xorTokens($token, $mask)));
         }
 
@@ -1609,13 +1621,15 @@ class Request extends \yii\base\Request
     }
 
     /**
-	* 从cookie或者session里加载csrf令牌,也就是加载服务端的csrf令牌
+	* 从cookie或者session里加载csrf令牌,如果是cookie，则表明从本次请求的cookie中读取。
+	，如果是session，不清楚。如果cookie和session里都没有时返回null
      * Loads the CSRF token from cookie or session.
      * @return string the CSRF token loaded from cookie or session. Null is returned if the cookie or session
      * does not have CSRF token.
      */
     protected function loadCsrfToken()
     {
+		//这个选项开启，意味着从客户端cookie中读取csrf的令牌，cookie的名字由csrfParam指定
         if ($this->enableCsrfCookie) {
             return $this->getCookies()->getValue($this->csrfParam);
         } else {
@@ -1625,7 +1639,7 @@ class Request extends \yii\base\Request
 
     /**
 	* 生成Csrf令牌，一个随机的字符串而已
-	* 两种方式（cookie,session)
+	* 两种方式（cookie,session)，生成Csrf时使用了安全组件
      * Generates  an unmasked random token used to perform CSRF validation.
      * @return string the random token for CSRF validation.
      */
@@ -1643,10 +1657,12 @@ class Request extends \yii\base\Request
     }
 
     /**
-     * 返回两个字符串的亦或结果
+     * 返回两个字符串的亦或结果，XOR就是亦或
+	 * 亦或能够加密解密的关键，是确保两个字符串的字节长度相等,具体字符串的内容是什么不重要（含中文也可以）
      * Returns the XOR result of two strings.
      * 如果两个字符串的长度不等，那么短字符串将填充，填充到和长字符串一样的长度
 	 * 有点不明白
+	 * 该方法是私有方法，用在比较csrf的mask和token
      * If the two strings are of different lengths, the shorter one will be padded to the length of the longer one.
      * @param string $token1
      * @param string $token2
@@ -1657,17 +1673,18 @@ class Request extends \yii\base\Request
         $n1 = StringHelper::byteLength($token1);
         $n2 = StringHelper::byteLength($token2);
         if ($n1 > $n2) {
-            //str_pad我得查看php官网。是如何截取$token2填充到$token1上的。
+            //从自身最左端截取指定的长度，填充到自身的右端，知道$token2的长度达到$n1
             $token2 = str_pad($token2, $n1, $token2);
         } elseif ($n1 < $n2) {
+			//如果$n1是0，则只填充空格，否则与上述类似
             $token1 = str_pad($token1, $n2, $n1 === 0 ? ' ' : $token1);
         }
-
+		//返回两者的亦或
         return $token1 ^ $token2;
     }
 
     /**
-	* 通过http请求头里获得客户端的csrf令牌
+	* 通过http请求头里获得客户端的csrf令牌，哪个请求头呢？这个交给CSRF_HEADER来指定。属于自定义http头
      * @return string the CSRF token sent via [[CSRF_HEADER]] by browser. Null is returned if no such header is sent.
      */
     public function getCsrfTokenFromHeader()
@@ -1677,9 +1694,9 @@ class Request extends \yii\base\Request
     }
 
     /**
-	* cookie方式生成CSRF令牌信息
+	* 生成一个Cookie,这个cookie专门存储CSRF令牌信息的，所以它的名字，它的那6个字段值比较特殊
      * Creates a cookie with a randomly generated CSRF token.
-	 由csrfCookie指定的随机初始化值将会使用来生成令牌
+		使用由csrfCookie指定的初始化值来生成令牌
      * Initial values specified in [[csrfCookie]] will be applied to the generated cookie.
      * @param string $token the CSRF token
      * @return Cookie the generated cookie
@@ -1688,14 +1705,14 @@ class Request extends \yii\base\Request
     protected function createCsrfCookie($token)
     {
         $options = $this->csrfCookie;
-        $options['name'] = $this->csrfParam;
+        $options['name'] = $this->csrfParam;//cookie名字由它来指定
         $options['value'] = $token;
         return new Cookie($options);
     }
 
     /**
      * Performs the CSRF validation.
-     *  验证，验证服务端存储的csrf(cookie或者session里）和客户端给出的csrf是否一致
+     *  验证，验证服务端存储的csrf(cookie或者session里）和客户端本次请求给出的csrf是否一致
      * This method will validate the user-provided CSRF token by comparing it with the one stored in cookie or session.
 	 * 该方法一般在[[Controller::beforeAction()]]级别的beforeAction里调用
      * This method is mainly called in [[Controller::beforeAction()]].
@@ -1715,26 +1732,29 @@ class Request extends \yii\base\Request
     {
         $method = $this->getMethod();
         // only validate CSRF token on non-"safe" methods http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.1.1
+		//不是所有的http请求方法都验证csrf令牌，比如get,head,options就不验证，直接return true
         if (!$this->enableCsrfValidation || in_array($method, ['GET', 'HEAD', 'OPTIONS'], true)) {
             return true;
         }
-
+		//加载曾经向客户端种植的csrf令牌（可以是cookie（居多），可以是session）
         $trueToken = $this->loadCsrfToken();
 
         if ($token !== null) {
             return $this->validateCsrfTokenInternal($token, $trueToken);
         } else {
+			//从实体参数（一般是post参数）中也获取一份csrf，这两份token进行比较
             return $this->validateCsrfTokenInternal($this->getBodyParam($this->csrfParam), $trueToken)
                 || $this->validateCsrfTokenInternal($this->getCsrfTokenFromHeader(), $trueToken);
         }
     }
 
     /**
-	* 执行csrf令牌的验证
+	* 执行csrf令牌的验证，这是验证的关键，所以是私有方法，由其他地方调用到这里。
      * Validates CSRF token
-     *
-     * @param string $token
-     * @param string $trueToken
+     * 主要是把表单隐藏域的$token进行解码，拆分，亦或。最终的结果再和$trueToken比较。
+	 * 为什么它俩比较呢？其实只要你看到服务端如何向客户端发送csrf的过程，你就会明白这里的验证逻辑了，对不对？
+     * @param string $token  实体参数的token,一般是来自页面表单的隐藏域_csrf
+     * @param string $trueToken 从cookie或者session中读取的cookie
      * @return bool
      */
     private function validateCsrfTokenInternal($token, $trueToken)
@@ -1742,18 +1762,21 @@ class Request extends \yii\base\Request
         if (!is_string($token)) {
             return false;
         }
-
+		//这里把英文句号替换为+号，并用base64解码（是当初往页面设置时做了如此替换和base64编码吗？暂时不知在哪里）
         $token = base64_decode(str_replace('.', '+', $token));
-		//用助手函数计算长度
+		//用助手函数计算字节长度
         $n = StringHelper::byteLength($token);
 		//长度对不对
         if ($n <= static::CSRF_MASK_LENGTH) {
             return false;
         }
+		//csrf包含了两部分，一部分是mask，另一部分是真正的令牌，先取出mask
         $mask = StringHelper::byteSubstr($token, 0, static::CSRF_MASK_LENGTH);
+		//再取出令牌
         $token = StringHelper::byteSubstr($token, static::CSRF_MASK_LENGTH, $n - static::CSRF_MASK_LENGTH);
+		//进行亦或操作（确保两个字符串的字节长度相等）
         $token = $this->xorTokens($mask, $token);
-
+		//判断亦或后的$token是否和$trueToken完全相等呢
         return $token === $trueToken;
     }
 }

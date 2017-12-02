@@ -79,7 +79,7 @@ $this->registerJs("console.log('this is registerJs')",$this::POS_HEAD, $key = nu
                 <?= Html::submitButton('Login', ['class' => 'btn btn-primary', 'name' => 'login-button']) ?>
             </div>
         </div>
-
+<!-- 顺着widget的end,run方法，发现在用BaseHtml::beginForm()方法里生成csrf隐藏域的 -->
     <?php ActiveForm::end(); ?>
 
     <div class="col-lg-offset-1" style="color:#999;">
