@@ -24,6 +24,8 @@ use Yii;
  * 密码生成与验证
  * - Password validation: [[generatePasswordHash()]] and [[validatePassword()]]
  *
+ * 注意，该组件类需要OpenSSL这个php扩展，在windows平台生成随机字符串；或者在所有平台加解密。
+ * 如果需要更高的安全特性支持，建议php大于5.5
  * > Note: this class requires 'OpenSSL' PHP extension for random key/string generation on Windows and
  * for encryption/decryption on all platforms. For the highest security level PHP version >= 5.5.0 is recommended.
  *

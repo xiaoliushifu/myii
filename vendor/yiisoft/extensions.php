@@ -57,4 +57,20 @@ return array (
       '@yii/redis' => $vendorDir . '/yiisoft/yii2-redis',
     ),
   ),
+  'yiisoft/yii2-queue' => 
+  array (
+    'name' => 'yiisoft/yii2-queue',
+    'version' => '1.1.0.0',
+    'alias' => 
+    array (
+      '@zhuravljov/yii/queue' => $vendorDir . '/yiisoft/yii2-queue/src',
+      '@zhuravljov/yii/queue/amqp' => $vendorDir . '/yiisoft/yii2-queue/src/drivers/amqp',
+      '@zhuravljov/yii/queue/beanstalk' => $vendorDir . '/yiisoft/yii2-queue/src/drivers/beanstalk',
+      '@zhuravljov/yii/queue/db' => $vendorDir . '/yiisoft/yii2-queue/src/drivers/db',
+      '@zhuravljov/yii/queue/file' => $vendorDir . '/yiisoft/yii2-queue/src/drivers/file',
+      '@zhuravljov/yii/queue/gearman' => $vendorDir . '/yiisoft/yii2-queue/src/drivers/gearman',
+      '@zhuravljov/yii/queue/redis' => $vendorDir . '/yiisoft/yii2-queue/src/drivers/redis',
+      '@zhuravljov/yii/queue/sync' => $vendorDir . '/yiisoft/yii2-queue/src/drivers/sync',
+    ),
+  ),
 );

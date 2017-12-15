@@ -3298,5 +3298,135 @@
             "xls",
             "xlsx"
         ]
+    },
+    {
+        "name": "symfony/process",
+        "version": "v3.4.2",
+        "version_normalized": "3.4.2.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/symfony/process.git",
+            "reference": "bb3ef65d493a6d57297cad6c560ee04e2a8f5098"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://files.phpcomposer.com/files/symfony/process/bb3ef65d493a6d57297cad6c560ee04e2a8f5098.zip",
+            "reference": "bb3ef65d493a6d57297cad6c560ee04e2a8f5098",
+            "shasum": ""
+        },
+        "require": {
+            "php": "^5.5.9|>=7.0.8"
+        },
+        "time": "2017-12-14T19:40:10+00:00",
+        "type": "library",
+        "extra": {
+            "branch-alias": {
+                "dev-master": "3.4-dev"
+            }
+        },
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "Symfony\\Component\\Process\\": ""
+            },
+            "exclude-from-classmap": [
+                "/Tests/"
+            ]
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "MIT"
+        ],
+        "authors": [
+            {
+                "name": "Fabien Potencier",
+                "email": "fabien@symfony.com"
+            },
+            {
+                "name": "Symfony Community",
+                "homepage": "https://symfony.com/contributors"
+            }
+        ],
+        "description": "Symfony Process Component",
+        "homepage": "https://symfony.com"
+    },
+    {
+        "name": "yiisoft/yii2-queue",
+        "version": "1.1.0",
+        "version_normalized": "1.1.0.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/yiisoft/yii2-queue.git",
+            "reference": "61dcc9f38ab3a2b059212d561553cef10fec0617"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://files.phpcomposer.com/files/yiisoft/yii2-queue/61dcc9f38ab3a2b059212d561553cef10fec0617.zip",
+            "reference": "61dcc9f38ab3a2b059212d561553cef10fec0617",
+            "shasum": ""
+        },
+        "require": {
+            "php": ">=5.5.0",
+            "symfony/process": "*",
+            "yiisoft/yii2": "~2.0.10"
+        },
+        "require-dev": {
+            "jeremeamia/superclosure": "*",
+            "pda/pheanstalk": "*",
+            "php-amqplib/php-amqplib": "*",
+            "phpunit/phpunit": "~4.4",
+            "yiisoft/yii2-debug": "*",
+            "yiisoft/yii2-gii": "*",
+            "yiisoft/yii2-redis": "*"
+        },
+        "suggest": {
+            "ext-gearman": "Need for Gearman queue.",
+            "ext-pcntl": "Need for process signals.",
+            "pda/pheanstalk": "Need for Beanstalk queue.",
+            "php-amqplib/php-amqplib": "Need for AMQP queue.",
+            "yiisoft/yii2-redis": "Need for Redis queue."
+        },
+        "time": "2017-07-12T05:17:03+00:00",
+        "type": "yii2-extension",
+        "extra": {
+            "branch-alias": {
+                "dev-master": "1.x-dev"
+            }
+        },
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "zhuravljov\\yii\\queue\\": "src",
+                "zhuravljov\\yii\\queue\\amqp\\": "src/drivers/amqp",
+                "zhuravljov\\yii\\queue\\beanstalk\\": "src/drivers/beanstalk",
+                "zhuravljov\\yii\\queue\\db\\": "src/drivers/db",
+                "zhuravljov\\yii\\queue\\file\\": "src/drivers/file",
+                "zhuravljov\\yii\\queue\\gearman\\": "src/drivers/gearman",
+                "zhuravljov\\yii\\queue\\redis\\": "src/drivers/redis",
+                "zhuravljov\\yii\\queue\\sync\\": "src/drivers/sync"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "BSD-3-Clause"
+        ],
+        "authors": [
+            {
+                "name": "Roman Zhuravlev",
+                "email": "zhuravljov@gmail.com"
+            }
+        ],
+        "description": "Yii2 Queue Extension which supported DB, Redis, RabbitMQ, Beanstalk and Gearman",
+        "keywords": [
+            "async",
+            "beanstalk",
+            "db",
+            "gearman",
+            "gii",
+            "queue",
+            "rabbitmq",
+            "redis",
+            "yii"
+        ]
     }
 ]
