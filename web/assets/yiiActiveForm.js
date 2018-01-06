@@ -2,7 +2,7 @@
  * Yii form widget.
  *
  * This is the JavaScript widget used by the yii\widgets\ActiveForm widget.
- *
+ *https://github.com/samdark/yii2-cookbook/blob/master/book/forms-activeform-js.md
  * @link http://www.yiiframework.com/
  * @copyright Copyright (c) 2008 Yii Software LLC
  * @license http://www.yiiframework.com/license/
@@ -395,6 +395,14 @@
 		//validateAttribute，然后validateAttribute再调用这个validate方法。属于底层，由$form对象调用
 		//故方法里的this指向$form对象
 		//这是验证的最核心
+		//参数forceValidate是在新版里添加的，该参数可以使得用代码手动触发验证后没有错误时提交代码
+		//新版中该方法也可以在外部手动调用，触发验证整个表单，如:
+		//$('form').yiiActiveForm('validate',true);验证表单无误后，将会提交表单
+		//$('form').yiiActiveForm('validate',false);验证表单无误后，不会提交表单。
+		//但是有一种情况，虽然false参数不会提交表单，但是是否验证整个表单，还得看各个表单的status属性
+		//一般刚刚打开页面时，就点击按钮触发$('form').yiiActiveForm('validate',false);实际不会验证整个表单。
+		//白高兴了一场。
+		//详情见官网介绍
         validate: function (forceValidate) {
             if (forceValidate) {
                 $(this).data('yiiActiveForm').submitting = true;
