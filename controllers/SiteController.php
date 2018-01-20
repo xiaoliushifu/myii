@@ -117,14 +117,17 @@ class SiteController extends Controller
      */
     public function actionMail()
     {
-        
+        //var_dump('ddddd');exit;
 //         Yii::$app->mailer->compose('html',[
 //             'title'=>'标题啊'
 //         ])//compose参数可以使用视图和传参
+        //如果是密码错误了，不好排除问题，因为错误是底层的swiftmailer输出的，swiftmailer有自己的错误机制。debug才看到的这个错误
+        //页面有时不显示错误信息。
         Yii::$app->mailer->compose()
-        ->setFrom('xxxxx@xxxxx.com')
-        ->setTo('xxxxxx@qq.com')
-        ->setCc('xxxxxxxx@163.com')
+        ->setFrom('liumingwei@xiyun.com.cn')
+//         ->setTo('liumingwei@yunzongnet.com')
+        ->setTo('872140945@qq.com')
+       // ->setCc('xxxxxxxx@163.com')
         ->setSubject('Message subject')
         ->setTextBody('Plain text content 你好')
         ->setHtmlBody('<b>HTML content</b>联通')
@@ -138,6 +141,7 @@ class SiteController extends Controller
 //         ->send();
 //         $end = microtime(true);
 //         $duration = $end-$start;
+        var_dump('hello');
         return 'mail finished'.$duration;
     }
 
