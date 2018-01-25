@@ -7,14 +7,13 @@
 
 namespace yii\helpers;
 
-use yii\base\InvalidParamException;
 use yii\base\Arrayable;
+use yii\base\InvalidParamException;
 use yii\web\JsExpression;
 
 /**
-* BaseJson类为JSON这个语法格式提供了具体实在的实现
  * BaseJson provides concrete implementation for [[Json]].
- * 应该直接使用Json，而不是BaseJson
+ *
  * Do not use BaseJson. Use [[Json]] instead.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
@@ -23,7 +22,7 @@ use yii\web\JsExpression;
 class BaseJson
 {
     /**
-     * List of JSON Error messages assigned to constant names for better handling of version differences
+     * List of JSON Error messages assigned to constant names for better handling of version differences.
      * @var array
      * @since 2.0.7
      */
@@ -40,16 +39,13 @@ class BaseJson
 
 
     /**
-	* 编码给定值为JSON字符串，注意，json在php来说，就是一个字符串而已。
      * Encodes the given value into a JSON string.
      *
-	 * 该方法通过支持JavaScript表达式封装了php原生函数json_encode
      * The method enhances `json_encode()` by supporting JavaScript expressions.
      * In particular, the method will not encode a JavaScript expression that is
      * represented in terms of a [[JsExpression]] object.
-     * 注意，要编码为JSON的数据，其字符编码必须是UTF-8的。（这是JSON格式的要求）
+     *
      * Note that data encoded as JSON must be UTF-8 encoded according to the JSON specification.
-	 * 开发人员需要确保$value是UTF-8的。
      * You must ensure strings passed to this method have proper encoding before passing them.
      *
      * @param mixed $value the data to be encoded.
@@ -62,14 +58,10 @@ class BaseJson
     {
         $expressions = [];
         $value = static::processData($value, $expressions, uniqid('', true));
-		//临时注册一个错误处理函数，在json格式化时可能出错。
         set_error_handler(function () {
             static::handleJsonError(JSON_ERROR_SYNTAX);
         }, E_WARNING);
-		//这才是核心，php原生函数
         $json = json_encode($value, $options);
-
-		//再把刚才注册的错误处理函数取消。（注册取消【错误处理函数】，属于进出栈操作）
         restore_error_handler();
         static::handleJsonError(json_last_error());
 
@@ -144,8 +136,6 @@ class BaseJson
     }
 
     /**
-	* 在php原生函数json_encode之前，预处理数据
-	*  主要是不是二维数组，或者是对象。其他数据类型的，则没有什么处理。直接返回了。
      * Pre-processes the data before sending it to `json_encode()`.
      * @param mixed $data the data to be processed
      * @param array $expressions collection of JavaScript expressions
@@ -178,11 +168,9 @@ class BaseJson
                 return new \stdClass();
             }
         }
-		//一般使用json的，多半是数组格式的，对象的少
+
         if (is_array($data)) {
-			//遍历之
             foreach ($data as $key => $value) {
-				//每个数组的元素是数组或者对象的话，递归处理之
                 if (is_array($value) || is_object($value)) {
                     $data[$key] = static::processData($value, $expressions, $expPrefix);
                 }

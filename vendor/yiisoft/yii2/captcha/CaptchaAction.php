@@ -87,7 +87,7 @@ class CaptchaAction extends Action
      */
     public $offset = -2;
     /**
-     * @var string the TrueType font file. This can be either a file path or path alias.
+     * @var string the TrueType font file. This can be either a file path or [path alias](guide:concept-aliases).
      */
     public $fontFile = '@yii/captcha/SpicyRice.ttf';
     /**
@@ -134,12 +134,12 @@ class CaptchaAction extends Action
                 // when src attribute of image tag is changed
                 'url' => Url::to([$this->id, 'v' => uniqid()]),
             ];
-        } else {
-            $this->setHttpHeaders();
-            //验证码都是二进制流，无需再处理其他格式，故应该使用FORMAT_RAW
-            Yii::$app->response->format = Response::FORMAT_RAW;
-            return $this->renderImage($this->getVerifyCode());
         }
+
+        $this->setHttpHeaders();
+        Yii::$app->response->format = Response::FORMAT_RAW;
+
+        return $this->renderImage($this->getVerifyCode());
     }
 
     /**
@@ -163,7 +163,6 @@ class CaptchaAction extends Action
      */
     public function getVerifyCode($regenerate = false)
     {
-        //固定的验证码字符串，看到了吧
         if ($this->fixedVerifyCode !== null) {
             return $this->fixedVerifyCode;
         }
@@ -253,14 +252,13 @@ class CaptchaAction extends Action
         } else {
             $imageLibrary = Captcha::checkRequirements();
         }
-        //分支判断两种图像处理库
         if ($imageLibrary === 'gd') {
             return $this->renderImageByGD($code);
         } elseif ($imageLibrary === 'imagick') {
             return $this->renderImageByImagick($code);
-        } else {
-            throw new InvalidConfigException("Defined library '{$imageLibrary}' is not supported");
         }
+
+        throw new InvalidConfigException("Defined library '{$imageLibrary}' is not supported");
     }
 
     /**
@@ -300,8 +298,8 @@ class CaptchaAction extends Action
         $x = 10;
         $y = round($this->height * 27 / 40);
         for ($i = 0; $i < $length; ++$i) {
-            $fontSize = (int) (rand(26, 32) * $scale * 0.8);
-            $angle = rand(-10, 10);
+            $fontSize = (int) (mt_rand(26, 32) * $scale * 0.8);
+            $angle = mt_rand(-10, 10);
             $letter = $code[$i];
             $box = imagettftext($image, $fontSize, $angle, $x, $y, $foreColor, $this->fontFile, $letter);
             $x = $box[2] + $this->offset;
@@ -343,9 +341,9 @@ class CaptchaAction extends Action
         for ($i = 0; $i < $length; ++$i) {
             $draw = new \ImagickDraw();
             $draw->setFont($this->fontFile);
-            $draw->setFontSize((int) (rand(26, 32) * $scale * 0.8));
+            $draw->setFontSize((int) (mt_rand(26, 32) * $scale * 0.8));
             $draw->setFillColor($foreColor);
-            $image->annotateImage($draw, $x, $y, rand(-10, 10), $code[$i]);
+            $image->annotateImage($draw, $x, $y, mt_rand(-10, 10), $code[$i]);
             $fontMetrics = $image->queryFontMetrics($draw, $code[$i]);
             $x += (int) $fontMetrics['textWidth'] + $this->offset;
         }
@@ -354,7 +352,7 @@ class CaptchaAction extends Action
         return $image->getImageBlob();
     }
 
-    /**设置验证码（图片数据流）这种http响应，需要的特殊的http响应头部信息
+    /**
      * Sets the HTTP headers needed by image response.
      */
     protected function setHttpHeaders()

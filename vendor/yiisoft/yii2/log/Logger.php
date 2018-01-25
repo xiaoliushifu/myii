@@ -124,9 +124,6 @@ class Logger extends Component
             $this->flush();
             // make sure log entries written by shutdown functions are also flushed
             // ensure "flush()" is called last when there are multiple shutdown functions
-            //shutdown函数也是函数队列，按照注册顺序有序执行，一旦某个shutdown函数里执行了exit()，那后续所有的shutdown也就不执行了。
-            //第一次注册是打入日志，这里再注册，是怕后续还有其他的shutdown函数执行的错误信息不能记录比如Session。
-            //所以这里是确保log组件是最终的shutdown函数，注意这次注册shutdown函数时，还给flush函数传递了参数true
             register_shutdown_function([$this, 'flush'], true);
         });
     }
@@ -148,7 +145,7 @@ class Logger extends Component
         $traces = [];
         if ($this->traceLevel > 0) {
             $count = 0;
-            $ts = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);//产生一条回溯跟踪
+            $ts = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
             array_pop($ts); // remove the last trace since it would be the entry script, not very useful
             foreach ($ts as $trace) {
                 if (isset($trace['file'], $trace['line']) && strpos($trace['file'], YII2_PATH) !== 0) {
@@ -160,16 +157,13 @@ class Logger extends Component
                 }
             }
         }
-        //traceLevel大于0，仅仅是否调用php内置函数debug_backtrace来填充$traces变量。
         $this->messages[] = [$message, $level, $category, $time, $traces, memory_get_usage()];
-        //是否到达预先设置的日志数量，到达的话就调用flush冲刷到target中，否则就在messages属性中，也就是内存中。
-        //flushInterval=0时，就没有数量控制了，一直到应用结束时由shutdown函数调用flush。
         if ($this->flushInterval > 0 && count($this->messages) >= $this->flushInterval) {
             $this->flush();
         }
     }
 
-    /**flush可能被调用多次，通过置$final=true告诉yii框架这是最终调用flush函数，就不要管那些累计了，这次都导出吧
+    /**
      * Flushes log messages from memory to targets.
      * @param bool $final whether this is a final call during a request.
      */
@@ -284,20 +278,22 @@ class Logger extends Component
             list($token, $level, $category, $timestamp, $traces) = $log;
             $memory = isset($log[5]) ? $log[5] : 0;
             $log[6] = $i;
-            if ($level == Logger::LEVEL_PROFILE_BEGIN) {
-                $stack[] = $log;
-            } elseif ($level == Logger::LEVEL_PROFILE_END) {
-                if (($last = array_pop($stack)) !== null && $last[0] === $token) {
-                    $timings[$last[6]] = [
-                        'info' => $last[0],
-                        'category' => $last[2],
-                        'timestamp' => $last[3],
-                        'trace' => $last[4],
-                        'level' => count($stack),
-                        'duration' => $timestamp - $last[3],
+            $hash = md5(json_encode($token));
+            if ($level == self::LEVEL_PROFILE_BEGIN) {
+                $stack[$hash] = $log;
+            } elseif ($level == self::LEVEL_PROFILE_END) {
+                if (isset($stack[$hash])) {
+                    $timings[$stack[$hash][6]] = [
+                        'info' => $stack[$hash][0],
+                        'category' => $stack[$hash][2],
+                        'timestamp' => $stack[$hash][3],
+                        'trace' => $stack[$hash][4],
+                        'level' => count($stack) - 1,
+                        'duration' => $timestamp - $stack[$hash][3],
                         'memory' => $memory,
-                        'memoryDiff' => $memory - (isset($last[5]) ? $last[5] : 0),
+                        'memoryDiff' => $memory - (isset($stack[$hash][5]) ? $stack[$hash][5] : 0),
                     ];
+                    unset($stack[$hash]);
                 }
             }
         }
@@ -316,14 +312,13 @@ class Logger extends Component
     public static function getLevelName($level)
     {
         static $levels = [
-            self::LEVEL_ERROR => 'error',#整数1
-            self::LEVEL_WARNING => 'warning',#整数2
-            self::LEVEL_INFO => 'info',#整数4
-            self::LEVEL_TRACE => 'trace',#整数8
-            //下面是性能分析时使用的，需要提前打标记才能记录性能分析的统计信息
-            self::LEVEL_PROFILE_BEGIN => 'profile begin',#0x50=80
-            self::LEVEL_PROFILE_END => 'profile end',#0x60=96
-            self::LEVEL_PROFILE => 'profile'#0x40=64
+            self::LEVEL_ERROR => 'error',
+            self::LEVEL_WARNING => 'warning',
+            self::LEVEL_INFO => 'info',
+            self::LEVEL_TRACE => 'trace',
+            self::LEVEL_PROFILE_BEGIN => 'profile begin',
+            self::LEVEL_PROFILE_END => 'profile end',
+            self::LEVEL_PROFILE => 'profile',
         ];
 
         return isset($levels[$level]) ? $levels[$level] : 'unknown';

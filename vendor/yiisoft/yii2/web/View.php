@@ -8,16 +8,15 @@
 namespace yii\web;
 
 use Yii;
+use yii\base\InvalidConfigException;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
-use yii\base\InvalidConfigException;
 
 /**
- * View组件表示MVC模式的V对象
  * View represents a view object in the MVC pattern.
- *View组件提供一系列的方法来完成渲染目的
+ *
  * View provides a set of methods (e.g. [[render()]]) for rendering purpose.
- *View默认配置为yii\base\Application的应用组件。当然你也可以自己扩展（自定义）视图对象
+ *
  * View is configured as an application component in [[\yii\base\Application]] by default.
  * You can access that instance via `Yii::$app->view`.
  *
@@ -55,31 +54,26 @@ class View extends \yii\base\View
     /**
      * The location of registered JavaScript code block or files.
      * This means the location is in the head section.
-     * 在视图文件的<head>中
      */
     const POS_HEAD = 1;
     /**
      * The location of registered JavaScript code block or files.
      * This means the location is at the beginning of the body section.
-     * 在<body>标签的开始的地方
      */
     const POS_BEGIN = 2;
     /**
      * The location of registered JavaScript code block or files.
      * This means the location is at the end of the body section.
-     * 在</body>标签结束的地方
      */
     const POS_END = 3;
     /**
      * The location of registered JavaScript code block.
      * This means the JavaScript code block will be enclosed within `jQuery(document).ready()`.
-     * 注册在jQuery的ready函数里
      */
     const POS_READY = 4;
     /**
      * The location of registered JavaScript code block.
      * This means the JavaScript code block will be enclosed within `jQuery(window).load()`.
-     * 注册js代码块到jQuery对象的load方法里
      */
     const POS_LOAD = 5;
     /**
@@ -96,54 +90,46 @@ class View extends \yii\base\View
     const PH_BODY_END = '<![CDATA[YII-BLOCK-BODY-END]]>';
 
     /**
-     * 这个成员属性，保存了一系列的小bundles。下标为bundle名，值则是AssetBundle对象
      * @var AssetBundle[] list of the registered asset bundles. The keys are the bundle names, and the values
      * are the registered [[AssetBundle]] objects.
      * @see registerAssetBundle()
      */
     public $assetBundles = [];
     /**
-     * 每个html页面的title
      * @var string the page title
      */
     public $title;
     /**
-     * header部分的meta标签
      * @var array the registered meta tags.
      * @see registerMetaTag()
      */
-    public $metaTags;
-    /**导航栏
+    public $metaTags = [];
+    /**
      * @var array the registered link tags.
      * @see registerLinkTag()
      */
-    public $linkTags;
+    public $linkTags = [];
     /**
-     * 数组，注册的CSS代码块
      * @var array the registered CSS code blocks.
-     * @see registerCss()  参考registerCss()方法
+     * @see registerCss()
      */
-    public $css;
+    public $css = [];
     /**
-     * 数组，注册的CSS文件
      * @var array the registered CSS files.
-     * @see registerCssFile()  参考registerCssFile()方法
+     * @see registerCssFile()
      */
-    public $cssFiles;
+    public $cssFiles = [];
     /**
-     * 数组，注册的JS代码块
      * @var array the registered JS code blocks
-     * @see registerJs()  参考registerJs()方法
+     * @see registerJs()
      */
-    public $js;
+    public $js = [];
     /**
-     * 数组，注册的JS文件
      * @var array the registered JS files.
-     * @see registerJsFile()    参考registerJsFile()方法
+     * @see registerJsFile()
      */
-    public $jsFiles;
-    
-    //存储assetManager对象
+    public $jsFiles = [];
+
     private $_assetManager;
 
 
@@ -155,12 +141,11 @@ class View extends \yii\base\View
         echo self::PH_HEAD;
     }
 
-    /**标记一
+    /**
      * Marks the beginning of an HTML body section.
      */
     public function beginBody()
     {
-        //还要触发个事件呢
         echo self::PH_BODY_BEGIN;
         $this->trigger(self::EVENT_BEGIN_BODY);
     }
@@ -170,21 +155,17 @@ class View extends \yii\base\View
      */
     public function endBody()
     {
-        //触发个事件
         $this->trigger(self::EVENT_END_BODY);
         echo self::PH_BODY_END;
-        
-        //循环注册一个个的bundles
+
         foreach (array_keys($this->assetBundles) as $bundle) {
             $this->registerAssetFiles($bundle);
         }
     }
 
     /**
-     * 标记整个HTML页面的结束
      * Marks the ending of an HTML page.
-     * @param bool $ajaxMode whether the view is rendering in AJAX mode. 布尔值，是否当前视图正以AJAX模式渲染
-     * 如果是的话，注册在Jquery的ready函数，load函数里的JS脚本将会渲染在整个页面的底部
+     * @param bool $ajaxMode whether the view is rendering in AJAX mode.
      * If true, the JS scripts registered at [[POS_READY]] and [[POS_LOAD]] positions
      * will be rendered at the end of the view like normal scripts.
      */
@@ -194,7 +175,6 @@ class View extends \yii\base\View
 
         $content = ob_get_clean();
 
-        //看到没，其实就是个使用php原生函数完成小洞的替换而已。
         echo strtr($content, [
             self::PH_HEAD => $this->renderHeadHtml(),
             self::PH_BODY_BEGIN => $this->renderBodyBeginHtml(),
@@ -205,13 +185,10 @@ class View extends \yii\base\View
     }
 
     /**
-     * 渲染一个视图，作为ajax请求的响应。一般由控制器里调用
      * Renders a view in response to an AJAX request.
      *
-     *该方法类似于render方法，有一点不同的是，它将把需要调用beginPage,head,beginBody,endBody,endPage方法的视图收集起来一块调用
      * This method is similar to [[render()]] except that it will surround the view being rendered
      * with the calls of [[beginPage()]], [[head()]], [[beginBody()]], [[endBody()]] and [[endPage()]].
-     * 这样做，这个方法就能把JS/CSS脚本和文件都一并注入到渲染结果里
      * By doing so, the method is able to inject into the rendering result with JS/CSS scripts and files
      * that are registered with the view.
      *
@@ -224,25 +201,22 @@ class View extends \yii\base\View
      */
     public function renderAjax($view, $params = [], $context = null)
     {
-        //找到视图文件
         $viewFile = $this->findViewFile($view, $context);
 
-        //开启输出缓存
         ob_start();
         ob_implicit_flush(false);
-        //直接调用这五个方法，而不是在视图文件里渲染时调用
+
         $this->beginPage();
         $this->head();
         $this->beginBody();
         echo $this->renderFile($viewFile, $params, $context);
         $this->endBody();
         $this->endPage(true);
-        //获得所有的输出缓存，并关闭本次的输出缓存阀门
+
         return ob_get_clean();
     }
 
     /**
-     * 注册Asset组件，默认就是应用组件的那个AssetManager管理器
      * Registers the asset manager being used by this view object.
      * @return \yii\web\AssetManager the asset manager. Defaults to the "assetManager" application component.
      */
@@ -261,17 +235,16 @@ class View extends \yii\base\View
     }
 
     /**
-     * 清除，就是置空下述的六个成员
      * Clears up the registered meta tags, link tags, css/js scripts and files.
      */
     public function clear()
     {
-        $this->metaTags = null;
-        $this->linkTags = null;
-        $this->css = null;
-        $this->cssFiles = null;
-        $this->js = null;
-        $this->jsFiles = null;
+        $this->metaTags = [];
+        $this->linkTags = [];
+        $this->css = [];
+        $this->cssFiles = [];
+        $this->js = [];
+        $this->jsFiles = [];
         $this->assetBundles = [];
     }
 
@@ -369,6 +342,27 @@ class View extends \yii\base\View
     }
 
     /**
+     * Registers CSRF meta tags.
+     * They are rendered dynamically to retrieve a new CSRF token for each request.
+     *
+     * ```php
+     * $view->registerCsrfMetaTags();
+     * ```
+     *
+     * The above code will result in `<meta name="csrf-param" content="[yii\web\Request::$csrfParam]">`
+     * and `<meta name="csrf-token" content="tTNpWKpdy-bx8ZmIq9R72...K1y8IP3XGkzZA==">` added to the page.
+     *
+     * Note: Hidden CSRF input of ActiveForm will be automatically refreshed by calling `window.yii.refreshCsrfToken()`
+     * from `yii.js`.
+     *
+     * @since 2.0.13
+     */
+    public function registerCsrfMetaTags()
+    {
+        $this->metaTags['csrf_meta_tags'] = $this->renderDynamic('return yii\helpers\Html::csrfMetaTags();');
+    }
+
+    /**
      * Registers a link tag.
      *
      * For example, a link tag for a custom [favicon](http://www.w3.org/2005/10/howto-favicon)
@@ -413,6 +407,11 @@ class View extends \yii\base\View
 
     /**
      * Registers a CSS file.
+     *
+     * This method should be used for simple registration of CSS files. If you want to use features of
+     * [[AssetManager]] like appending timestamps to the URL and file publishing options, use [[AssetBundle]]
+     * and [[registerAssetBundle()]] instead.
+     *
      * @param string $url the CSS file to be registered.
      * @param array $options the HTML attributes for the link tag. Please refer to [[Html::cssFile()]] for
      * the supported options. The following options are specially handled and are not treated as HTML attributes:
@@ -438,7 +437,7 @@ class View extends \yii\base\View
                 'baseUrl' => '',
                 'css' => [strncmp($url, '//', 2) === 0 ? $url : ltrim($url, '/')],
                 'cssOptions' => $options,
-                'depends' => (array)$depends,
+                'depends' => (array) $depends,
             ]);
             $this->registerAssetBundle($key);
         }
@@ -454,10 +453,8 @@ class View extends \yii\base\View
      * - [[POS_BEGIN]]: at the beginning of the body section
      * - [[POS_END]]: at the end of the body section
      * - [[POS_LOAD]]: enclosed within jQuery(window).load().
-     * 使用了POS_LOAD位置参数的话，该方法会自动注册JQuery的js文件
      *   Note that by using this position, the method will automatically register the jQuery js file.
      * - [[POS_READY]]: enclosed within jQuery(document).ready(). This is the default value.
-     *   直接注入js代码，默认是使用Jquery的ready方法，而ready方法需要自动加载Jquery
      *   Note that by using this position, the method will automatically register the jQuery js file.
      *
      * @param string $key the key that identifies the JS code block. If null, it will use
@@ -468,7 +465,6 @@ class View extends \yii\base\View
     {
         $key = $key ?: md5($js);
         $this->js[$position][$key] = $js;
-        //从代码里果然看到，REDAY和LOAD位置都会自动加载Jquery文件
         if ($position === self::POS_READY || $position === self::POS_LOAD) {
             JqueryAsset::register($this);
         }
@@ -476,6 +472,11 @@ class View extends \yii\base\View
 
     /**
      * Registers a JS file.
+     *
+     * This method should be used for simple registration of JS files. If you want to use features of
+     * [[AssetManager]] like appending timestamps to the URL and file publishing options, use [[AssetBundle]]
+     * and [[registerAssetBundle()]] instead.
+     *
      * @param string $url the JS file to be registered.
      * @param array $options the HTML attributes for the script tag. The following options are specially handled
      * and are not treated as HTML attributes:
@@ -484,8 +485,7 @@ class View extends \yii\base\View
      * - `position`: specifies where the JS script tag should be inserted in a page. The possible values are:
      *     * [[POS_HEAD]]: in the head section
      *     * [[POS_BEGIN]]: at the beginning of the body section
-     *     * [[POS_END]]: at the end of the body section. This is the default value。
-     *     js文件默认都注册到body标签的最末尾，也就是</body>之前，
+     *     * [[POS_END]]: at the end of the body section. This is the default value.
      *
      * Please refer to [[Html::jsFile()]] for other supported options.
      *
@@ -510,7 +510,7 @@ class View extends \yii\base\View
                 'baseUrl' => '',
                 'js' => [strncmp($url, '//', 2) === 0 ? $url : ltrim($url, '/')],
                 'jsOptions' => $options,
-                'depends' => (array)$depends,
+                'depends' => (array) $depends,
             ]);
             $this->registerAssetBundle($key);
         }
@@ -600,7 +600,7 @@ class View extends \yii\base\View
                 $lines[] = Html::script(implode("\n", $this->js[self::POS_END]), ['type' => 'text/javascript']);
             }
             if (!empty($this->js[self::POS_READY])) {
-                $js = "jQuery(document).ready(function () {\n" . implode("\n", $this->js[self::POS_READY]) . "\n});";
+                $js = "jQuery(function ($) {\n" . implode("\n", $this->js[self::POS_READY]) . "\n});";
                 $lines[] = Html::script($js, ['type' => 'text/javascript']);
             }
             if (!empty($this->js[self::POS_LOAD])) {

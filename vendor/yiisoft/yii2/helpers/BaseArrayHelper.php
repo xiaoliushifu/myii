@@ -26,7 +26,7 @@ class BaseArrayHelper
      * @param object|array|string $object the object to be converted into an array
      * @param array $properties a mapping from object class names to the properties that need to put into the resulting arrays.
      * The properties specified for each class is an array of the following format:
-     *下面是一个对象，它的属性就像如下的数组
+     *
      * ```php
      * [
      *     'app\models\Post' => [
@@ -41,7 +41,7 @@ class BaseArrayHelper
      *     ],
      * ]
      * ```
-     *经过toArray函数处理后，就是下面的关联数组了
+     *
      * The result of `ArrayHelper::toArray($post, $properties)` could be like the following:
      *
      * ```php
@@ -94,20 +94,17 @@ class BaseArrayHelper
             }
 
             return $recursive ? static::toArray($result, $properties) : $result;
-        } else {
-            return [$object];
         }
+
+        return [$object];
     }
 
     /**
-	* 把多个数组合并为一个，递归地。
      * Merges two or more arrays into one recursively.
-	 相同的key的数组，后者将会覆盖前者
      * If each array has an element with the same string key value, the latter
      * will overwrite the former (different from array_merge_recursive).
      * Recursive merging will be conducted if both arrays have an element of array
      * type and are having the same key.
-	 数字型的下标，后面的数组将会添加到前面的数组
      * For integer-keyed elements, the elements from the latter array will
      * be appended to the former array.
      * You can use [[UnsetArrayValue]] object to unset value from previous array or
@@ -129,7 +126,7 @@ class BaseArrayHelper
                 } elseif ($v instanceof ReplaceArrayValue) {
                     $res[$k] = $v->value;
                 } elseif (is_int($k)) {
-                    if (isset($res[$k])) {
+                    if (array_key_exists($k, $res)) {
                         $res[] = $v;
                     } else {
                         $res[$k] = $v;
@@ -148,7 +145,7 @@ class BaseArrayHelper
     /**
      * Retrieves the value of an array element or object property with the given key or property name.
      * If the key does not exist in the array or object, the default value will be returned instead.
-     *可以获得数组的值，或者对象的属性的值。可以是多维数组，或者多个子对象嵌套
+     *
      * The key may be specified in a dot format to retrieve the value of a sub-array or the property
      * of an embedded object. In particular, if the key is `x.y.z`, then the returned value would
      * be `$array['x']['y']['z']` or `$array->x->y->z` (if `$array` is an object). If `$array['x']`
@@ -197,7 +194,7 @@ class BaseArrayHelper
             $key = $lastKey;
         }
 
-        if (is_array($array) && (isset($array[$key]) || array_key_exists($key, $array)) ) {
+        if (is_array($array) && (isset($array[$key]) || array_key_exists($key, $array))) {
             return $array[$key];
         }
 
@@ -212,15 +209,91 @@ class BaseArrayHelper
             return $array->$key;
         } elseif (is_array($array)) {
             return (isset($array[$key]) || array_key_exists($key, $array)) ? $array[$key] : $default;
-        } else {
-            return $default;
         }
+
+        return $default;
+    }
+
+    /**
+     * Writes a value into an associative array at the key path specified.
+     * If there is no such key path yet, it will be created recursively.
+     * If the key exists, it will be overwritten.
+     *
+     * ```php
+     *  $array = [
+     *      'key' => [
+     *          'in' => [
+     *              'val1',
+     *              'key' => 'val'
+     *          ]
+     *      ]
+     *  ];
+     * ```
+     *
+     * The result of `ArrayHelper::setValue($array, 'key.in.0', ['arr' => 'val']);` will be the following:
+     *
+     * ```php
+     *  [
+     *      'key' => [
+     *          'in' => [
+     *              ['arr' => 'val'],
+     *              'key' => 'val'
+     *          ]
+     *      ]
+     *  ]
+     *
+     * ```
+     *
+     * The result of
+     * `ArrayHelper::setValue($array, 'key.in', ['arr' => 'val']);` or
+     * `ArrayHelper::setValue($array, ['key', 'in'], ['arr' => 'val']);`
+     * will be the following:
+     *
+     * ```php
+     *  [
+     *      'key' => [
+     *          'in' => [
+     *              'arr' => 'val'
+     *          ]
+     *      ]
+     *  ]
+     * ```
+     *
+     * @param array $array the array to write the value to
+     * @param string|array|null $path the path of where do you want to write a value to `$array`
+     * the path can be described by a string when each key should be separated by a dot
+     * you can also describe the path as an array of keys
+     * if the path is null then `$array` will be assigned the `$value`
+     * @param mixed $value the value to be written
+     * @since 2.0.13
+     */
+    public static function setValue(&$array, $path, $value)
+    {
+        if ($path === null) {
+            $array = $value;
+            return;
+        }
+
+        $keys = is_array($path) ? $path : explode('.', $path);
+
+        while (count($keys) > 1) {
+            $key = array_shift($keys);
+            if (!isset($array[$key])) {
+                $array[$key] = [];
+            }
+            if (!is_array($array[$key])) {
+                $array[$key] = [$array[$key]];
+            }
+            $array = &$array[$key];
+        }
+
+        $array[array_shift($keys)] = $value;
     }
 
     /**
      * Removes an item from an array and returns the value. If the key does not exist in the array, the default value
      * will be returned instead.
-     *删除数组的值，并返回这个值
+     *
      * Usage examples,
      *
      * ```php
@@ -238,7 +311,6 @@ class BaseArrayHelper
      */
     public static function remove(&$array, $key, $default = null)
     {
-		//代码没有多少，基本上还是原生php代码
         if (is_array($array) && (isset($array[$key]) || array_key_exists($key, $array))) {
             $value = $array[$key];
             unset($array[$key]);
@@ -249,7 +321,7 @@ class BaseArrayHelper
         return $default;
     }
 
-    /**根据指定元素的值，删除这个数组里所有值是它的，并返回删除的。
+    /**
      * Removes items with matching values from the array and returns the removed items.
      *
      * Example,
@@ -278,14 +350,14 @@ class BaseArrayHelper
                 }
             }
         }
+
         return $result;
     }
 
     /**
-	* 这个方法的注释真的，很长呀。多好的代码习惯呀
      * Indexes and/or groups the array according to a specified key.
      * The input should be either multidimensional array or an array of objects.
-     *针对多维数组或者对象数组的处理。可以是子数组的下标名，或者属性名，或者返回key的匿名函数
+     *
      * The $key can be either a key name of the sub-array, a property name of object, or an anonymous
      * function that must return the value that will be used as a key.
      *
@@ -385,7 +457,7 @@ class BaseArrayHelper
     public static function index($array, $key, $groups = [])
     {
         $result = [];
-        $groups = (array)$groups;
+        $groups = (array) $groups;
 
         foreach ($array as $element) {
             $lastArray = &$result;
@@ -406,7 +478,7 @@ class BaseArrayHelper
                 $value = static::getValue($element, $key);
                 if ($value !== null) {
                     if (is_float($value)) {
-                        $value = (string) $value;
+                        $value = StringHelper::floatToString($value);
                     }
                     $lastArray[$value] = $element;
                 }
@@ -418,7 +490,6 @@ class BaseArrayHelper
     }
 
     /**
-	* 返回指定列的值，常用于多维数组或对象数组
      * Returns the values of a specified column in an array.
      * The input array should be multidimensional or an array of objects.
      *
@@ -532,15 +603,15 @@ class BaseArrayHelper
             // Function `isset` checks key faster but skips `null`, `array_key_exists` handles this case
             // http://php.net/manual/en/function.array-key-exists.php#107786
             return isset($array[$key]) || array_key_exists($key, $array);
-        } else {
-            foreach (array_keys($array) as $k) {
-                if (strcasecmp($key, $k) === 0) {
-                    return true;
-                }
-            }
-
-            return false;
         }
+
+        foreach (array_keys($array) as $k) {
+            if (strcasecmp($key, $k) === 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -684,15 +755,17 @@ class BaseArrayHelper
                     return false;
                 }
             }
+
             return true;
-        } else {
-            foreach ($array as $key => $value) {
-                if (is_string($key)) {
-                    return true;
-                }
-            }
-            return false;
         }
+
+        foreach ($array as $key => $value) {
+            if (is_string($key)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -720,19 +793,20 @@ class BaseArrayHelper
 
         if ($consecutive) {
             return array_keys($array) === range(0, count($array) - 1);
-        } else {
-            foreach ($array as $key => $value) {
-                if (!is_int($key)) {
-                    return false;
-                }
-            }
-            return true;
         }
+
+        foreach ($array as $key => $value) {
+            if (!is_int($key)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
      * Check whether an array or [[\Traversable]] contains an element.
-     *检测某个数组或（可迭代的对象，一般是实现了Traverable接口的php类）是否包含某个元素
+     *
      * This method does the same as the PHP function [in_array()](http://php.net/manual/en/function.in-array.php)
      * but additionally works for objects that implement the [[\Traversable]] interface.
      * @param mixed $needle The value to look for.
@@ -762,12 +836,12 @@ class BaseArrayHelper
 
     /**
      * Checks whether a variable is an array or [[\Traversable]].
-     * 数组，天然可以迭代；或者实现了php的接口Traversable
+     *
      * This method does the same as the PHP function [is_array()](http://php.net/manual/en/function.is-array.php)
      * but additionally works on objects that implement the [[\Traversable]] interface.
      * @param mixed $var The variable being evaluated.
      * @return bool whether $var is array-like
-     * @see http://php.net/manual/en/function.is_array.php
+     * @see http://php.net/manual/en/function.is-array.php
      * @since 2.0.8
      */
     public static function isTraversable($var)
@@ -777,7 +851,7 @@ class BaseArrayHelper
 
     /**
      * Checks whether an array or [[\Traversable]] is a subset of another array or [[\Traversable]].
-     * 检测某个数组或可迭代的对象是否是另一个数组的子集。
+     *
      * This method will return `true`, if all elements of `$needles` are contained in
      * `$haystack`. If at least one element is missing, `false` will be returned.
      * @param array|\Traversable $needles The values that must **all** be in `$haystack`.
@@ -790,21 +864,21 @@ class BaseArrayHelper
     public static function isSubset($needles, $haystack, $strict = false)
     {
         if (is_array($needles) || $needles instanceof \Traversable) {
-			//它的实现就是，一个个遍历，是否都在另一个数组里，只要有一个不是，那就说明不是它的子集。
             foreach ($needles as $needle) {
                 if (!static::isIn($needle, $haystack, $strict)) {
                     return false;
                 }
             }
+
             return true;
-        } else {
-            throw new InvalidParamException('Argument $needles must be an array or implement Traversable');
         }
+
+        throw new InvalidParamException('Argument $needles must be an array or implement Traversable');
     }
 
     /**
      * Filters array according to rules specified.
-     *过滤
+     *
      * For example:
      *
      * ```php

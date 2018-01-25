@@ -115,6 +115,7 @@ class Dispatcher extends Component
         if ($this->_logger === null) {
             $this->setLogger(Yii::getLogger());
         }
+
         return $this->_logger;
     }
 
@@ -182,7 +183,6 @@ class Dispatcher extends Component
     public function dispatch($messages, $final)
     {
         $targetErrors = [];
-        //这里是循环targets,说明targets可以是数组，即同一个日志消息可以被不同的target导出
         foreach ($this->targets as $target) {
             if ($target->enabled) {
                 try {
@@ -201,7 +201,6 @@ class Dispatcher extends Component
         }
 
         if (!empty($targetErrors)) {
-            //自己调用自己
             $this->dispatch($targetErrors, true);
         }
     }

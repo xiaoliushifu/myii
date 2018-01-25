@@ -8,7 +8,6 @@
 namespace yii\caching;
 
 /**
-* ArrayCache提供的缓存特性是，紧紧在当前请求中生效。
  * ArrayCache provides caching for the current request only by storing the values in an array.
  *
  * See [[Cache]] for common cache operations that ArrayCache supports.
@@ -45,6 +44,7 @@ class ArrayCache extends Cache
         if (isset($this->_cache[$key]) && ($this->_cache[$key][1] === 0 || $this->_cache[$key][1] > microtime(true))) {
             return $this->_cache[$key][0];
         }
+
         return false;
     }
 

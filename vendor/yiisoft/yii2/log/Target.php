@@ -11,6 +11,7 @@ use Yii;
 use yii\base\Component;
 use yii\base\InvalidConfigException;
 use yii\helpers\ArrayHelper;
+use yii\helpers\StringHelper;
 use yii\helpers\VarDumper;
 use yii\web\Request;
 
@@ -25,6 +26,8 @@ use yii\web\Request;
  * satisfying both filter conditions will be handled. Additionally, you
  * may specify [[except]] to exclude messages of certain categories.
  *
+ * @property bool $enabled Indicates whether this log target is enabled. Defaults to true. Note that the type
+ * of this property differs in getter and setter. See [[getEnabled()]] and [[setEnabled()]] for details.
  * @property int $levels The message levels that this target is interested in. This is a bitmap of level
  * values. Defaults to 0, meaning  all available levels. Note that the type of this property differs in getter
  * and setter. See [[getLevels()]] and [[setLevels()]] for details.
@@ -36,10 +39,6 @@ use yii\web\Request;
  */
 abstract class Target extends Component
 {
-    /**
-     * @var bool whether to enable this log target. Defaults to true.
-     */
-    public $enabled = true;
     /**
      * @var array list of message categories that this target is interested in. Defaults to empty, meaning all categories.
      * You can use an asterisk at the end of a category so that the category may be used to
@@ -92,8 +91,15 @@ abstract class Target extends Component
      * Please refer to [[Logger::messages]] for the details about the message structure.
      */
     public $messages = [];
+    /**
+     * @var bool whether to log time with microseconds.
+     * Defaults to false.
+     * @since 2.0.13
+     */
+    public $microtime = false;
 
     private $_levels = 0;
+    private $_enabled = true;
 
 
     /**
@@ -120,11 +126,11 @@ abstract class Target extends Component
             }
             // set exportInterval to 0 to avoid triggering export again while exporting
             $oldExportInterval = $this->exportInterval;
-            $this->exportInterval = 0;//在这里置为0，保证了不会循环地因为打日志而发邮件！
+            $this->exportInterval = 0;
             $this->export();
             $this->exportInterval = $oldExportInterval;
 
-            $this->messages = [];//输出一次日志（可能有许多条），则清空
+            $this->messages = [];
         }
     }
 
@@ -140,6 +146,7 @@ abstract class Target extends Component
         foreach ($context as $key => $value) {
             $result[] = "\${$key} = " . VarDumper::dumpAsString($value);
         }
+
         return implode("\n\n", $result);
     }
 
@@ -221,7 +228,6 @@ abstract class Target extends Component
 
             $matched = empty($categories);
             foreach ($categories as $category) {
-                //这个类别过滤的if语句太长了
                 if ($message[2] === $category || !empty($category) && substr_compare($category, '*', -1, 1) === 0 && strpos($message[2], rtrim($category, '*')) === 0) {
                     $matched = true;
                     break;
@@ -242,6 +248,7 @@ abstract class Target extends Component
                 unset($messages[$i]);
             }
         }
+
         return $messages;
     }
 
@@ -254,7 +261,7 @@ abstract class Target extends Component
     public function formatMessage($message)
     {
         list($text, $level, $category, $timestamp) = $message;
-        $level = Logger::getLevelName($level);//数字转字母
+        $level = Logger::getLevelName($level);
         if (!is_string($text)) {
             // exceptions may not be serializable if in the call stack somewhere is a Closure
             if ($text instanceof \Throwable || $text instanceof \Exception) {
@@ -264,14 +271,14 @@ abstract class Target extends Component
             }
         }
         $traces = [];
-        if (isset($message[4])) {//下标4是有关堆栈的信息
+        if (isset($message[4])) {
             foreach ($message[4] as $trace) {
                 $traces[] = "in {$trace['file']}:{$trace['line']}";
             }
         }
-        //前缀是ip,uid,sessionid这些信息
+
         $prefix = $this->getMessagePrefix($message);
-        return date('Y-m-d H:i:s', $timestamp) . " {$prefix}[$level][$category] $text"
+        return $this->getTime($timestamp) . " {$prefix}[$level][$category] $text"
             . (empty($traces) ? '' : "\n    " . implode("\n    ", $traces));
     }
 
@@ -285,14 +292,14 @@ abstract class Target extends Component
      */
     public function getMessagePrefix($message)
     {
-        if ($this->prefix !== null) {//优先使用自定义的日志前缀机制
+        if ($this->prefix !== null) {
             return call_user_func($this->prefix, $message);
         }
 
         if (Yii::$app === null) {
             return '';
         }
-        //下面就是yii默认的日志前缀处理机制
+
         $request = Yii::$app->getRequest();
         $ip = $request instanceof Request ? $request->getUserIP() : '-';
 
@@ -309,5 +316,53 @@ abstract class Target extends Component
         $sessionID = $session && $session->getIsActive() ? $session->getId() : '-';
 
         return "[$ip][$userID][$sessionID]";
+    }
+
+    /**
+     * Sets a value indicating whether this log target is enabled.
+     * @param bool|callable $value a boolean value or a callable to obtain the value from.
+     * The callable value is available since version 2.0.13.
+     *
+     * A callable may be used to determine whether the log target should be enabled in a dynamic way.
+     * For example, to only enable a log if the current user is logged in you can configure the target
+     * as follows:
+     *
+     * ```php
+     * 'enabled' => function() {
+     *     return !Yii::$app->user->isGuest;
+     * }
+     * ```
+     */
+    public function setEnabled($value)
+    {
+        $this->_enabled = $value;
+    }
+
+    /**
+     * Check whether the log target is enabled.
+     * @property bool Indicates whether this log target is enabled. Defaults to true.
+     * @return bool A value indicating whether this log target is enabled.
+     */
+    public function getEnabled()
+    {
+        if (is_callable($this->_enabled)) {
+            return call_user_func($this->_enabled, $this);
+        }
+
+        return $this->_enabled;
+    }
+
+    /**
+     * Returns formatted ('Y-m-d H:i:s') timestamp for message.
+     * If [[microtime]] is configured to true it will return format 'Y-m-d H:i:s.u'.
+     * @param float $timestamp
+     * @return string
+     * @since 2.0.13
+     */
+    protected function getTime($timestamp)
+    {
+        $parts = explode('.', StringHelper::floatToString($timestamp));
+
+        return date('Y-m-d H:i:s', $parts[0]) . ($this->microtime && isset($parts[1]) ? ('.' . $parts[1]) : '');
     }
 }

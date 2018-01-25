@@ -165,10 +165,8 @@ class DateValidator extends Validator
      */
     public $max;
     /**
-	* 整型或字符串，表示日期的最小值，可以是一个Unix时间戳，或一个表示日期时间的值
      * @var int|string lower limit of the date. Defaults to null, meaning no lower limit.
      * This can be a unix timestamp or a string representing a date time value.
-	 如果是字符串，则会用format来解析它
      * If this property is a string, [[format]] will be used to parse it.
      * @see tooSmall for the customized message used when the date is too small.
      * @since 2.0.4
@@ -180,8 +178,6 @@ class DateValidator extends Validator
      */
     public $tooBig;
     /**
-	* 自定义的错误信息（当日期值小于min时），且支持变量。比如  "预计发货时间不能小于{min}"
-	*其中的min就是变量。就是上述的成员public $min
      * @var string user-defined error message used when the value is smaller than [[min]].
      * @since 2.0.4
      */
@@ -203,10 +199,10 @@ class DateValidator extends Validator
      * @var array map of short format names to IntlDateFormatter constant values.
      */
     private $_dateFormats = [
-        'short'  => 3, // IntlDateFormatter::SHORT,
+        'short' => 3, // IntlDateFormatter::SHORT,
         'medium' => 2, // IntlDateFormatter::MEDIUM,
-        'long'   => 1, // IntlDateFormatter::LONG,
-        'full'   => 0, // IntlDateFormatter::FULL,
+        'long' => 1, // IntlDateFormatter::LONG,
+        'full' => 0, // IntlDateFormatter::FULL,
     ];
 
 
@@ -270,6 +266,13 @@ class DateValidator extends Validator
     public function validateAttribute($model, $attribute)
     {
         $value = $model->$attribute;
+        if ($this->isEmpty($value)) {
+            if ($this->timestampAttribute !== null) {
+                $model->{$this->timestampAttribute} = null;
+            }
+            return;
+        }
+
         $timestamp = $this->parseDateValue($value);
         if ($timestamp === false) {
             if ($this->timestampAttribute === $attribute) {
@@ -309,13 +312,13 @@ class DateValidator extends Validator
             return [$this->tooSmall, ['min' => $this->minString]];
         } elseif ($this->max !== null && $timestamp > $this->max) {
             return [$this->tooBig, ['max' => $this->maxString]];
-        } else {
-            return null;
         }
+
+        return null;
     }
 
     /**
-     * Parses date string into UNIX timestamp
+     * Parses date string into UNIX timestamp.
      *
      * @param string $value string representing date
      * @return int|false a UNIX timestamp or `false` on failure.
@@ -327,7 +330,7 @@ class DateValidator extends Validator
     }
 
     /**
-     * Parses date string into UNIX timestamp
+     * Parses date string into UNIX timestamp.
      *
      * @param string $value string representing date
      * @param string $format expected date format
@@ -343,16 +346,17 @@ class DateValidator extends Validator
         } else {
             if (extension_loaded('intl')) {
                 return $this->parseDateValueIntl($value, $format);
-            } else {
-                // fallback to PHP if intl is not installed
-                $format = FormatConverter::convertDateIcuToPhp($format, 'date');
             }
+
+            // fallback to PHP if intl is not installed
+            $format = FormatConverter::convertDateIcuToPhp($format, 'date');
         }
+
         return $this->parseDateValuePHP($value, $format);
     }
 
     /**
-     * Parses a date value using the IntlDateFormatter::parse()
+     * Parses a date value using the IntlDateFormatter::parse().
      * @param string $value string representing date
      * @param string $format the expected date format
      * @return int|bool a UNIX timestamp or `false` on failure.
@@ -390,7 +394,7 @@ class DateValidator extends Validator
     }
 
     /**
-     * Parses a date value using the DateTime::createFromFormat()
+     * Parses a date value using the DateTime::createFromFormat().
      * @param string $value string representing date
      * @param string $format the expected date format
      * @return int|bool a UNIX timestamp or `false` on failure.
@@ -409,11 +413,12 @@ class DateValidator extends Validator
         if (!$hasTimeInfo) {
             $date->setTime(0, 0, 0);
         }
+
         return $date->getTimestamp();
     }
 
     /**
-     * Formats a timestamp using the specified format
+     * Formats a timestamp using the specified format.
      * @param int $timestamp
      * @param string $format
      * @return string

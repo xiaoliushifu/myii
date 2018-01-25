@@ -15,16 +15,13 @@ use yii\helpers\StringHelper;
 
 /**
  * ActiveRecord is the base class for classes representing relational data in terms of objects.
- *Active Record实现了Active Record设计模式
+ *
  * Active Record implements the [Active Record design pattern](http://en.wikipedia.org/wiki/Active_record).
- * 在AR背后的设想是一个单独的AR对象关联一个数据库表的指定行，对象的属性就是表的字段
  * The premise behind Active Record is that an individual [[ActiveRecord]] object is associated with a specific
  * row in a database table. The object's attributes are mapped to the columns of the corresponding table.
- * 引用AR的属性等效于访问数据库表中那一行代表的列
  * Referencing an Active Record attribute is equivalent to accessing the corresponding table column for that record.
- *比如，Customer这个AR类关联customer表，
+ *
  * As an example, say that the `Customer` ActiveRecord class is associated with the `customer` table.
- * 这意味着类的name属性，映射customer表的name字段
  * This would mean that the class's `name` attribute is automatically mapped to the `name` column in `customer` table.
  * Thanks to Active Record, assuming the variable `$customer` is an object of type `Customer`, to get the value of
  * the `name` column for the table row, you can use the expression `$customer->name`.
@@ -52,12 +49,10 @@ use yii\helpers\StringHelper;
  * > database tables.
  *
  * Class instances are obtained in one of two ways:
- *类实例的获得，有以下两种方式
- *new 
+ *
  * * Using the `new` operator to create a new, empty object
- * 用方法获得，如find,one等
  * * Using a method to fetch an existing record (or records) from the database
- *下述给出了几个典型的应用
+ *
  * Below is an example showing some typical usage of ActiveRecord:
  *
  * ```php
@@ -68,7 +63,6 @@ use yii\helpers\StringHelper;
  * // the following will retrieve the user 'CeBe' from the database
  * $user = User::find()->where(['name' => 'CeBe'])->one();
  *
- *也可以根据一个表模型的关联关系获得另一个表的AR类
  * // this will get related records from orders table when relation is defined
  * $orders = $user->orders;
  * ```
@@ -104,7 +98,7 @@ class ActiveRecord extends BaseActiveRecord
 
 
     /**
-     * Loads default values from database table schema
+     * Loads default values from database table schema.
      *
      * You may call this method to load default values after creating a new instance:
      *
@@ -125,6 +119,7 @@ class ActiveRecord extends BaseActiveRecord
                 $this->{$column->name} = $column->defaultValue;
             }
         }
+
         return $this;
     }
 
@@ -195,6 +190,21 @@ class ActiveRecord extends BaseActiveRecord
     }
 
     /**
+     * @inheritdoc
+     */
+    public function refresh()
+    {
+        $pk = [];
+        // disambiguate column names in case ActiveQuery adds a JOIN
+        foreach ($this->getPrimaryKey(true) as $key => $value) {
+            $pk[static::tableName() . '.' . $key] = $value;
+        }
+        /* @var $record BaseActiveRecord */
+        $record = static::findOne($pk);
+        return $this->refreshInternal($record);
+    }
+
+    /**
      * Updates the whole table using the provided attribute values and conditions.
      *
      * For example, to change the status to be 1 for all customers whose status is 2:
@@ -211,7 +221,7 @@ class ActiveRecord extends BaseActiveRecord
      *
      * ```php
      * $models = Customer::find()->where('status = 2')->all();
-     * foreach($models as $model) {
+     * foreach ($models as $model) {
      *     $model->status = 1;
      *     $model->update(false); // skipping validation as no user input is involved
      * }
@@ -282,7 +292,7 @@ class ActiveRecord extends BaseActiveRecord
      *
      * ```php
      * $models = Customer::find()->where('status = 3')->all();
-     * foreach($models as $model) {
+     * foreach ($models as $model) {
      *     $model->delete();
      * }
      * ```
@@ -294,7 +304,7 @@ class ActiveRecord extends BaseActiveRecord
      * @param array $params the parameters (name => value) to be bound to the query.
      * @return int the number of rows deleted
      */
-    public static function deleteAll($condition = '', $params = [])
+    public static function deleteAll($condition = null, $params = [])
     {
         $command = static::getDb()->createCommand();
         $command->delete(static::tableName(), $condition, $params);
@@ -454,7 +464,7 @@ class ActiveRecord extends BaseActiveRecord
      * @param array $attributes list of attributes that need to be saved. Defaults to `null`,
      * meaning all attributes that are loaded from DB will be saved.
      * @return bool whether the attributes are valid and the record is inserted successfully.
-     * @throws \Exception in case insert failed.
+     * @throws \Exception|\Throwable in case insert failed.
      */
     public function insert($runValidation = true, $attributes = null)
     {
@@ -475,6 +485,7 @@ class ActiveRecord extends BaseActiveRecord
             } else {
                 $transaction->commit();
             }
+
             return $result;
         } catch (\Exception $e) {
             $transaction->rollBack();
@@ -563,7 +574,7 @@ class ActiveRecord extends BaseActiveRecord
      * or [[beforeSave()]] stops the updating process.
      * @throws StaleObjectException if [[optimisticLock|optimistic locking]] is enabled and the data
      * being updated is outdated.
-     * @throws \Exception in case update failed.
+     * @throws \Exception|\Throwable in case update failed.
      */
     public function update($runValidation = true, $attributeNames = null)
     {
@@ -584,6 +595,7 @@ class ActiveRecord extends BaseActiveRecord
             } else {
                 $transaction->commit();
             }
+
             return $result;
         } catch (\Exception $e) {
             $transaction->rollBack();
@@ -611,7 +623,7 @@ class ActiveRecord extends BaseActiveRecord
      * Note that it is possible the number of rows deleted is 0, even though the deletion execution is successful.
      * @throws StaleObjectException if [[optimisticLock|optimistic locking]] is enabled and the data
      * being deleted is outdated.
-     * @throws \Exception in case delete failed.
+     * @throws \Exception|\Throwable in case delete failed.
      */
     public function delete()
     {
@@ -627,6 +639,7 @@ class ActiveRecord extends BaseActiveRecord
             } else {
                 $transaction->commit();
             }
+
             return $result;
         } catch (\Exception $e) {
             $transaction->rollBack();
