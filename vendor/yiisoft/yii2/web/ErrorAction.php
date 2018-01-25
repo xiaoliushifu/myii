@@ -13,14 +13,11 @@ use yii\base\Exception;
 use yii\base\UserException;
 
 /**
- * ErrorAction类是为了使用指定的视图来展示应用主体的错误，
  * ErrorAction displays application errors using a specified view.
  *
- *使用ErrorAction类时，需走如下的步骤：
  * To use ErrorAction, you need to do the following steps:
- *首先，在控制器的actions()里声明一个ErrorAction类型的动作。比如在SiteController里
+ *
  * First, declare an action of ErrorAction type in the `actions()` method of your `SiteController`
- * 其他控制器里声明也是可以的
  * class (or whatever controller you prefer), like the following:
  *
  * ```php
@@ -31,15 +28,14 @@ use yii\base\UserException;
  *     ];
  * }
  * ```
- *然后，创建为这个动作创建一个视图，如果路由是site/error,那么这个视图文件就是views/site/error.php
+ *
  * Then, create a view file for this action. If the route of your error action is `site/error`, then
- * 在这个视图里，有这么几个变量要说一下：
  * the view file should be `views/site/error.php`. In this view file, the following variables are available:
  *
- * - `$name`: the error name  错误名
- * - `$message`: the error message 错误消息
- * - `$exception`: the exception being handled  异常
- *最后，配置一个errorHandler组件如下：
+ * - `$name`: the error name
+ * - `$message`: the error message
+ * - `$exception`: the exception being handled
+ *
  * Finally, configure the "errorHandler" application component as follows,
  *
  * ```php
@@ -55,11 +51,8 @@ use yii\base\UserException;
 class ErrorAction extends Action
 {
     /**
-     * 视图名，如果没有设置这个视图名称，那么将取id的值
      * @var string the view file to be rendered. If not set, it will take the value of [[id]].
-     * 这意味着，如果你命名这个action为error,那么这个视图名就是error。
      * That means, if you name the action as "error" in "SiteController", then the view name
-     * 对应的视图文件就是"views/site/error.php".
      * would be "error", and the corresponding view file would be "views/site/error.php".
      */
     public $view;
@@ -99,13 +92,14 @@ class ErrorAction extends Action
     }
 
     /**
-     * 独立动作，特有的一个方法就是run
      * Runs the action.
      *
      * @return string result content
      */
     public function run()
     {
+        Yii::$app->getResponse()->setStatusCodeByException($this->exception);
+
         if (Yii::$app->getRequest()->getIsAjax()) {
             return $this->renderAjaxResponse();
         }

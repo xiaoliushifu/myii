@@ -7,25 +7,19 @@
 
 namespace yii\base;
 
-use yii\helpers\StringHelper;
 use Yii;
+use yii\helpers\StringHelper;
 
 /**
- * Security组件提供了一个方便好用的方法来处理通常的安全相关的任务
  * Security provides a set of methods to handle common security-related tasks.
  *
  * In particular, Security supports the following features:
- *加密与解密
+ *
  * - Encryption/decryption: [[encryptByKey()]], [[decryptByKey()]], [[encryptByPassword()]] and [[decryptByPassword()]]
- * 密钥导出相关（不明白）
  * - Key derivation using standard algorithms: [[pbkdf2()]] and [[hkdf()]]
- * 防数据篡改
  * - Data tampering prevention: [[hashData()]] and [[validateData()]]
- * 密码生成与验证
  * - Password validation: [[generatePasswordHash()]] and [[validatePassword()]]
  *
- * 注意，该组件类需要OpenSSL这个php扩展，在windows平台生成随机字符串；或者在所有平台加解密。
- * 如果需要更高的安全特性支持，建议php大于5.5
  * > Note: this class requires 'OpenSSL' PHP extension for random key/string generation on Windows and
  * for encryption/decryption on all platforms. For the highest security level PHP version >= 5.5.0 is recommended.
  *
@@ -169,7 +163,7 @@ class Security extends Component
      * @param string $data data to be encrypted
      * @param bool $passwordBased set true to use password-based key derivation
      * @param string $secret the encryption password or key
-     * @param string $info context/application specific information, e.g. a user ID
+     * @param string|null $info context/application specific information, e.g. a user ID
      * See [RFC 5869 Section 3.2](https://tools.ietf.org/html/rfc5869#section-3.2) for more details.
      *
      * @return string the encrypted data
@@ -220,7 +214,7 @@ class Security extends Component
      * @param string $data encrypted data to be decrypted.
      * @param bool $passwordBased set true to use password-based key derivation
      * @param string $secret the decryption password or key
-     * @param string $info context/application specific information, @see encrypt()
+     * @param string|null $info context/application specific information, @see encrypt()
      *
      * @return bool|string the decrypted data or false on authentication failure
      * @throws InvalidConfigException on OpenSSL not loaded
@@ -279,6 +273,15 @@ class Security extends Component
      */
     public function hkdf($algo, $inputKey, $salt = null, $info = null, $length = 0)
     {
+        if (function_exists('hash_hkdf')) {
+            $outputKey = hash_hkdf($algo, $inputKey, $length, $info, $salt);
+            if ($outputKey === false) {
+                throw new InvalidParamException('Invalid parameters to hash_hkdf()');
+            }
+
+            return $outputKey;
+        }
+
         $test = @hash_hmac($algo, '', '', true);
         if (!$test) {
             throw new InvalidParamException('Failed to generate HMAC with hash algorithm: ' . $algo);
@@ -307,6 +310,7 @@ class Security extends Component
         if ($length !== 0) {
             $outputKey = StringHelper::byteSubstr($outputKey, 0, $length);
         }
+
         return $outputKey;
     }
 
@@ -331,6 +335,7 @@ class Security extends Component
             if ($outputKey === false) {
                 throw new InvalidParamException('Invalid parameters to hash_pbkdf2()');
             }
+
             return $outputKey;
         }
 
@@ -368,16 +373,15 @@ class Security extends Component
         if ($length !== 0) {
             $outputKey = StringHelper::byteSubstr($outputKey, 0, $length);
         }
+
         return $outputKey;
     }
 
     /**
-     * 给原始$data一个前缀的字符串（这个字符串用hash算法加密而成),用来检测是否被篡改
      * Prefixes data with a keyed hash value so that it can later be detected if it is tampered.
      * There is no need to hash inputs or outputs of [[encryptByKey()]] or [[encryptByPassword()]]
      * as those methods perform the task.
      * @param string $data the data to be protected
-     * 字符串 $key 生成hash时使用的密钥
      * @param string $key the secret key to be used for generating hash. Should be a secure
      * cryptographic key.
      * @param bool $rawHash whether the generated hash value is in raw binary format. If false, lowercase
@@ -395,6 +399,7 @@ class Security extends Component
         if (!$hash) {
             throw new InvalidConfigException('Failed to generate HMAC with hash algorithm: ' . $this->macHash);
         }
+
         return $hash . $data;
     }
 
@@ -409,7 +414,7 @@ class Security extends Component
      * It indicates whether the hash value in the data is in binary format. If false, it means the hash value consists
      * of lowercase hex digits only.
      * hex digits will be generated.
-     * @return string the real data with the hash stripped off. False if the data is tampered.
+     * @return string|false the real data with the hash stripped off. False if the data is tampered.
      * @throws InvalidConfigException when HMAC generation fails.
      * @see hashData()
      */
@@ -419,18 +424,18 @@ class Security extends Component
         if (!$test) {
             throw new InvalidConfigException('Failed to generate HMAC with hash algorithm: ' . $this->macHash);
         }
-        //首先脱掉hash前缀，找到原始数据$pureData
         $hashLength = StringHelper::byteLength($test);
         if (StringHelper::byteLength($data) >= $hashLength) {
             $hash = StringHelper::byteSubstr($data, 0, $hashLength);
             $pureData = StringHelper::byteSubstr($data, $hashLength, null);
-            //用原始数据$pureData再生成一次，与曾经生成的hash前缀进行比较，进而得知是否被篡改过
+
             $calculatedHash = hash_hmac($this->macHash, $pureData, $key, $rawHash);
 
             if ($this->compareString($hash, $calculatedHash)) {
                 return $pureData;
             }
         }
+
         return false;
     }
 
@@ -568,9 +573,7 @@ class Security extends Component
         }
 
         $bytes = $this->generateRandomKey($length);
-        // '=' character(s) returned by base64_encode() are always discarded because
-        // they are guaranteed to be after position $length in the base64_encode() output.
-        return strtr(substr(base64_encode($bytes), 0, $length), '+/', '_-');
+        return substr(StringHelper::base64UrlEncode($bytes), 0, $length);
     }
 
     /**
@@ -613,7 +616,7 @@ class Security extends Component
         }
 
         if (function_exists('password_hash')) {
-            /** @noinspection PhpUndefinedConstantInspection */
+            /* @noinspection PhpUndefinedConstantInspection */
             return password_hash($password, PASSWORD_DEFAULT, ['cost' => $cost]);
         }
 
@@ -683,7 +686,7 @@ class Security extends Component
         // Get a 20-byte random string
         $rand = $this->generateRandomKey(20);
         // Form the prefix that specifies Blowfish (bcrypt) algorithm and cost parameter.
-        $salt = sprintf("$2y$%02d$", $cost);
+        $salt = sprintf('$2y$%02d$', $cost);
         // Append the random salt data in the required base64 format.
         $salt .= str_replace('+', '.', substr(base64_encode($rand), 0, 22));
 
@@ -707,6 +710,40 @@ class Security extends Component
         for ($i = 0; $i < $actualLength; $i++) {
             $diff |= (ord($actual[$i]) ^ ord($expected[$i % $expectedLength]));
         }
+
         return $diff === 0;
+    }
+
+    /**
+     * Masks a token to make it uncompressible.
+     * Applies a random mask to the token and prepends the mask used to the result making the string always unique.
+     * Used to mitigate BREACH attack by randomizing how token is outputted on each request.
+     * @param string $token An unmasked token.
+     * @return string A masked token.
+     * @since 2.0.12
+     */
+    public function maskToken($token)
+    {
+        // The number of bytes in a mask is always equal to the number of bytes in a token.
+        $mask = $this->generateRandomKey(StringHelper::byteLength($token));
+        return StringHelper::base64UrlEncode($mask . ($mask ^ $token));
+    }
+
+    /**
+     * Unmasks a token previously masked by `maskToken`.
+     * @param string $maskedToken A masked token.
+     * @return string An unmasked token, or an empty string in case of token format is invalid.
+     * @since 2.0.12
+     */
+    public function unmaskToken($maskedToken)
+    {
+        $decoded = StringHelper::base64UrlDecode($maskedToken);
+        $length = StringHelper::byteLength($decoded) / 2;
+        // Check if the masked token has an even length.
+        if (!is_int($length)) {
+            return '';
+        }
+
+        return StringHelper::byteSubstr($decoded, $length, $length) ^ StringHelper::byteSubstr($decoded, 0, $length);
     }
 }

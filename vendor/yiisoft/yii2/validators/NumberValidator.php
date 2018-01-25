@@ -8,9 +8,9 @@
 namespace yii\validators;
 
 use Yii;
+use yii\helpers\Json;
 use yii\helpers\StringHelper;
 use yii\web\JsExpression;
-use yii\helpers\Json;
 
 /**
  * NumberValidator validates that the attribute value is a number.
@@ -28,13 +28,12 @@ class NumberValidator extends Validator
      * @var bool whether the attribute value can only be an integer. Defaults to false.
      */
     public $integerOnly = false;
-    /** 
-	*  整型或浮点，数字的上限
+    /**
      * @var int|float upper limit of the number. Defaults to null, meaning no upper limit.
      * @see tooBig for the customized message used when the number is too big.
      */
     public $max;
-    /**整型或浮点，数字的下限
+    /**
      * @var int|float lower limit of the number. Defaults to null, meaning no lower limit.
      * @see tooSmall for the customized message used when the number is too small.
      */
@@ -47,12 +46,11 @@ class NumberValidator extends Validator
      * @var string user-defined error message used when the value is smaller than [[min]].
      */
     public $tooSmall;
-    /**怎么算整数呢？还是得靠正则呀，哈哈，
-	*  任意的空白，正负号（+-），一个数字以上，任意空白
+    /**
      * @var string the regular expression for matching integers.
      */
     public $integerPattern = '/^\s*[+-]?\d+\s*$/';
-    /**怎么算数字呢？这个正则好好研究一下吧
+    /**
      * @var string the regular expression for matching numbers. It defaults to a pattern
      * that matches floating numbers with optional exponential part (e.g. -1.23e-10).
      */
@@ -64,9 +62,7 @@ class NumberValidator extends Validator
      */
     public function init()
     {
-		//借用父类的方法，初始化继承而来的三个属性
         parent::init();
-		//然后初始化当前验证器特有的属性
         if ($this->message === null) {
             $this->message = $this->integerOnly ? Yii::t('yii', '{attribute} must be an integer.')
                 : Yii::t('yii', '{attribute} must be a number.');
@@ -117,9 +113,9 @@ class NumberValidator extends Validator
             return [$this->tooSmall, ['min' => $this->min]];
         } elseif ($this->max !== null && $value > $this->max) {
             return [$this->tooBig, ['max' => $this->max]];
-        } else {
-            return null;
         }
+
+        return null;
     }
 
     /**
@@ -142,28 +138,28 @@ class NumberValidator extends Validator
 
         $options = [
             'pattern' => new JsExpression($this->integerOnly ? $this->integerPattern : $this->numberPattern),
-            'message' => Yii::$app->getI18n()->format($this->message, [
+            'message' => $this->formatMessage($this->message, [
                 'attribute' => $label,
-            ], Yii::$app->language),
+            ]),
         ];
 
         if ($this->min !== null) {
             // ensure numeric value to make javascript comparison equal to PHP comparison
             // https://github.com/yiisoft/yii2/issues/3118
             $options['min'] = is_string($this->min) ? (float) $this->min : $this->min;
-            $options['tooSmall'] = Yii::$app->getI18n()->format($this->tooSmall, [
+            $options['tooSmall'] = $this->formatMessage($this->tooSmall, [
                 'attribute' => $label,
                 'min' => $this->min,
-            ], Yii::$app->language);
+            ]);
         }
         if ($this->max !== null) {
             // ensure numeric value to make javascript comparison equal to PHP comparison
             // https://github.com/yiisoft/yii2/issues/3118
             $options['max'] = is_string($this->max) ? (float) $this->max : $this->max;
-            $options['tooBig'] = Yii::$app->getI18n()->format($this->tooBig, [
+            $options['tooBig'] = $this->formatMessage($this->tooBig, [
                 'attribute' => $label,
                 'max' => $this->max,
-            ], Yii::$app->language);
+            ]);
         }
         if ($this->skipOnEmpty) {
             $options['skipOnEmpty'] = 1;

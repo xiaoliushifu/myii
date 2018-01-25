@@ -8,10 +8,8 @@
 namespace yii\caching;
 
 /**
- * 
  * ZendDataCache provides Zend data caching in terms of an application component.
  *
- 需要使用zend server，并且安装指定的PHP扩展。
  * To use this application component, the [Zend Data Cache PHP extension](http://www.zend.com/en/products/server/)
  * must be loaded.
  *

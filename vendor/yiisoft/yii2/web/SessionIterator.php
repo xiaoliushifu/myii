@@ -8,10 +8,7 @@
 namespace yii\web;
 
 /**
- * 实现了一个迭代器，用来迭代会话数据(会话数据一般是数组），由yii\web\session组件来使用
  * SessionIterator implements an [[\Iterator|iterator]] for traversing session variables managed by [[Session]].
- *实现PHP Iterator接口的类，必须实现五个方法。current,key,next,rewind,valid
- *
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0

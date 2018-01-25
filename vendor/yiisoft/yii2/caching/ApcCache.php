@@ -41,7 +41,7 @@ class ApcCache extends Cache
      */
     public function init()
     {
-        parent::init();//父类的Cache是没有init方法的，所以还是到Object那的init。
+        parent::init();
         $extension = $this->useApcu ? 'apcu' : 'apc';
         if (!extension_loaded($extension)) {
             throw new InvalidConfigException("ApcCache requires PHP $extension extension to be loaded.");

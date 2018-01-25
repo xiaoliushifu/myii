@@ -7,15 +7,14 @@
 
 namespace yii\base;
 
-use Yii;
 use ReflectionClass;
+use Yii;
 
 /**
-* Widget是小部件的基类
  * Widget is the base class for widgets.
- *小部件是在视图view中使用的可重复单元，就是用来生成对应视图代码（HTML）的php封装。
+ *
  * For more details and usage information on Widget, see the [guide article on widgets](guide:structure-widgets).
- * 小部件与视图文件相比，就是小巧型的，可重用的。不像普通的视图文件，大部分是php脚本。
+ *
  * @property string $id ID of the widget.
  * @property \yii\web\View $view The view object that can be used to render views or view files. Note that the
  * type of this property differs in getter and setter. See [[getView()]] and [[setView()]] for details.
@@ -28,7 +27,6 @@ use ReflectionClass;
 class Widget extends Component implements ViewContextInterface
 {
     /**
-	 * 事件名，见名之意，init自然是在init方法里触发
      * @event Event an event that is triggered when the widget is initialized via [[init()]].
      * @since 2.0.11
      */
@@ -56,7 +54,6 @@ class Widget extends Component implements ViewContextInterface
      */
     public static $autoIdPrefix = 'w';
     /**
-	* 用数组实现的栈逻辑，静态。一般保存当前正被渲染的小部件对象，主要在begin和end方法里使用
      * @var Widget[] the widgets that are currently being rendered (not ended). This property
      * is maintained by [[begin()]] and [[end()]] methods.
      * @internal
@@ -72,7 +69,7 @@ class Widget extends Component implements ViewContextInterface
     public function init()
     {
         parent::init();
-        $this->trigger(self::EVENT_INIT);//触发init事件
+        $this->trigger(self::EVENT_INIT);
     }
 
     /**
@@ -87,12 +84,10 @@ class Widget extends Component implements ViewContextInterface
      */
     public static function begin($config = [])
     {
-		//自动填充当前调用的类（不是父类，而是实际发挥作用的子类），组成完整的配置信息。
-		//因为该方法是静态，故调用时并未实例化对象，这里class下标是实例化的关键
         $config['class'] = get_called_class();
         /* @var $widget Widget */
-        $widget = Yii::createObject($config);//用反射机制去实例化
-        static::$stack[] = $widget;//存储到当前栈中
+        $widget = Yii::createObject($config);
+        static::$stack[] = $widget;
 
         return $widget;
     }
@@ -107,27 +102,25 @@ class Widget extends Component implements ViewContextInterface
     public static function end()
     {
         if (!empty(static::$stack)) {
-			//取出刚才的小部件对象
             $widget = array_pop(static::$stack);
             if (get_class($widget) === get_called_class()) {
                 /* @var $widget Widget */
                 if ($widget->beforeRun()) {
-					//小部件的核心方法，就是run
                     $result = $widget->run();
                     $result = $widget->afterRun($result);
                     echo $result;
                 }
+
                 return $widget;
-            } else {
-                throw new InvalidCallException('Expecting end() of ' . get_class($widget) . ', found ' . get_called_class());
             }
-        } else {
-            throw new InvalidCallException('Unexpected ' . get_called_class() . '::end() call. A matching begin() is not found.');
+
+            throw new InvalidCallException('Expecting end() of ' . get_class($widget) . ', found ' . get_called_class());
         }
+
+        throw new InvalidCallException('Unexpected ' . get_called_class() . '::end() call. A matching begin() is not found.');
     }
 
     /**
-	 * 一个方法完成小部件的渲染（与上述的begin(),end()相比是另一种渲染方式）
      * Creates a widget instance and runs it.
      * The widget rendering result is returned by this method.
      * @param array $config name-value pairs that will be used to initialize the object properties
@@ -144,7 +137,6 @@ class Widget extends Component implements ViewContextInterface
             $widget = Yii::createObject($config);
             $out = '';
             if ($widget->beforeRun()) {
-				//直接调用run()完事。
                 $result = $widget->run();
                 $out = $widget->afterRun($result);
             }
@@ -212,7 +204,6 @@ class Widget extends Component implements ViewContextInterface
     }
 
     /**
-	* 执行run，需要每个小部件子类各自完成，这个虽然是个空实现，其实是个接口。
      * Executes the widget.
      * @return string the result of widget execution to be outputted.
      */
@@ -222,9 +213,10 @@ class Widget extends Component implements ViewContextInterface
 
     /**
      * Renders a view.
+     *
      * The view to be rendered can be specified in one of the following formats:
      *
-     * - path alias (e.g. "@app/views/site/index");
+     * - [path alias](guide:concept-aliases) (e.g. "@app/views/site/index");
      * - absolute path within application (e.g. "//site/index"): the view name starts with double slashes.
      *   The actual view file will be looked for under the [[Application::viewPath|view path]] of the application.
      * - absolute path within module (e.g. "/site/index"): the view name starts with a single slash.
@@ -246,7 +238,7 @@ class Widget extends Component implements ViewContextInterface
 
     /**
      * Renders a view file.
-     * @param string $file the view file to be rendered. This can be either a file path or a path alias.
+     * @param string $file the view file to be rendered. This can be either a file path or a [path alias](guide:concept-aliases).
      * @param array $params the parameters (name-value pairs) that should be made available in the view.
      * @return string the rendering result.
      * @throws InvalidParamException if the view file does not exist.
@@ -267,7 +259,7 @@ class Widget extends Component implements ViewContextInterface
 
         return dirname($class->getFileName()) . DIRECTORY_SEPARATOR . 'views';
     }
-    
+
     /**
      * This method is invoked right before the widget is executed.
      *

@@ -13,12 +13,12 @@ use yii\helpers\FileHelper;
 
 /**
  * FileMutex implements mutex "lock" mechanism via local file system files.
- 依赖于php的flock函数，果然不出余之所料
+ *
  * This component relies on PHP `flock()` function.
  *
  * Application configuration example:
  *
- * ```
+ * ```php
  * [
  *     'components' => [
  *         'mutex' => [
@@ -28,11 +28,11 @@ use yii\helpers\FileHelper;
  * ]
  * ```
  *
- * Note: this component can maintain the locks only for the single web server,
- * it probably will not suffice to your in case you are using cloud server solution.
+ * > Note: this component can maintain the locks only for the single web server,
+ * > it probably will not suffice in case you are using cloud server solution.
  *
- * Warning: due to `flock()` function nature this component is unreliable when
- * using a multithreaded server API like ISAPI.
+ * > Warning: due to `flock()` function nature this component is unreliable when
+ * > using a multithreaded server API like ISAPI.
  *
  * @see Mutex
  *
@@ -42,7 +42,7 @@ use yii\helpers\FileHelper;
 class FileMutex extends Mutex
 {
     /**
-     * @var string the directory to store mutex files. You may use path alias here.
+     * @var string the directory to store mutex files. You may use [path alias](guide:concept-aliases) here.
      * Defaults to the "mutex" subdirectory under the application runtime path.
      */
     public $mutexPath = '@runtime/mutex';
@@ -73,8 +73,8 @@ class FileMutex extends Mutex
      */
     public function init()
     {
+        parent::init();
         $this->mutexPath = Yii::getAlias($this->mutexPath);
-		//首先创建文件所在路径
         if (!is_dir($this->mutexPath)) {
             FileHelper::createDirectory($this->mutexPath, $this->dirMode, true);
         }
@@ -83,35 +83,59 @@ class FileMutex extends Mutex
     /**
      * Acquires lock by given name.
      * @param string $name of the lock to be acquired.
-     * @param int $timeout to wait for lock to become released.
+     * @param int $timeout time (in seconds) to wait for lock to become released.
      * @return bool acquiring result.
      */
     protected function acquireLock($name, $timeout = 0)
     {
-        $file = fopen($this->getLockFilePath($name), 'w+');
-        if ($file === false) {
-            return false;
-        }
-        if ($this->fileMode !== null) {
-            @chmod($this->getLockFilePath($name), $this->fileMode);
-        }
+        $filePath = $this->getLockFilePath($name);
         $waitTime = 0;
-		//LOCK_EX是进行排他锁，LOCK_NB暂不理解。是在进行锁操作时也不阻塞？（谁都可以抢锁吗？）直到谁最终抢到？
-        while (!flock($file, LOCK_EX | LOCK_NB)) {
-            $waitTime++;
-			//尝试是有次数限制的，
-            if ($waitTime > $timeout) {
-                fclose($file);
 
+        while (true) {
+            $file = fopen($filePath, 'w+');
+
+            if ($file === false) {
                 return false;
             }
-			//而且休眠一秒
-            sleep(1);
-        }
-		//锁定后的文件存到内存中
-        $this->_files[$name] = $file;
 
-        return true;
+            if ($this->fileMode !== null) {
+                @chmod($filePath, $this->fileMode);
+            }
+
+            if (!flock($file, LOCK_EX | LOCK_NB)) {
+                fclose($file);
+
+                if (++$waitTime > $timeout) {
+                    return false;
+                }
+
+                sleep(1);
+                continue;
+            }
+
+            // Under unix we delete the lock file before releasing the related handle. Thus it's possible that we've acquired a lock on
+            // a non-existing file here (race condition). We must compare the inode of the lock file handle with the inode of the actual lock file.
+            // If they do not match we simply continue the loop since we can assume the inodes will be equal on the next try.
+            // Example of race condition without inode-comparison:
+            // Script A: locks file
+            // Script B: opens file
+            // Script A: unlinks and unlocks file
+            // Script B: locks handle of *unlinked* file
+            // Script C: opens and locks *new* file
+            // In this case we would have acquired two locks for the same file path.
+            if (DIRECTORY_SEPARATOR !== '\\' && fstat($file)['ino'] !== @fileinode($filePath)) {
+                clearstatcache(true, $filePath);
+                flock($file, LOCK_UN);
+                fclose($file);
+                continue;
+            }
+
+            $this->_files[$name] = $file;
+            return true;
+        }
+
+        // Should not be reached normally.
+        return false;
     }
 
     /**
@@ -121,25 +145,29 @@ class FileMutex extends Mutex
      */
     protected function releaseLock($name)
     {
-		//没有这个锁，或释放锁失败。否则就是释放锁成功。
-		//接着再进行else。
-        if (!isset($this->_files[$name]) || !flock($this->_files[$name], LOCK_UN)) {
+        if (!isset($this->_files[$name])) {
             return false;
-        } else {
-			//关闭这个文件
-            fclose($this->_files[$name]);
-			//文件系统删除这个文件
-            unlink($this->getLockFilePath($name));
-			//内存中删除这个文件
-            unset($this->_files[$name]);
-
-            return true;
         }
+
+        if (DIRECTORY_SEPARATOR === '\\') {
+            // Under windows it's not possible to delete a file opened via fopen (either by own or other process).
+            // That's why we must first unlock and close the handle and then *try* to delete the lock file.
+            flock($this->_files[$name], LOCK_UN);
+            fclose($this->_files[$name]);
+            @unlink($this->getLockFilePath($name));
+        } else {
+            // Under unix it's possible to delete a file opened via fopen (either by own or other process).
+            // That's why we must unlink (the currently locked) lock file first and then unlock and close the handle.
+            unlink($this->getLockFilePath($name));
+            flock($this->_files[$name], LOCK_UN);
+            fclose($this->_files[$name]);
+        }
+
+        unset($this->_files[$name]);
+        return true;
     }
 
     /**
-	* 文件路径+锁名+.lock。
-	* 锁名需进行md5散列。
      * Generate path for lock file.
      * @param string $name
      * @return string

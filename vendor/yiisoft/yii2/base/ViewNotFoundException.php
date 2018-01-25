@@ -7,8 +7,7 @@
 
 namespace yii\base;
 
-/**这个异常类，专门为了视图找不到而定义的。
-* 看到没，这就是专业呀
+/**
  * ViewNotFoundException represents an exception caused by view file not found.
  *
  * @author Alexander Makarov

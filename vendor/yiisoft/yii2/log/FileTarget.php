@@ -26,7 +26,7 @@ use yii\helpers\FileHelper;
 class FileTarget extends Target
 {
     /**
-     * @var string log file path or path alias. If not set, it will use the "@runtime/logs/app.log" file.
+     * @var string log file path or [path alias](guide:concept-aliases). If not set, it will use the "@runtime/logs/app.log" file.
      * The directory containing the log files will be automatically created if not existing.
      */
     public $logFile;
@@ -37,13 +37,12 @@ class FileTarget extends Target
      * @since 2.0.3
      */
     public $enableRotation = true;
-    /**最大单个日志文件大小，当文件超过这个数值时，进行日志文件轮替。
+    /**
      * @var int maximum log file size, in kilo-bytes. Defaults to 10240, meaning 10MB.
      */
     public $maxFileSize = 10240; // in KB
     /**
      * @var int number of log files used for rotation. Defaults to 5.
-     * 轮替时日志文件的数量
      */
     public $maxLogFiles = 5;
     /**
@@ -64,7 +63,7 @@ class FileTarget extends Target
      * renaming files. Defaults to `true` to be more compatible with log tailers and is windows
      * systems which do not play well with rename on open files. Rotation by renaming however is
      * a bit faster.
-     *优先使用copy方法来轮替一个文件，而不是rename函数，因为rename函数作用打开的文件时（比如fopen的文件)不起作用。虽然rename较快一点。
+     *
      * The problem with windows systems where the [rename()](http://www.php.net/manual/en/function.rename.php)
      * function does not work with files that are opened by some process is described in a
      * [comment by Martin Pelletier](http://www.php.net/manual/en/function.rename.php#102274) in
@@ -105,21 +104,18 @@ class FileTarget extends Target
     public function export()
     {
         $text = implode("\n", array_map([$this, 'formatMessage'], $this->messages)) . "\n";
-        //'a'，写入方式打开，文件指针到文件末尾
         if (($fp = @fopen($this->logFile, 'a')) === false) {
             throw new InvalidConfigException("Unable to append to log file: {$this->logFile}");
         }
-        //以咨询方式获得独占锁（因为要写入，不能被其他写入进程打搅）
         @flock($fp, LOCK_EX);
         if ($this->enableRotation) {
             // clear stat cache to ensure getting the real current file size and not a cached one
             // this may result in rotating twice when cached file size is used on subsequent calls
-            clearstatcache();//php内置函数，清除文件状态缓存
+            clearstatcache();
         }
-        //先判断是否需要轮替
         if ($this->enableRotation && @filesize($this->logFile) > $this->maxFileSize * 1024) {
             $this->rotateFiles();
-            @flock($fp, LOCK_UN);//释放刚才的独占锁定
+            @flock($fp, LOCK_UN);
             @fclose($fp);
             @file_put_contents($this->logFile, $text, FILE_APPEND | LOCK_EX);
         } else {
@@ -139,7 +135,7 @@ class FileTarget extends Target
     {
         $file = $this->logFile;
         for ($i = $this->maxLogFiles; $i >= 0; --$i) {
-            // $i == 0 is the original log file,其他就是app.log.1
+            // $i == 0 is the original log file
             $rotateFile = $file . ($i === 0 ? '' : '.' . $i);
             if (is_file($rotateFile)) {
                 // suppress errors because it's possible multiple processes enter into this section

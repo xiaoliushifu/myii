@@ -13,8 +13,10 @@ if (!class_exists('Symfony\Component\CssSelector\CssSelectorConverter')) {
 // Add aliases for PHPUnit 6
 
 namespace {
-    if (!class_exists('PHPUnit_Framework_TestCase') && class_exists('PHPUnit\Framework\TestCase')) {
+    if (!class_exists('PHPUnit_Framework_Assert') && class_exists('PHPUnit\Framework\Assert')) {
         class_alias('PHPUnit\Framework\Assert', 'PHPUnit_Framework_Assert');
+    }
+    if (!class_exists('PHPUnit_Framework_TestCase') && class_exists('PHPUnit\Framework\TestCase')) {
         class_alias('PHPUnit\Framework\AssertionFailedError', 'PHPUnit_Framework_AssertionFailedError');
         class_alias('PHPUnit\Framework\Constraint\Constraint', 'PHPUnit_Framework_Constraint');
         class_alias('PHPUnit\Framework\Constraint\LogicalNot', 'PHPUnit_Framework_Constraint_Not');
@@ -44,6 +46,8 @@ namespace {
         class_alias('PHPUnit\Util\Printer', 'PHPUnit_Util_Printer');
         class_alias('PHPUnit\Util\Test', 'PHPUnit_Util_Test');
         class_alias('PHPUnit\Util\TestDox\ResultPrinter', 'PHPUnit_Util_TestDox_ResultPrinter');
+        class_alias('PHPUnit\Framework\BaseTestListener', 'PHPUnit_Framework_BaseTestListener');
+
         require_once __DIR__ . '/phpunit5-loggers.php'; // TAP and JSON loggers were removed in PHPUnit 6
     }
 }

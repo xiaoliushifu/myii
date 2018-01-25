@@ -9,64 +9,46 @@ namespace yii\web;
 
 use Yii;
 use yii\base\InvalidConfigException;
-use yii\helpers\StringHelper;
+use yii\validators\IpValidator;
 
 /**
-* Request组件，代表了Http的请求实体
- * The web Request class represents an HTTP request
- * 囊括$_SERVER超全局数组，并解析它们，以处理不同Web服务器的不一致性
+ * The web Request class represents an HTTP request.
+ *
  * It encapsulates the $_SERVER variable and resolves its inconsistency among different Web servers.
- * 也提供了一个这样的接口：从$_POST,$_GET,$_COOKIES和通过http的put，delete方法发送的REST 参数
  * Also it provides an interface to retrieve request parameters from $_POST, $_GET, $_COOKIES and REST
  * parameters sent via other HTTP methods like PUT or DELETE.
- *Request配置为应用主体组件
+ *
  * Request is configured as an application component in [[\yii\web\Application]] by default.
- * 可以通过Yii::$app->request。
  * You can access that instance via `Yii::$app->request`.
  *
- *可以先看看官网的guide
  * For more details and usage information on Request, see the [guide article on requests](guide:runtime-requests).
  *
- * 字符串，$absoluteUrl  比如http:://www.cctv.com/index.php/admin/?r=site/index
  * @property string $absoluteUrl The currently requested absolute URL. This property is read-only.
- * 数组，可接受的内容类型,由优先级排列。
  * @property array $acceptableContentTypes The content types ordered by the quality score. Types with the
- * 数组的键是内容类型，数组的值对应的优先级
  * highest scores will be returned first. The array keys are the content types, while the array values are the
  * corresponding quality score and other parameters as given in the header.
- * 数组，$acceptableLanguages  可接受的语言，优先级排列
  * @property array $acceptableLanguages The languages ordered by the preference level. The first element
  * represents the most preferred language.
- * 字符串，null  $authPassword  通过HTTP authentication发送的，如果没有发送则是null,只读
- * @property string|null $authPassword The password sent via HTTP authentication, null if the password is not
+ * @property array $authCredentials That contains exactly two elements: - 0: the username sent via HTTP
+ * authentication, `null` if the username is not given - 1: the password sent via HTTP authentication, `null` if
+ * the password is not given. This property is read-only.
+ * @property string|null $authPassword The password sent via HTTP authentication, `null` if the password is
+ * not given. This property is read-only.
+ * @property string|null $authUser The username sent via HTTP authentication, `null` if the username is not
  * given. This property is read-only.
- * 字符串，null;  $authUser   通过HTTP authentication发送的，如果没有发送则是null,只读
- * @property string|null $authUser The username sent via HTTP authentication, null if the username is not
- * given. This property is read-only.
- * 字符串，$baseUrl   相对与当前应用主体的URL   /index.php(不带host）
  * @property string $baseUrl The relative URL for the application.
- * 数组，$bodyParams，请求参数来自于http请求实体（不是queryString)
  * @property array $bodyParams The request parameters given in the request body.
- * 字符串，$contentType  请求内容类型，如果读取不到内容类型（content-TYPE）,则返回null，只读
  * @property string $contentType Request content-type. Null is returned if this information is not available.
  * This property is read-only.
- * cookie集合    $cookie  只读
  * @property CookieCollection $cookies The cookie collection. This property is read-only.
- * 字符串，$csrfToken  用来执行CSRF验证，只读
  * @property string $csrfToken The token used to perform CSRF validation. This property is read-only.
- * 字符串，$csrfTokenFromHeader   见名知意，通过http请求header里的CSRF_HEADER。没有则返回null。只读
  * @property string $csrfTokenFromHeader The CSRF token sent via [[CSRF_HEADER]] by browser. Null is returned
  * if no such header is sent. This property is read-only.
- * 数组，$eTags   实体标记，只读属性
  * @property array $eTags The entity tags. This property is read-only.
- * HeaderCollection  $headers  头部对象实体。只读
  * @property HeaderCollection $headers The header collection. This property is read-only.
- * 字符串，null,$hostInfo模式和主机部分（带端口后如果需要）。比如http://www.yiiframework.com
  * @property string|null $hostInfo Schema and hostname part (with port number if needed) of the request URL
  * (e.g. `http://www.yiiframework.com`), null if can't be obtained from `$_SERVER` and wasn't set. See
  * [[getHostInfo()]] for security related notes on this property.
- * 
- * 字符串，null。$hostName，比如 www.yiiframework.com。只读
  * @property string|null $hostName Hostname part of the request URL (e.g. `www.yiiframework.com`). This
  * property is read-only.
  * @property bool $isAjax Whether this is an AJAX (XMLHttpRequest) request. This property is read-only.
@@ -83,127 +65,99 @@ use yii\helpers\StringHelper;
  * read-only.
  * @property string $method Request method, such as GET, POST, HEAD, PUT, PATCH, DELETE. The value returned is
  * turned into upper case. This property is read-only.
+ * @property string|null $origin URL origin of a CORS request, `null` if not available. This property is
+ * read-only.
  * @property string $pathInfo Part of the request URL that is after the entry script and before the question
  * mark. Note, the returned path info is already URL-decoded.
  * @property int $port Port number for insecure requests.
- * 数组，$queryParams  请求参数值
  * @property array $queryParams The request GET parameter values.
- * 字符串，$queryString  请求URL的问号之后的部分
  * @property string $queryString Part of the request URL that is after the question mark. This property is
  * read-only.
- * 字符串，$rawBody   原始http的请求实体
  * @property string $rawBody The request body.
- * 字符串，$referrer  。URL的referrer,只读
  * @property string|null $referrer URL referrer, null if not available. This property is read-only.
- * 字符串，$scriptFile  入口脚本路径
+ * @property string|null $remoteHost Remote host name, `null` if not available. This property is read-only.
+ * @property string|null $remoteIP Remote IP address, `null` if not available. This property is read-only.
  * @property string $scriptFile The entry script file path.
- * 字符串，入口脚本的相对路径
  * @property string $scriptUrl The relative URL of the entry script.
- * 整型，$securePort，安全请求（https)的端口号
  * @property int $securePort Port number for secure requests.
- * 字符串，$serverName  服务器名字，只读
  * @property string $serverName Server name, null if not available. This property is read-only.
- * 整型，$serverPort  服务器的端口号，只读
  * @property int|null $serverPort Server port number, null if not available. This property is read-only.
- * 字符串，$url  当前请求的相对URL,注意，返回的信息是URL-encoded的
- * @property string $url The currently requested relative URL. Note that the URI returned is URL-encoded.
- * 字符串，$userAgent  用户代理，只读
+ * @property string $url The currently requested relative URL. Note that the URI returned may be URL-encoded
+ * depending on the client.
  * @property string|null $userAgent User agent, null if not available. This property is read-only.
- * 字符串，$userHost 用户主机名，只读（客户端的主机名？）
  * @property string|null $userHost User host name, null if not available. This property is read-only.
- * 字符串，$userIP  用户ip地址
  * @property string|null $userIP User IP address, null if not available. This property is read-only.
  *
  * @author Qiang Xue <qiang.xue@gmail.com>
  * @since 2.0
+ * @SuppressWarnings(PHPMD.SuperGlobals)
  */
 class Request extends \yii\base\Request
 {
     /**
-     * 发送CSRF字符串的http头字段的名字（请求还是响应，应该是请求？）
      * The name of the HTTP header for sending CSRF token.
      */
     const CSRF_HEADER = 'X-CSRF-Token';
     /**
      * The length of the CSRF token mask.
+     * @deprecated 2.0.12 The mask length is now equal to the token length.
      */
     const CSRF_MASK_LENGTH = 8;
 
     /**
-     * 是否启用跨站请求伪造验证
      * @var bool whether to enable CSRF (Cross-Site Request Forgery) validation. Defaults to true.
      * When CSRF validation is enabled, forms submitted to an Yii Web application must be originated
      * from the same application. If not, a 400 HTTP exception will be raised.
-     * 这个机制，需要客户端浏览器开启接收cookie的支持
+     *
      * Note, this feature requires that the user client accepts cookie. Also, to use this feature,
-     * 通过post方法提交的表单里必须包含一个隐藏域，它的名字由csrfParam成员指定
      * forms submitted via POST method must contain a hidden input whose name is specified by [[csrfParam]].
-     * 可以使用yii\helpers\Html::beginForm()来生成它的隐藏项
      * You may use [[\yii\helpers\Html::beginForm()]] to generate his hidden input.
-     *在客户端的JavaScript里，可以通过yii.getCsrfParam()获得[[csrfParam]]的值，通过yii.getCsrfToken()获得csrfToken的值。
+     *
      * In JavaScript, you may get the values of [[csrfParam]] and [[csrfToken]] via `yii.getCsrfParam()` and
-     * 但是yiiAsset必须注册才行。还需要在页面里使用Html::csrfMetaTags()来包含meta标签
      * `yii.getCsrfToken()`, respectively. The [[\yii\web\YiiAsset]] asset must be registered.
-     * 
      * You also need to include CSRF meta tags in your pages by using [[\yii\helpers\Html::csrfMetaTags()]].
      *
-     * @see Controller::enableCsrfValidation  参考这个
-     * @see http://en.wikipedia.org/wiki/Cross-site_request_forgery 参考wiki
+     * @see Controller::enableCsrfValidation
+     * @see http://en.wikipedia.org/wiki/Cross-site_request_forgery
      */
-    //默认开启
     public $enableCsrfValidation = true;
     /**
-     * 实现CSRF验证的那个cookie的名字
      * @var string the name of the token used to prevent CSRF. Defaults to '_csrf'.
-     * 仅在$enableCsrfValidation为true时才有用
      * This property is used only when [[enableCsrfValidation]] is true.
      */
     public $csrfParam = '_csrf';
     /**
-     * 为_csrf这个cookie配置httpOnly字段
      * @var array the configuration for creating the CSRF [[Cookie|cookie]]. This property is used only when
-     * 该属性得在enableCsrfValidation和enableCsrfCookie属性都启用时才可生效
      * both [[enableCsrfValidation]] and [[enableCsrfCookie]] are true.
      */
     public $csrfCookie = ['httpOnly' => true];
     /**
-     * 使用cookie方式存储csrf字符串
-     * 布尔，是否使用cookie方式存储CSRF令牌。如果不允许，那么将会使用session来存储
      * @var bool whether to use cookie to persist CSRF token. If false, CSRF token will be stored
-     * 其中session名也是由csrfParam来指定，注意，虽然用session存储增加安全性，但是它需要每个页面都要开启session
      * in session under the name of [[csrfParam]]. Note that while storing CSRF tokens in session increases
-     * 这将影响网站性能
      * security, it requires starting a session for every page, which will degrade your site performance.
      */
     public $enableCsrfCookie = true;
     /**
-     * 为了确保客户端cookie不被篡改，是否应该加密(验证）那些种植给客户端的所有cookie。默认true
      * @var bool whether cookies should be validated to ensure they are not tampered. Defaults to true.
      */
     public $enableCookieValidation = true;
     /**
-     * 配合上一个属性，需要给cookie加密时，加密算法需要一个加密的token，这个属性在初始化request组件时指出
      * @var string a secret key used for cookie validation. This property must be set if [[enableCookieValidation]] is true.
      */
     public $cookieValidationKey;
     /**
-     * 字符串，POST参数的名字，表名是否一个http请求是一个通过POST方法来建立的PUT,PATCH,或者DELETE请求通道，
      * @var string the name of the POST parameter that is used to indicate if a request is a PUT, PATCH or DELETE
-     * 默认是_method
      * request tunneled through POST. Defaults to '_method'.
-     * @see getMethod() 参考
-     * @see getBodyParams() 参考
+     * @see getMethod()
+     * @see getBodyParams()
      */
     public $methodParam = '_method';
     /**
-     * 数组，把原始http请求转为[bodyParams]]的解析器
      * @var array the parsers for converting the raw HTTP request body into [[bodyParams]].
-     * 数组的keys是请求的Content-Types，而数组的values是对应的配置（用Yii::createObject据此配置来创建解析对象）
      * The array keys are the request `Content-Types`, and the array values are the
      * corresponding configurations for [[Yii::createObject|creating the parser objects]].
-     * 解析对象必须实现[[RequestParserInterface]].接口
      * A parser must implement the [[RequestParserInterface]].
-     *如果需要解析一个JSON请求的话，可以像下面的例子那样使用[[JsonParser]]类：
+     *
      * To enable parsing for JSON requests you can use the [[JsonParser]] class like in the following example:
      *
      * ```
@@ -211,129 +165,225 @@ class Request extends \yii\base\Request
      *     'application/json' => 'yii\web\JsonParser',
      * ]
      * ```
-     *如果想用一个解析器解析所有的请求类型，那就用"*"作为数组的key
+     *
      * To register a parser for parsing all request types you can use `'*'` as the array key.
-     * 这将在所有Content-type不匹配时作为备用
      * This one will be used as a fallback in case no other types match.
      *
-     * @see getBodyParams()  参考
+     * @see getBodyParams()
      */
     public $parsers = [];
+    /**
+     * @var array the configuration for trusted security related headers.
+     *
+     * An array key is an IPv4 or IPv6 IP address in CIDR notation for matching a client.
+     *
+     * An array value is a list of headers to trust. These will be matched against
+     * [[secureHeaders]] to determine which headers are allowed to be sent by a specified host.
+     * The case of the header names must be the same as specified in [[secureHeaders]].
+     *
+     * For example, to trust all headers listed in [[secureHeaders]] for IP addresses
+     * in range `192.168.0.0-192.168.0.254` write the following:
+     *
+     * ```php
+     * [
+     *     '192.168.0.0/24',
+     * ]
+     * ```
+     *
+     * To trust just the `X-Forwarded-For` header from `10.0.0.1`, use:
+     *
+     * ```
+     * [
+     *     '10.0.0.1' => ['X-Forwarded-For']
+     * ]
+     * ```
+     *
+     * Default is to trust all headers except those listed in [[secureHeaders]] from all hosts.
+     * Matches are tried in order and searching is stopped when IP matches.
+     *
+     * > Info: Matching is performed using [[IpValidator]].
+     * See [[IpValidator::::setRanges()|IpValidator::setRanges()]]
+     * and [[IpValidator::networks]] for advanced matching.
+     *
+     * @see $secureHeaders
+     * @since 2.0.13
+     */
+    public $trustedHosts = [];
+    /**
+     * @var array lists of headers that are, by default, subject to the trusted host configuration.
+     * These headers will be filtered unless explicitly allowed in [[trustedHosts]].
+     * The match of header names is case-insensitive.
+     * @see https://en.wikipedia.org/wiki/List_of_HTTP_header_fields
+     * @see $trustedHosts
+     * @since 2.0.13
+     */
+    public $secureHeaders = [
+        'X-Forwarded-For',
+        'X-Forwarded-Host',
+        'X-Forwarded-Proto',
+        'Front-End-Https',
+        'X-Rewrite-Url',
+    ];
+    /**
+     * @var string[] List of headers where proxies store the real client IP.
+     * It's not advisable to put insecure headers here.
+     * The match of header names is case-insensitive.
+     * @see $trustedHosts
+     * @see $secureHeaders
+     * @since 2.0.13
+     */
+    public $ipHeaders = [
+        'X-Forwarded-For',
+    ];
+    /**
+     * @var array list of headers to check for determining whether the connection is made via HTTPS.
+     * The array keys are header names and the array value is a list of header values that indicate a secure connection.
+     * The match of header names and values is case-insensitive.
+     * It's not advisable to put insecure headers here.
+     * @see $trustedHosts
+     * @see $secureHeaders
+     * @since 2.0.13
+     */
+    public $secureProtocolHeaders = [
+        'X-Forwarded-Proto' => ['https'],
+        'Front-End-Https' => ['on'],
+    ];
 
     /**
-     * CookieCollection  请求的cookie集合类
      * @var CookieCollection Collection of request cookies.
      */
     private $_cookies;
     /**
-     * HeaderCollection http请求头部集合
      * @var HeaderCollection Collection of request headers.
      */
     private $_headers;
 
 
     /**
-     * 这是一个web请求继承父类base\request必须实现的方法
-     * 用来把当前的http请求解析成一个路由和关联的参数
      * Resolves the current request into a route and the associated parameters.
-     * 返回值，数组，第一个元素是路由；第二个元素是相关的参数
      * @return array the first element is the route, and the second is the associated parameters.
      * @throws NotFoundHttpException if the request cannot be resolved.
      */
     public function resolve()
     {
-        //不是request直接解析，还得靠UrlManager组件来帮忙
-        //未开启美化功能，一般返回r参数和空数组
         $result = Yii::$app->getUrlManager()->parseRequest($this);
-        //注意，这里是全不等，解析的结果也许是空字符串。比如访问首页的情况
         if ($result !== false) {
-            //$route就是请求url里的r参数，$params永远是空数组
-            list ($route, $params) = $result;
-            //注意，成员属性_queryParams为空时，会修改$_GET
+            list($route, $params) = $result;
             if ($this->_queryParams === null) {
-                //回忆一下，php数组相加的结果是什么呢？
-                //下标相同的（索引或关联），前者保留。
                 $_GET = $params + $_GET; // preserve numeric keys
             } else {
                 $this->_queryParams = $params + $this->_queryParams;
             }
-            //路由信息（r后的参数），和整个的$_GET（$_GET已经被调整过了）
+
             return [$route, $this->getQueryParams()];
-        } else {
-            //路由必须解析出来，否则抛异常
-            throw new NotFoundHttpException(Yii::t('yii', 'Page not found.'));
+        }
+
+        throw new NotFoundHttpException(Yii::t('yii', 'Page not found.'));
+    }
+
+    /**
+     * Filters headers according to the [[trustedHosts]].
+     * @param HeaderCollection $headerCollection
+     * @since 2.0.13
+     */
+    protected function filterHeaders(HeaderCollection $headerCollection)
+    {
+        // do not trust any of the [[secureHeaders]] by default
+        $trustedHeaders = [];
+
+        // check if the client is a trusted host
+        if (!empty($this->trustedHosts)) {
+            $validator = $this->getIpValidator();
+            $ip = $this->getRemoteIP();
+            foreach ($this->trustedHosts as $cidr => $headers) {
+                if (!is_array($headers)) {
+                    $cidr = $headers;
+                    $headers = $this->secureHeaders;
+                }
+                $validator->setRanges($cidr);
+                if ($validator->validate($ip)) {
+                    $trustedHeaders = $headers;
+                    break;
+                }
+            }
+        }
+
+        // filter all secure headers unless they are trusted
+        foreach ($this->secureHeaders as $secureHeader) {
+            if (!in_array($secureHeader, $trustedHeaders)) {
+                $headerCollection->remove($secureHeader);
+            }
         }
     }
 
     /**
-     * 返回头集合对象
+     * Creates instance of [[IpValidator]].
+     * You can override this method to adjust validator or implement different matching strategy.
+     *
+     * @return IpValidator
+     * @since 2.0.13
+     */
+    protected function getIpValidator()
+    {
+        return new IpValidator();
+    }
+
+    /**
      * Returns the header collection.
-     * 头集合对象包含了http请求的头部信息
      * The header collection contains incoming HTTP headers.
      * @return HeaderCollection the header collection
      */
     public function getHeaders()
     {
         if ($this->_headers === null) {
-            //实例化头集合对象
-            $this->_headers = new HeaderCollection;
-            //apache服务器才有的函数，这也是php跟外界有依赖的体现
+            $this->_headers = new HeaderCollection();
             if (function_exists('getallheaders')) {
                 $headers = getallheaders();
-            //PECL pecl_http >= 0.10.0时才有的函数
+                foreach ($headers as $name => $value) {
+                    $this->_headers->add($name, $value);
+                }
             } elseif (function_exists('http_get_request_headers')) {
                 $headers = http_get_request_headers();
+                foreach ($headers as $name => $value) {
+                    $this->_headers->add($name, $value);
+                }
             } else {
-                //实在不行，就遍历$_SERVER。这是跨平台的
                 foreach ($_SERVER as $name => $value) {
-                    //变量里，是"HTTP_"这五个字符开头的，才是http请求里的头字段
                     if (strncmp($name, 'HTTP_', 5) === 0) {
-                        //把HTTP_CONTENT_TYPE 修改成  Content-type。然后添加到头集合对象里
                         $name = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))));
                         $this->_headers->add($name, $value);
                     }
                 }
-                //返回头集合对象即可
-                return $this->_headers;
             }
-            //通过php原生函数（getallHeaders(),或者http_get_request_headers())获得的http请求头信息，单独也添加到头集合对象里
-            foreach ($headers as $name => $value) {
-                $this->_headers->add($name, $value);
-            }
+            $this->filterHeaders($this->_headers);
         }
-        //还是返回头集合对象
+
         return $this->_headers;
     }
 
     /**
-     * 返回当前http请求的方法（比如，GET,POST,HEAD,PUT,PATCH,DELETE)
      * Returns the method of the current request (e.g. GET, POST, HEAD, PUT, PATCH, DELETE).
-     * 返回字符串，大写的
      * @return string request method, such as GET, POST, HEAD, PUT, PATCH, DELETE.
      * The value returned is turned into upper case.
      */
     public function getMethod()
     {
-        //如果POST方式里，带有_method的参数，优先使用这个
-        //一般用POST方法来模拟PUT,PATCH这样的请求（在laravel中首次见到）
         if (isset($_POST[$this->methodParam])) {
             return strtoupper($_POST[$this->methodParam]);
         }
-        //或者$_SERVER里有这个参数。这个是什么知识点，是自定义的？还是公认的？
-        if (isset($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE'])) {
-            return strtoupper($_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE']);
+
+        if ($this->headers->has('X-Http-Method-Override')) {
+            return strtoupper($this->headers->get('X-Http-Method-Override'));
         }
 
-        //最后使用原生的超全局数组来确定
         if (isset($_SERVER['REQUEST_METHOD'])) {
             return strtoupper($_SERVER['REQUEST_METHOD']);
         }
-        //最后，上述三种情况都不能确定的话，那就用GET吧
+
         return 'GET';
     }
 
     /**
-     * 布尔，判断是不是GET方法
      * Returns whether this is a GET request.
      * @return bool whether this is a GET request.
      */
@@ -343,7 +393,6 @@ class Request extends \yii\base\Request
     }
 
     /**
-     * 布尔，判断是不是OPTIONS方法
      * Returns whether this is an OPTIONS request.
      * @return bool whether this is a OPTIONS request.
      */
@@ -353,7 +402,6 @@ class Request extends \yii\base\Request
     }
 
     /**
-     * 布尔，判断是不是HEAD方法
      * Returns whether this is a HEAD request.
      * @return bool whether this is a HEAD request.
      */
@@ -363,7 +411,6 @@ class Request extends \yii\base\Request
     }
 
     /**
-     * 布尔，判断是不是POST方法
      * Returns whether this is a POST request.
      * @return bool whether this is a POST request.
      */
@@ -373,7 +420,6 @@ class Request extends \yii\base\Request
     }
 
     /**
-     * 布尔，判断是不是DELETE方法
      * Returns whether this is a DELETE request.
      * @return bool whether this is a DELETE request.
      */
@@ -383,7 +429,6 @@ class Request extends \yii\base\Request
     }
 
     /**
-     * 布尔，判断是不是PUT方法
      * Returns whether this is a PUT request.
      * @return bool whether this is a PUT request.
      */
@@ -393,7 +438,6 @@ class Request extends \yii\base\Request
     }
 
     /**
-     * 布尔，判断是不是PATCH方法
      * Returns whether this is a PATCH request.
      * @return bool whether this is a PATCH request.
      */
@@ -403,12 +447,8 @@ class Request extends \yii\base\Request
     }
 
     /**
-     * 布尔，判断是不是一个AJAX请求
      * Returns whether this is an AJAX (XMLHttpRequest) request.
-     *注意，如果跨域的话，不会设置这个头字段HTTP_X_REQUESTED_WITH。因为跨域根本就已经不是ajax请求了。
-     *跨域和ajax根本就不是同一个概念。所以现在市面上所说的解决ajax不能跨域的问题。其实已经不是ajax了。而是使用另一种非ajax的方式。
-     *只要用ajax，就一定不能跨域。
-     *所以这里说，跨域不会设置头字段HTTP_X_REQUESTED_WITH，是因为跨域已经不是ajax请求，而是修改为普通的http请求。
+     *
      * Note that jQuery doesn't set the header in case of cross domain
      * requests: https://stackoverflow.com/questions/8163703/cross-domain-ajax-doesnt-send-x-requested-with-header
      *
@@ -416,37 +456,27 @@ class Request extends \yii\base\Request
      */
     public function getIsAjax()
     {
-        //单独通过$_SERVER里的这个头字段判断，我觉得有待商榷，因为这个头字段是可以随意更改的。
-        //况且，这应该不是什么公认的吧？这只是Jquery框架里的方式，原生js可不是这样弄的。所以，并不是从HTTP协议上强制规定的。
-        //因为HTTP协议只规定了，带有X_AAAA的都是自定义的头部。所以，并不是强制规定的。完全可以自定义为X_AAA来表示是否为ajax请求。
-        //也是可以的。
-        return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest';
+        return $this->headers->get('X-Requested-With') === 'XMLHttpRequest';
     }
 
     /**
-     * 是否是PJAX请求，这是什么。是yii框架自定义的吗？
-     * 应该是，因为我们又看到了X_PJAX是符合http协议了关于自定义头部的消息。
-     * 但是什么是pjax呢？我们后续再说
-     * Returns whether this is a PJAX request
+     * Returns whether this is a PJAX request.
      * @return bool whether this is a PJAX request
      */
     public function getIsPjax()
     {
-        //首先是ajax，然后。。。。。。。
-        return $this->getIsAjax() && !empty($_SERVER['HTTP_X_PJAX']);
+        return $this->getIsAjax() && $this->headers->has('X-Pjax');
     }
 
     /**
-     * 是否是Flash或者flex请求。有点不明白这有什么背景知识。后续再说.
-	 * 估计属于flash软件自定义的吧
      * Returns whether this is an Adobe Flash or Flex request.
      * @return bool whether this is an Adobe Flash or Adobe Flex request.
      */
     public function getIsFlash()
     {
-        return isset($_SERVER['HTTP_USER_AGENT']) &&
-            //我们看到在用户代理里，必须出现Shockwave这个关键字，或者Flash才行
-            (stripos($_SERVER['HTTP_USER_AGENT'], 'Shockwave') !== false || stripos($_SERVER['HTTP_USER_AGENT'], 'Flash') !== false);
+        $userAgent = $this->headers->get('User-Agent', '');
+        return stripos($userAgent, 'Shockwave') !== false
+            || stripos($userAgent, 'Flash') !== false;
     }
 
     private $_rawBody;
@@ -458,10 +488,6 @@ class Request extends \yii\base\Request
     public function getRawBody()
     {
         if ($this->_rawBody === null) {
-            //这个之前就已经知道，php可以通过这个方法获得原始的请求实体
-            //但是表单请求是form-data的类型时是无效的。
-			//Content-Type: multipart/form-data; boundary=${bound}
-			//不像form-urlencoded是a=b&c=d&e=f这样。form-data是由分隔符切割开的一个个的a=b
             $this->_rawBody = file_get_contents('php://input');
         }
 
@@ -469,7 +495,6 @@ class Request extends \yii\base\Request
     }
 
     /**
-     * 设置原始的http请求实体，主要在测试环境中使用
      * Sets the raw HTTP request body, this method is mainly used by test scripts to simulate raw HTTP requests.
      * @param string $rawBody the request body
      */
@@ -481,12 +506,9 @@ class Request extends \yii\base\Request
     private $_bodyParams;
 
     /**
-     * 返回请求实体里的参数（一般是POST方式的参数）
      * Returns the request parameters given in the request body.
-     *由解析器来决定。
+     *
      * Request parameters are determined using the parsers configured in [[parsers]] property.
-     * 如果内容类型没有指定解析器，最后有mb_parse_str()原生函数
-     * 获得实体参数，就是获得_BodyParams成员的值
      * If no parsers are configured for the current [[contentType]] it uses the PHP function `mb_parse_str()`
      * to parse the [[rawBody|request body]].
      * @return array the request parameters given in the request body.
@@ -498,49 +520,37 @@ class Request extends \yii\base\Request
     public function getBodyParams()
     {
         if ($this->_bodyParams === null) {
-            
-            //是否是post方式模拟的PUT,PATCH请求参数
             if (isset($_POST[$this->methodParam])) {
-                //无论模拟PUT,PATCH等，本质还是POST方式，所以参数还是从$_POST来读取
                 $this->_bodyParams = $_POST;
                 unset($this->_bodyParams[$this->methodParam]);
                 return $this->_bodyParams;
             }
-            //先看内容类型，稍后再说内容（实体参数）
+
             $rawContentType = $this->getContentType();
-            //什么时候出现";",来看看"Content-type:text/html;charset=utf-8"
             if (($pos = strpos($rawContentType, ';')) !== false) {
-                // e.g. application/json; charset=UTF-8
-                //只要内容类型，不需要字符集
+                // e.g. text/html; charset=UTF-8
                 $contentType = substr($rawContentType, 0, $pos);
             } else {
                 $contentType = $rawContentType;
             }
 
-            //针对该类型的解析器
             if (isset($this->parsers[$contentType])) {
-                //实例化解析器的对象
                 $parser = Yii::createObject($this->parsers[$contentType]);
                 if (!($parser instanceof RequestParserInterface)) {
                     throw new InvalidConfigException("The '$contentType' request parser is invalid. It must implement the yii\\web\\RequestParserInterface.");
                 }
                 $this->_bodyParams = $parser->parse($this->getRawBody(), $rawContentType);
-            //用"*"则表示能够解析以前内容类型的解析器
             } elseif (isset($this->parsers['*'])) {
                 $parser = Yii::createObject($this->parsers['*']);
                 if (!($parser instanceof RequestParserInterface)) {
-                    throw new InvalidConfigException("The fallback request parser is invalid. It must implement the yii\\web\\RequestParserInterface.");
+                    throw new InvalidConfigException('The fallback request parser is invalid. It must implement the yii\\web\\RequestParserInterface.');
                 }
                 $this->_bodyParams = $parser->parse($this->getRawBody(), $rawContentType);
-             //post方式的http请求，则直接使用现成的$_POST
             } elseif ($this->getMethod() === 'POST') {
                 // PHP has already parsed the body so we have all params in $_POST
                 $this->_bodyParams = $_POST;
-            //平常普通的HTTP的GET请求
             } else {
                 $this->_bodyParams = [];
-                //用PHP原生函数来解析
-                //这个函数的功能，是解析一个urlencode编码过的字符串，到第二个数组参数$this->_bodyParams中
                 mb_parse_str($this->getRawBody(), $this->_bodyParams);
             }
         }
@@ -549,7 +559,6 @@ class Request extends \yii\base\Request
     }
 
     /**
-     * 设置http请求实体的参数（键值对）
      * Sets the request body parameters.
      * @param array $values the request body parameters (name-value pairs)
      * @see getBodyParam()
@@ -561,9 +570,7 @@ class Request extends \yii\base\Request
     }
 
     /**
-     * 获取指定的http请求实体参数
      * Returns the named request body parameter value.
-     * //如果参数不存在，则使用第二个参数返回（有点多此一举吧？）
      * If the parameter does not exist, the second parameter passed to this method will be returned.
      * @param string $name the parameter name
      * @param mixed $defaultValue the default parameter value if the parameter does not exist.
@@ -579,8 +586,6 @@ class Request extends \yii\base\Request
     }
 
     /**
-     * 获得POST方式里的参数。
-     * 如果没有指定$name,则获取全部，否则获取指定$name的参数值
      * Returns POST parameter with a given name. If name isn't specified, returns an array of all POST parameters.
      *
      * @param string $name the parameter name
@@ -590,23 +595,20 @@ class Request extends \yii\base\Request
     public function post($name = null, $defaultValue = null)
     {
         if ($name === null) {
-			//还是使用getBodyParams方法获取的
             return $this->getBodyParams();
-        } else {
-            return $this->getBodyParam($name, $defaultValue);
         }
+
+        return $this->getBodyParam($name, $defaultValue);
     }
 
     private $_queryParams;
 
     /**
-     * 返回成员属性_queryParams（也就是问号后面的字符串，这几乎就是$_GET了）
      * Returns the request parameters given in the [[queryString]].
      *
-     *如果这个_queryParams成员为null的话，则返回$_GET
      * This method will return the contents of `$_GET` if params where not explicitly set.
      * @return array the request GET parameter values.
-     * @see setQueryParams()//参考该方法设置_queryParams成员属性
+     * @see setQueryParams()
      */
     public function getQueryParams()
     {
@@ -618,7 +620,6 @@ class Request extends \yii\base\Request
     }
 
     /**
-     * 设置queryString参数
      * Sets the request [[queryString]] parameters.
      * @param array $values the request query parameters (name-value pairs)
      * @see getQueryParam()
@@ -630,7 +631,6 @@ class Request extends \yii\base\Request
     }
 
     /**
-     * 获取GET方式的参数（指定的，或者全部$_GET)
      * Returns GET parameter with a given name. If name isn't specified, returns an array of all GET parameters.
      *
      * @param string $name the parameter name
@@ -640,29 +640,22 @@ class Request extends \yii\base\Request
     public function get($name = null, $defaultValue = null)
     {
         if ($name === null) {
-            //这还不完全是$_GET，因为一旦_queryString有值的话，就不是$_GET了
-			//从上一个方法可知，_queryParams是可以手动设置的
             return $this->getQueryParams();
-        } else {
-            return $this->getQueryParam($name, $defaultValue);
         }
+
+        return $this->getQueryParam($name, $defaultValue);
     }
 
     /**
-     * 返回指定的GET参数
-     * 这个一般在UrlManager组件里解析路由时调用，urlManager未开启美化的情况下
      * Returns the named GET parameter value.
-     * 如果GET参数不存在，则默认返回第二个参数
      * If the GET parameter does not exist, the second parameter passed to this method will be returned.
-     * @param string $name the GET parameter name.   $name一般是r。路由参数的名字，是由urlManager组件绝对的
+     * @param string $name the GET parameter name.
      * @param mixed $defaultValue the default parameter value if the GET parameter does not exist.
      * @return mixed the GET parameter value
      * @see getBodyParam()
      */
     public function getQueryParam($name, $defaultValue = null)
     {
-        //这个方法名不过是多了个s而已,getQueryParams，其实就是http请求URL里，问号后面的部分
-        //而我们知道，这部分其实就是$_GET(跟http使用的get,post请求方法没有关系）
         $params = $this->getQueryParams();
 
         return isset($params[$name]) ? $params[$name] : $defaultValue;
@@ -672,29 +665,22 @@ class Request extends \yii\base\Request
     private $_hostName;
 
     /**
-	 * 返回当前http请求里的协议和主机信息。
      * Returns the schema and host part of the current request URL.
-     *注意，返回的URL不包含末尾的斜杠。（比如http://www.cctv.com)
+     *
      * The returned URL does not have an ending slash.
-     *默认情况下，该值基于用户的请求信息。返回`$_SERVER['HTTP_HOST']`。
+     *
      * By default this value is based on the user request information. This method will
-	 如果它可用，而`$_SERVER['SERVER_NAME']`不可用
      * return the value of `$_SERVER['HTTP_HOST']` if it is available or `$_SERVER['SERVER_NAME']` if not.
-	 详情，请查看php官方文档
      * You may want to check out the [PHP documentation](http://php.net/manual/en/reserved.variables.server.php)
      * for more information on these variables.
-     *也可以明确地通过[[setHostInfo()|hostInfo]] 属性成员来指明该值
+     *
      * You may explicitly specify it by setting the [[setHostInfo()|hostInfo]] property.
      *
-	 注意，由于依赖服务端配置，该信息是不可靠的（可能被用户发送的http头信息伪造）
      * > Warning: Dependent on the server configuration this information may not be
      * > reliable and [may be faked by the user sending the HTTP request](https://www.acunetix.com/vulnerabilities/web/host-header-attack).
-	 如果服务端不依赖请求header而是配置成统一的名字，则此时该值`$_SERVER['HTTP_HOST']`是不可靠的
      * > If the webserver is configured to serve the same site independent of the value of
-	 此时，要么修整服务端配置，要么明确地通过[[setHostInfo()|hostInfo]]来完成该值的主动设置
      * > the `Host` header, this value is not reliable. In such situations you should either
      * > fix your webserver configuration or explicitly set the value by setting the [[setHostInfo()|hostInfo]] property.
-	 如果你没有权限修改服务端,还可以通过[[\yii\filters\HostControl]]过滤器，在应用级别上保护类似攻击
      * > If you don't have access to the server configuration, you can setup [[\yii\filters\HostControl]] filter at
      * > application level in order to protect against such kind of attack.
      *
@@ -708,18 +694,14 @@ class Request extends \yii\base\Request
     public function getHostInfo()
     {
         if ($this->_hostInfo === null) {
-            //安全连接，简单来说，就是https
             $secure = $this->getIsSecureConnection();
             $http = $secure ? 'https' : 'http';
-            //还是从$_SERVER里读来。客户端的请求主机信息
-            if (isset($_SERVER['HTTP_HOST'])) {
-                $this->_hostInfo = $http . '://' . $_SERVER['HTTP_HOST'];
-            //或者，从服务端的主机信息读
+            if ($this->headers->has('Host')) {
+                $this->_hostInfo = $http . '://' . $this->headers->get('Host');
             } elseif (isset($_SERVER['SERVER_NAME'])) {
                 $this->_hostInfo = $http . '://' . $_SERVER['SERVER_NAME'];
                 $port = $secure ? $this->getSecurePort() : $this->getPort();
                 if (($port !== 80 && !$secure) || ($port !== 443 && $secure)) {
-                    //拼接上端口
                     $this->_hostInfo .= ':' . $port;
                 }
             }
@@ -729,10 +711,7 @@ class Request extends \yii\base\Request
     }
 
     /**
-     * 设置模式和主机部分。这里的模式指的是http://或者https://
      * Sets the schema and host part of the application URL.
-     * 设置器setHostInfo()方法，是用来设置的，当http://www.zzz.com在某个web服务器上不能决定的时候
-	 * 一般是http请求绝对，特殊情况下才需要手动设置。
      * This setter is provided in case the schema and hostname cannot be determined
      * on certain Web servers.
      * @param string|null $value the schema and host part of the application URL. The trailing slashes will be removed.
@@ -745,10 +724,9 @@ class Request extends \yii\base\Request
     }
 
     /**
-     * 返回请求URL的主机部分
      * Returns the host part of the current request URL.
      * Value is calculated from current [[getHostInfo()|hostInfo]] property.
-     *该值可能是不可靠的（因为getHostInfo()方法）
+     *
      * > Warning: The content of this value may not be reliable, dependent on the server
      * > configuration. Please refer to [[getHostInfo()]] for more information.
      *
@@ -759,7 +737,6 @@ class Request extends \yii\base\Request
     public function getHostName()
     {
         if ($this->_hostName === null) {
-			//内部使用自定义的方法getHostInfo(),然后再使用php原生函数parse_url来再次解析出HOST信息
             $this->_hostName = parse_url($this->getHostInfo(), PHP_URL_HOST);
         }
 
@@ -769,9 +746,7 @@ class Request extends \yii\base\Request
     private $_baseUrl;
 
     /**
-     * 返回应用主体的相对URL
      * Returns the relative URL for the application.
-     * 这个相对URL，不包含脚本文件名，且拖尾的斜杠是去掉的。在这里就是一个空字符串
      * This is similar to [[scriptUrl]] except that it does not include the script file name,
      * and the ending slashes are removed.
      * @return string the relative URL for the application
@@ -780,19 +755,15 @@ class Request extends \yii\base\Request
     public function getBaseUrl()
     {
         if ($this->_baseUrl === null) {
-			//取目录，再去掉右边的斜杠"/",反斜杠"\"。基本就是个空字符串了。
             $this->_baseUrl = rtrim(dirname($this->getScriptUrl()), '\\/');
         }
-        //估计是""空字符串
+
         return $this->_baseUrl;
     }
 
     /**
-
      * Sets the relative URL for the application.
-	 默认情况下，这个URL是基于入口脚本的
      * By default the URL is determined based on the entry script URL.
-	 提供该方法的原因是因为，某些情况下开发人员可能想改变默认的行为
      * This setter is provided in case you want to change this behavior.
      * @param string $value the relative URL for the application
      */
@@ -804,14 +775,7 @@ class Request extends \yii\base\Request
     private $_scriptUrl;
 
     /**
-	* 返回入口脚本的相对URL。相对的主体是谁呢？是相对于document_root的路径
-	* document_root是web服务器配置的，网站根目录。
-	*所以入口脚本的相对url。可以是/test/index.php,或者/index.php这样的字符串
-	*如果web服务器配置了虚拟主机，则一般是/index.php。
-	*如果没有配置虚拟主机，则一般使用localhost或IP地址访问，相对url的情况就多了去了。
-	*但此时最常见的，有可能是/xxxx/index.php
      * Returns the relative URL of the entry script.
-	 * 该方法的实现，参考了zend框架里的Zend_Controller_Request_Http控制器
      * The implementation of this method referenced Zend_Controller_Request_Http in Zend Framework.
      * @return string the relative URL of the entry script.
      * @throws InvalidConfigException if unable to determine the entry script URL
@@ -819,18 +783,12 @@ class Request extends \yii\base\Request
     public function getScriptUrl()
     {
         if ($this->_scriptUrl === null) {
-			//返回入口脚本的文件系统绝对路径
             $scriptFile = $this->getScriptFile();
-			//返回文件名部分（也就是入口脚本文件名）
             $scriptName = basename($scriptFile);
-			//是否是
-			//相对网站根目录（document_root是网站根目录）的路径,比如/test/index.php
             if (isset($_SERVER['SCRIPT_NAME']) && basename($_SERVER['SCRIPT_NAME']) === $scriptName) {
                 $this->_scriptUrl = $_SERVER['SCRIPT_NAME'];
-			//与上述$_SERVER['SCRIPT_NAME']的结果相同（使用localhost与web服务器配置虚拟主机两种情况下访问），但是不清楚含义的区别
             } elseif (isset($_SERVER['PHP_SELF']) && basename($_SERVER['PHP_SELF']) === $scriptName) {
                 $this->_scriptUrl = $_SERVER['PHP_SELF'];
-            //下面这个ORIG_SCRIPT_NAME没见过
             } elseif (isset($_SERVER['ORIG_SCRIPT_NAME']) && basename($_SERVER['ORIG_SCRIPT_NAME']) === $scriptName) {
                 $this->_scriptUrl = $_SERVER['ORIG_SCRIPT_NAME'];
             } elseif (isset($_SERVER['PHP_SELF']) && ($pos = strpos($_SERVER['PHP_SELF'], '/' . $scriptName)) !== false) {
@@ -841,7 +799,7 @@ class Request extends \yii\base\Request
                 throw new InvalidConfigException('Unable to determine the entry script URL.');
             }
         }
-		//基本上这个值就是/test/index.php这样或者是/index.php这样
+
         return $this->_scriptUrl;
     }
 
@@ -859,9 +817,7 @@ class Request extends \yii\base\Request
     private $_scriptFile;
 
     /**
-	 * 返回入口脚本路径，注意是服务端文件系统的绝对路径
      * Returns the entry script file path.
-	 *默认就是根据$_SERVER来实现的。测试时就是   "D:/wamp64/www/basic/web/index.php"
      * The default implementation will simply return `$_SERVER['SCRIPT_FILENAME']`.
      * @return string the entry script file path
      * @throws InvalidConfigException
@@ -870,20 +826,18 @@ class Request extends \yii\base\Request
     {
         if (isset($this->_scriptFile)) {
             return $this->_scriptFile;
-		//在本地，这个变量的值是，D:/wamp64/www/test/index.php（入口脚本在文件系统里的绝对路径）
-        } elseif (isset($_SERVER['SCRIPT_FILENAME'])) {
-            return $_SERVER['SCRIPT_FILENAME'];
-        } else {
-            throw new InvalidConfigException('Unable to determine the entry script file path.');
         }
+
+        if (isset($_SERVER['SCRIPT_FILENAME'])) {
+            return $_SERVER['SCRIPT_FILENAME'];
+        }
+
+        throw new InvalidConfigException('Unable to determine the entry script file path.');
     }
 
     /**
-	* 主动设置入口脚本路径（服务器所在操作系统的文件系统的绝对路径）
      * Sets the entry script file path.
-	 * 正常情况下，入口脚本路径通过$_SERVER['SCRIPT_FILENAME']来获得
      * The entry script file path normally can be obtained from `$_SERVER['SCRIPT_FILENAME']`.
-	 * 如果因为服务端的配置，导致未能正确返回该值，此时就可以手动配置这个属性
      * If your server configuration does not return the correct value, you may configure
      * this property to make it right.
      * @param string $value the entry script file path.
@@ -896,14 +850,10 @@ class Request extends \yii\base\Request
     private $_pathInfo;
 
     /**
-	 * 返回当前请求URL的path info 
      * Returns the path info of the currently requested URL.
-	 * path info是一个URL里入口脚本之后，问号之前的部分。比如http://www.a.com/index.php/site/index?a=b&c=d里的site/index
      * A path info refers to the part that is after the entry script and before the question mark (query string).
-	 * 开始的斜杠，结尾的斜杠都被去除了
      * The starting and ending slashes are both removed.
      * @return string part of the request URL that is after the entry script and before the question mark.
-	 * 注意，返回的值，已经被URL-decoded。（确实，只要经过服务器这一关到PHP，都是url-decoded)
      * Note, the returned path info is already URL-decoded.
      * @throws InvalidConfigException if the path info cannot be determined due to unexpected server configuration
      */
@@ -917,7 +867,6 @@ class Request extends \yii\base\Request
     }
 
     /**
-	* 设置path info。仅供测试环境使用
      * Sets the path info of the current request.
      * This method is mainly provided for testing purpose.
      * @param string $value the path info of the current request
@@ -928,7 +877,6 @@ class Request extends \yii\base\Request
     }
 
     /**
-	* 解析当前请求URL的path info
      * Resolves the path info part of the currently requested URL.
      * A path info refers to the part that is after the entry script and before the question mark (query string).
      * The starting slashes are both removed (ending slashes will be kept).
@@ -938,19 +886,14 @@ class Request extends \yii\base\Request
      */
     protected function resolvePathInfo()
     {
-        //获得原始url信息。一般是$_SERVER['REQUEST_URI']信息。REQUEST_URI' => string '/test/index.php/aaa/bbb?p=q&e=f'
         $pathInfo = $this->getUrl();
-		//是否有问号
+
         if (($pos = strpos($pathInfo, '?')) !== false) {
-		//取得问号之前的部分，一步步解析。
             $pathInfo = substr($pathInfo, 0, $pos);
         }
-        //这时的信息，还带有urlencode的东西，所以需要urldecode一下
+
         $pathInfo = urldecode($pathInfo);
 
-		//这个处理是基于什么的呢？一下没有看明白。
-		//不过倒是看到了php正则表达式的一些应用。比如修正符s是什么？影响点号（.）可以匹配任何字符。
-		//修正符x是让#后的字符忽略，以及任何空白空格字符也都忽略。这其实就是所谓的：正则表达式注释。
         // try to encode in UTF8 if not so
         // http://w3.org/International/questions/qa-forms-utf-8.html
         if (!preg_match('%^(?:
@@ -964,28 +907,21 @@ class Request extends \yii\base\Request
             | \xF4[\x80-\x8F][\x80-\xBF]{2}      # plane 16
             )*$%xs', $pathInfo)
         ) {
-		//注意，正则的开头是^,if的外部是!。其实是双重否定。所以，只能说上面每个[]里的都是各个编码里
-		//特有的字符，只要匹配到那些字符，就说明是指定编码，而不能是utf-8编码了。这才把
-		//不是utf-8编码的字符串统一转换成utf-8，并进行encode。
             $pathInfo = utf8_encode($pathInfo);
         }
-		//scriptUrl一般是"/index.php"
+
         $scriptUrl = $this->getScriptUrl();
         $baseUrl = $this->getBaseUrl();
-		//如果$pathInfo是以/index.php开始
         if (strpos($pathInfo, $scriptUrl) === 0) {
-			//pathinfo应该是去掉/index.php的部分
             $pathInfo = substr($pathInfo, strlen($scriptUrl));
-		//这是什么情况？这是要去掉baseUrl
         } elseif ($baseUrl === '' || strpos($pathInfo, $baseUrl) === 0) {
             $pathInfo = substr($pathInfo, strlen($baseUrl));
-		//基本上这俩是相等的吧
         } elseif (isset($_SERVER['PHP_SELF']) && strpos($_SERVER['PHP_SELF'], $scriptUrl) === 0) {
             $pathInfo = substr($_SERVER['PHP_SELF'], strlen($scriptUrl));
         } else {
             throw new InvalidConfigException('Unable to determine the path info of the current request.');
         }
-		//如果开始带有斜杠"/"，则去掉开始的斜杠
+
         if (substr($pathInfo, 0, 1) === '/') {
             $pathInfo = substr($pathInfo, 1);
         }
@@ -995,7 +931,6 @@ class Request extends \yii\base\Request
 
     /**
      * Returns the currently requested absolute URL.
-	 * 快捷方式，hostInfo和url的拼接而已。
      * This is a shortcut to the concatenation of [[hostInfo]] and [[url]].
      * @return string the currently requested absolute URL.
      */
@@ -1010,7 +945,7 @@ class Request extends \yii\base\Request
      * Returns the currently requested relative URL.
      * This refers to the portion of the URL that is after the [[hostInfo]] part.
      * It includes the [[queryString]] part if any.
-     * @return string the currently requested relative URL. Note that the URI returned is URL-encoded.
+     * @return string the currently requested relative URL. Note that the URI returned may be URL-encoded depending on the client.
      * @throws InvalidConfigException if the URL cannot be determined due to unusual server configuration
      */
     public function getUrl()
@@ -1038,20 +973,16 @@ class Request extends \yii\base\Request
      * This refers to the portion that is after the [[hostInfo]] part. It includes the [[queryString]] part if any.
      * The implementation of this method referenced Zend_Controller_Request_Http in Zend Framework.
      * @return string|bool the request URI portion for the currently requested URL.
-     * Note that the URI returned is URL-encoded.
+     * Note that the URI returned may be URL-encoded depending on the client.
      * @throws InvalidConfigException if the request URI cannot be determined due to unusual server configuration
      */
     protected function resolveRequestUri()
     {
-		//IIS服务器？，真是少见
-        if (isset($_SERVER['HTTP_X_REWRITE_URL'])) { // IIS
-            $requestUri = $_SERVER['HTTP_X_REWRITE_URL'];
-		//REQUEST_URI基本上也是相对于主机信息之后的全部部分（pathinfo,问号都包含）
+        if ($this->headers->has('X-Rewrite-Url')) { // IIS
+            $requestUri = $this->headers->get('X-Rewrite-Url');
         } elseif (isset($_SERVER['REQUEST_URI'])) {
-            $requestUri = $_SERVER['REQUEST_URI'];//比如，/?name=liu&KEY=1508632073。或者/test/index.php/aaa/bbb?p=q&e=f
-            //$requestUri[0]?明明是字符串，却使用数组形式，这是php字符串的特殊使用。获得字符串的第一个字符
+            $requestUri = $_SERVER['REQUEST_URI'];
             if ($requestUri !== '' && $requestUri[0] !== '/') {
-				//https://xxxx的部分全部替换为空
                 $requestUri = preg_replace('/^(http|https):\/\/[^\/]+/i', '', $requestUri);
             }
         } elseif (isset($_SERVER['ORIG_PATH_INFO'])) { // IIS 5.0 CGI
@@ -1067,7 +998,6 @@ class Request extends \yii\base\Request
     }
 
     /**
-     * 从$_SERVER中读取，QUERY_STRING变量
      * Returns part of the request URL that is after the question mark.
      * @return string part of the request URL that is after the question mark
      */
@@ -1077,20 +1007,28 @@ class Request extends \yii\base\Request
     }
 
     /**
-     * 是否通过安全通道（也就是https)
      * Return if the request is sent via secure channel (https).
      * @return bool if the request is sent via secure channel (https)
      */
     public function getIsSecureConnection()
     {
-		//有https里吗？自己没有测试过，学习了。
-        return isset($_SERVER['HTTPS']) && (strcasecmp($_SERVER['HTTPS'], 'on') === 0 || $_SERVER['HTTPS'] == 1)
-            || isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strcasecmp($_SERVER['HTTP_X_FORWARDED_PROTO'], 'https') === 0;
+        if (isset($_SERVER['HTTPS']) && (strcasecmp($_SERVER['HTTPS'], 'on') === 0 || $_SERVER['HTTPS'] == 1)) {
+            return true;
+        }
+        foreach ($this->secureProtocolHeaders as $header => $values) {
+            if (($headerValue = $this->headers->get($header, null)) !== null) {
+                foreach ($values as $value) {
+                    if (strcasecmp($headerValue, $value) === 0) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     /**
-     * 服务端的服务器名，是从$_SERVER中来的SERVER_NAME变量
-	 * 一般就是域名了，比如localhost,home.qianyun.me这样的
      * Returns the server name.
      * @return string server name, null if not available
      */
@@ -1100,7 +1038,6 @@ class Request extends \yii\base\Request
     }
 
     /**
-     * 服务端的端口号，一般是80，或者443（https)
      * Returns the server port number.
      * @return int|null server port number, null if not available
      */
@@ -1110,68 +1047,158 @@ class Request extends \yii\base\Request
     }
 
     /**
-     * $_SERVER里的HTTP_REFERER，也就是所谓的上一个url
      * Returns the URL referrer.
      * @return string|null URL referrer, null if not available
      */
     public function getReferrer()
     {
-        return isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : null;
+        return $this->headers->get('Referer');
     }
 
     /**
-     * $_SERVER里的用户代理，一般是浏览器的信息
+     * Returns the URL origin of a CORS request.
+     *
+     * The return value is taken from the `Origin` [[getHeaders()|header]] sent by the browser.
+     *
+     * Note that the origin request header indicates where a fetch originates from.
+     * It doesn't include any path information, but only the server name.
+     * It is sent with a CORS requests, as well as with POST requests.
+     * It is similar to the referer header, but, unlike this header, it doesn't disclose the whole path.
+     * Please refer to <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Origin> for more information.
+     *
+     * @return string|null URL origin of a CORS request, `null` if not available.
+     * @see getHeaders()
+     * @since 2.0.13
+     */
+    public function getOrigin()
+    {
+        return $this->getHeaders()->get('origin');
+    }
+
+    /**
      * Returns the user agent.
      * @return string|null user agent, null if not available
      */
     public function getUserAgent()
     {
-        return isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : null;
+        return $this->headers->get('User-Agent');
     }
 
     /**
-     * 用户IP,还是从$_SERVER的REMOTE_ADDR来的
      * Returns the user IP address.
+     * The IP is determined using headers and / or `$_SERVER` variables.
      * @return string|null user IP address, null if not available
      */
     public function getUserIP()
+    {
+        foreach ($this->ipHeaders as $ipHeader) {
+            if ($this->headers->has($ipHeader)) {
+                return trim(explode(',', $this->headers->get($ipHeader))[0]);
+            }
+        }
+
+        return $this->getRemoteIP();
+    }
+
+    /**
+     * Returns the user host name.
+     * The HOST is determined using headers and / or `$_SERVER` variables.
+     * @return string|null user host name, null if not available
+     */
+    public function getUserHost()
+    {
+        foreach ($this->ipHeaders as $ipHeader) {
+            if ($this->headers->has($ipHeader)) {
+                return gethostbyaddr(trim(explode(',', $this->headers->get($ipHeader))[0]));
+            }
+        }
+
+        return $this->getRemoteHost();
+    }
+
+    /**
+     * Returns the IP on the other end of this connection.
+     * This is always the next hop, any headers are ignored.
+     * @return string|null remote IP address, `null` if not available.
+     * @since 2.0.13
+     */
+    public function getRemoteIP()
     {
         return isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : null;
     }
 
     /**
-     * 客户端发送http请求的主机，这个一般为空吧？反正本地测试是$_SERVER里没有看到
-	 *不知使用公网访问时是否有值呢
-     * Returns the user host name.
-     * @return string|null user host name, null if not available
+     * Returns the host name of the other end of this connection.
+     * This is always the next hop, any headers are ignored.
+     * @return string|null remote host name, `null` if not available
+     * @see getUserHost()
+     * @see getRemoteIP()
+     * @since 2.0.13
      */
-    public function getUserHost()
+    public function getRemoteHost()
     {
         return isset($_SERVER['REMOTE_HOST']) ? $_SERVER['REMOTE_HOST'] : null;
     }
 
     /**
-     * 通过http认证信息发送的用户名，少见
-     * @return string|null the username sent via HTTP authentication, null if the username is not given
+     * @return string|null the username sent via HTTP authentication, `null` if the username is not given
+     * @see getAuthCredentials() to get both username and password in one call
      */
     public function getAuthUser()
     {
-        return isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : null;
+        return $this->getAuthCredentials()[0];
     }
 
     /**
-     * 通过http认证信息发送的用户密码，少见
-     * @return string|null the password sent via HTTP authentication, null if the password is not given
+     * @return string|null the password sent via HTTP authentication, `null` if the password is not given
+     * @see getAuthCredentials() to get both username and password in one call
      */
     public function getAuthPassword()
     {
-        return isset($_SERVER['PHP_AUTH_PW']) ? $_SERVER['PHP_AUTH_PW'] : null;
+        return $this->getAuthCredentials()[1];
+    }
+
+    /**
+     * @return array that contains exactly two elements:
+     * - 0: the username sent via HTTP authentication, `null` if the username is not given
+     * - 1: the password sent via HTTP authentication, `null` if the password is not given
+     * @see getAuthUser() to get only username
+     * @see getAuthPassword() to get only password
+     * @since 2.0.13
+     */
+    public function getAuthCredentials()
+    {
+        $username = isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : null;
+        $password = isset($_SERVER['PHP_AUTH_PW']) ? $_SERVER['PHP_AUTH_PW'] : null;
+        if ($username !== null || $password !== null) {
+            return [$username, $password];
+        }
+
+        /*
+         * Apache with php-cgi does not pass HTTP Basic authentication to PHP by default.
+         * To make it work, add the following line to to your .htaccess file:
+         *
+         * RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+         */
+        $auth_token = $this->getHeaders()->get('HTTP_AUTHORIZATION') ?: $this->getHeaders()->get('REDIRECT_HTTP_AUTHORIZATION');
+        if ($auth_token !== null && strpos(strtolower($auth_token), 'basic') === 0) {
+            $parts = array_map(function ($value) {
+                return strlen($value) === 0 ? null : $value;
+            }, explode(':', base64_decode(mb_substr($auth_token, 6)), 2));
+
+            if (count($parts) < 2) {
+                return [$parts[0], null];
+            }
+
+            return $parts;
+        }
+
+        return [null, null];
     }
 
     private $_port;
 
     /**
-     * 获得端口
      * Returns the port to use for insecure requests.
      * Defaults to 80, or the port specified by the server if the current
      * request is insecure.
@@ -1181,11 +1208,6 @@ class Request extends \yii\base\Request
     public function getPort()
     {
         if ($this->_port === null) {
-            //这个代码有点晕。
-            //是安全通道（https)的，就是80端口吗？不是吧。还是我的理解有误
-			//根据php手册，逻辑运算符&&优先于?:。故下述等价于：
-			//  ( !$this->getIsSecureConnection() && isset($_SERVER['SERVER_PORT']) )? (int) $_SERVER['SERVER_PORT'] : 80;
-			//整体来看是个?:
             $this->_port = !$this->getIsSecureConnection() && isset($_SERVER['SERVER_PORT']) ? (int) $_SERVER['SERVER_PORT'] : 80;
         }
 
@@ -1193,9 +1215,7 @@ class Request extends \yii\base\Request
     }
 
     /**
-	* 为非安全请求设置端口号
      * Sets the port to use for insecure requests.
-	 * 该方法的提供是万一服务端使用必要的自定义端口时
      * This setter is provided in case a custom port is necessary for certain
      * server configurations.
      * @param int $value port number.
@@ -1204,7 +1224,6 @@ class Request extends \yii\base\Request
     {
         if ($value != $this->_port) {
             $this->_port = (int) $value;
-			//还把主机信息置空了
             $this->_hostInfo = null;
         }
     }
@@ -1213,7 +1232,6 @@ class Request extends \yii\base\Request
 
     /**
      * Returns the port to use for secure requests.
-     * https且指定了端口，就优先指定的，否则就是默认的443
      * Defaults to 443, or the port specified by the server if the current
      * request is secure.
      * @return int port number for secure requests.
@@ -1222,7 +1240,6 @@ class Request extends \yii\base\Request
     public function getSecurePort()
     {
         if ($this->_securePort === null) {
-			//注意，逻辑运算符&& 优先级高于三元?:
             $this->_securePort = $this->getIsSecureConnection() && isset($_SERVER['SERVER_PORT']) ? (int) $_SERVER['SERVER_PORT'] : 443;
         }
 
@@ -1230,7 +1247,6 @@ class Request extends \yii\base\Request
     }
 
     /**
-	* 调整（设置）安全请求的端口
      * Sets the port to use for secure requests.
      * This setter is provided in case a custom port is necessary for certain
      * server configurations.
@@ -1247,9 +1263,8 @@ class Request extends \yii\base\Request
     private $_contentTypes;
 
     /**
-     * 返回终端用户（浏览器）可以接收的内容类型
      * Returns the content types acceptable by the end user.
-     * 如何知道终端用户可以接收的？当然是客户端发送的http请求里的ACCEPT字段来的
+     *
      * This is determined by the `Accept` HTTP header. For example,
      *
      * ```php
@@ -1264,7 +1279,6 @@ class Request extends \yii\base\Request
      * // ]
      * ```
      *
-	 返回数组
      * @return array the content types ordered by the quality score. Types with the highest scores
      * will be returned first. The array keys are the content types, while the array values
      * are the corresponding quality score and other parameters as given in the header.
@@ -1272,9 +1286,8 @@ class Request extends \yii\base\Request
     public function getAcceptableContentTypes()
     {
         if ($this->_contentTypes === null) {
-			//HTTP_ACCEPT是以逗号分隔的字符串，表名客户端浏览器可接收的响应内容类型
-            if (isset($_SERVER['HTTP_ACCEPT'])) {
-                $this->_contentTypes = $this->parseAcceptHeader($_SERVER['HTTP_ACCEPT']);
+            if ($this->headers->get('Accept') !== null) {
+                $this->_contentTypes = $this->parseAcceptHeader($this->headers->get('Accept'));
             } else {
                 $this->_contentTypes = [];
             }
@@ -1284,9 +1297,7 @@ class Request extends \yii\base\Request
     }
 
     /**
-	* 手动设置（调整）_contentTypes，
      * Sets the acceptable content types.
-	 * 看get方法可知它的具体格式
      * Please refer to [[getAcceptableContentTypes()]] on the format of the parameter.
      * @param array $value the content types that are acceptable by the end user. They should
      * be ordered by the preference level.
@@ -1299,31 +1310,23 @@ class Request extends \yii\base\Request
     }
 
     /**
-     * 返回http请求里的内容类型
      * Returns request content-type
-	 * CONTENT_TYPE表名了数据的MIME类型（要发送给客户端的http响应体数据类型）
      * The Content-Type header field indicates the MIME type of the data
      * contained in [[getRawBody()]] or, in the case of the HEAD method, the
      * media type that would have been sent had the request been a GET.
      * For the MIME-types the user expects in response, see [[acceptableContentTypes]].
      * @return string request content-type. Null is returned if this information is not available.
-     * @link http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.17
+     * @link https://tools.ietf.org/html/rfc2616#section-14.17
      * HTTP 1.1 header field definitions
      */
     public function getContentType()
     {
-		//CONTENT_TYPE一般不会出现在$_SERVER里吧？它一般在http响应的头部字段里
         if (isset($_SERVER['CONTENT_TYPE'])) {
-            //优先从$_SERVER里读取，优先是CONTENT_TYPE变量
             return $_SERVER['CONTENT_TYPE'];
-		//这个也少见
-        } elseif (isset($_SERVER['HTTP_CONTENT_TYPE'])) {
-            //然后再次是HTTP_CONTENT_TYPE
-            //fix bug https://bugs.php.net/bug.php?id=66606
-            return $_SERVER['HTTP_CONTENT_TYPE'];
         }
 
-        return null;
+        //fix bug https://bugs.php.net/bug.php?id=66606
+        return $this->headers->get('Content-Type');
     }
 
     private $_languages;
@@ -1337,9 +1340,8 @@ class Request extends \yii\base\Request
     public function getAcceptableLanguages()
     {
         if ($this->_languages === null) {
-			//一般是逗号分隔的字符串，像"zh-CN,zh;q=0.8"这样的。
-            if (isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
-                $this->_languages = array_keys($this->parseAcceptHeader($_SERVER['HTTP_ACCEPT_LANGUAGE']));
+            if ($this->headers->has('Accept-Language')) {
+                $this->_languages = array_keys($this->parseAcceptHeader($this->headers->get('Accept-Language')));
             } else {
                 $this->_languages = [];
             }
@@ -1349,7 +1351,6 @@ class Request extends \yii\base\Request
     }
 
     /**
-	* 手动设置客户端（终端用户）的语言。数组格式
      * @param array $value the languages that are acceptable by the end user. They should
      * be ordered by the preference level.
      */
@@ -1359,21 +1360,16 @@ class Request extends \yii\base\Request
     }
 
     /**
-	 * 解析Accept或者Accept-Language头字段信息
      * Parses the given `Accept` (or `Accept-Language`) header.
-     * 返回数组，每个元素都是带有q分数的一维数组
+     *
      * This method will return the acceptable values with their quality scores and the corresponding parameters
-	 *数组的key是内容类型，而value又是一个数组，包含q和其他参数，q高的将优先返回
      * as specified in the given `Accept` header. The array keys of the return value are the acceptable values,
      * while the array values consisting of the corresponding quality scores and parameters. The acceptable
      * values with the highest quality scores will be returned first. For example,
      *
      * ```php
-	 * 比如头信息如下：
      * $header = 'text/plain; q=0.5, application/json; version=1.0, application/xml; version=2.0;';
-	 * 经过该方法解析后
      * $accepts = $request->parseAcceptHeader($header);
-	 *我们打印一下返回的信息格式如下：
      * print_r($accepts);
      * // displays:
      * // [
@@ -1390,10 +1386,7 @@ class Request extends \yii\base\Request
     public function parseAcceptHeader($header)
     {
         $accepts = [];
-		//因为原始信息就是以逗号分隔
         foreach (explode(',', $header) as $i => $part) {
-			//每个内容类型里都已分号(;)来给出q,所以再拆
-			//不限制分隔后的子串(-1),且返回分隔后的非空部分
             $params = preg_split('/\s*;\s*/', trim($part), -1, PREG_SPLIT_NO_EMPTY);
             if (empty($params)) {
                 continue;
@@ -1403,9 +1396,9 @@ class Request extends \yii\base\Request
             ];
             foreach ($params as $param) {
                 if (strpos($param, '=') !== false) {
-                    list ($key, $value) = explode('=', $param, 2);
+                    list($key, $value) = explode('=', $param, 2);
                     if ($key === 'q') {
-                        $values['q'][2] = (double) $value;
+                        $values['q'][2] = (float) $value;
                     } else {
                         $values[$key] = $value;
                     }
@@ -1416,29 +1409,36 @@ class Request extends \yii\base\Request
             $accepts[] = $values;
         }
 
-		//使用php原生函数usort()来自定义排序，非常好
         usort($accepts, function ($a, $b) {
             $a = $a['q']; // index, name, q
             $b = $b['q'];
             if ($a[2] > $b[2]) {
                 return -1;
-            } elseif ($a[2] < $b[2]) {
-                return 1;
-            } elseif ($a[1] === $b[1]) {
-                return $a[0] > $b[0] ? 1 : -1;
-            } elseif ($a[1] === '*/*') {
-                return 1;
-            } elseif ($b[1] === '*/*') {
-                return -1;
-            } else {
-                $wa = $a[1][strlen($a[1]) - 1] === '*';
-                $wb = $b[1][strlen($b[1]) - 1] === '*';
-                if ($wa xor $wb) {
-                    return $wa ? 1 : -1;
-                } else {
-                    return $a[0] > $b[0] ? 1 : -1;
-                }
             }
+
+            if ($a[2] < $b[2]) {
+                return 1;
+            }
+
+            if ($a[1] === $b[1]) {
+                return $a[0] > $b[0] ? 1 : -1;
+            }
+
+            if ($a[1] === '*/*') {
+                return 1;
+            }
+
+            if ($b[1] === '*/*') {
+                return -1;
+            }
+
+            $wa = $a[1][strlen($a[1]) - 1] === '*';
+            $wb = $b[1][strlen($b[1]) - 1] === '*';
+            if ($wa xor $wb) {
+                return $wa ? 1 : -1;
+            }
+
+            return $a[0] > $b[0] ? 1 : -1;
         });
 
         $result = [];
@@ -1452,7 +1452,6 @@ class Request extends \yii\base\Request
     }
 
     /**
-	* 返回用户意愿的语言，根据浏览器的头字段来的
      * Returns the user-preferred language that should be used by this application.
      * The language resolution is based on the user preferred languages and the languages
      * supported by the application. The method will try to find the best match.
@@ -1470,10 +1469,11 @@ class Request extends \yii\base\Request
             foreach ($languages as $language) {
                 $normalizedLanguage = str_replace('_', '-', strtolower($language));
 
-                if ($normalizedLanguage === $acceptableLanguage || // en-us==en-us
-                    strpos($acceptableLanguage, $normalizedLanguage . '-') === 0 || // en==en-us
-                    strpos($normalizedLanguage, $acceptableLanguage . '-') === 0) { // en-us==en
-
+                if (
+                    $normalizedLanguage === $acceptableLanguage // en-us==en-us
+                    || strpos($acceptableLanguage, $normalizedLanguage . '-') === 0 // en==en-us
+                    || strpos($normalizedLanguage, $acceptableLanguage . '-') === 0 // en-us==en
+                ) {
                     return $language;
                 }
             }
@@ -1483,25 +1483,22 @@ class Request extends \yii\base\Request
     }
 
     /**
-	* 一种缓存方式，Etags
      * Gets the Etags.
      *
      * @return array The entity tags
      */
     public function getETags()
     {
-		//一般在服务端使用缓存时，才有这个头字段吧
-        if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
-            return preg_split('/[\s,]+/', str_replace('-gzip', '', $_SERVER['HTTP_IF_NONE_MATCH']), -1, PREG_SPLIT_NO_EMPTY);
-        } else {
-            return [];
+        if ($this->headers->has('If-None-Match')) {
+            return preg_split('/[\s,]+/', str_replace('-gzip', '', $this->headers->get('If-None-Match')), -1, PREG_SPLIT_NO_EMPTY);
         }
+
+        return [];
     }
 
     /**
-     * 返回cookie集合对象
      * Returns the cookie collection.
-     * request组件中的cookie集合对象，代表了http请求中,在header部分cookie字段的内容
+     *
      * Through the returned cookie collection, you may access a cookie using the following syntax:
      *
      * ```php
@@ -1519,8 +1516,6 @@ class Request extends \yii\base\Request
     public function getCookies()
     {
         if ($this->_cookies === null) {
-            //看到没有，当request实例化cookie集合类时，是只读的。那response组件呢？
-            //在loadCookies()方法里，已经解密了cookie的前缀hash
             $this->_cookies = new CookieCollection($this->loadCookies(), [
                 'readOnly' => true,
             ]);
@@ -1530,11 +1525,7 @@ class Request extends \yii\base\Request
     }
 
     /**
-     * 客户端传来的cookie，都存在PHP超全局数组$_COOKIE
      * Converts `$_COOKIE` into an array of [[Cookie]].
-     * 我们就用$_COOKIE作为cookie集合对象的cookie来源
-     * response中如何加密cookie，这里request就如何对应地解密cookie，两者操作cookie是一致的。
-     * response 设置cookie时要加密；request 接收cookie时就要解密
      * @return array the cookies obtained from request
      * @throws InvalidConfigException if [[cookieValidationKey]] is not set when [[enableCookieValidation]] is true
      */
@@ -1549,26 +1540,24 @@ class Request extends \yii\base\Request
                 if (!is_string($value)) {
                     continue;
                 }
-                //使用security组件验证每个cookie值是否被篡改过，返回去掉hash前缀的原始数据
-                //（原理是找到原始信息再用同样的算法,同样的密钥生成一次，比较两次生成的字符串是否一样）
                 $data = Yii::$app->getSecurity()->validateData($value, $this->cookieValidationKey);
                 if ($data === false) {
                     continue;
                 }
-                //反序列化原始数据
                 $data = @unserialize($data);
                 if (is_array($data) && isset($data[0], $data[1]) && $data[0] === $name) {
-                    $cookies[$name] = new Cookie([
+                    $cookies[$name] = Yii::createObject([
+                        'class' => 'yii\web\Cookie',
                         'name' => $name,
                         'value' => $data[1],
                         'expire' => null,
                     ]);
                 }
             }
-        //没有开启cookie防篡改机制时
         } else {
             foreach ($_COOKIE as $name => $value) {
-                $cookies[$name] = new Cookie([
+                $cookies[$name] = Yii::createObject([
+                    'class' => 'yii\web\Cookie',
                     'name' => $name,
                     'value' => $value,
                     'expire' => null,
@@ -1579,73 +1568,49 @@ class Request extends \yii\base\Request
         return $cookies;
     }
 
-	/**
-	这个成员属性，保存生成后的Csrf令牌值，是带有掩码的令牌值。用于HTML页面的meta和表单的隐藏域
-	什么时候生成？meta是在渲染布局视图时；而表单隐藏域在渲染普通视图时。
-	不是每个页面都有表单，但是每个页面都有meta。
-	所以如果有表单的页面生成了Csrf,那么后来的meta就可以直接使用了。
-	*/
     private $_csrfToken;
 
     /**
-	* （如果从布局视图里通过助手方法调用，则是生成令牌）。
-	如果是处理请求时调用，则是返回令牌用于CSRF验证，令牌值在_csrfToken中保存
      * Returns the token used to perform CSRF validation.
-     * 该令牌的生成比较安全。
+     *
      * This token is generated in a way to prevent [BREACH attacks](http://breachattack.com/). It may be passed
-	 令牌从客户端传递而来有两种：通过隐藏表单域，或者http请求的头字段里(可以是自定义的header,也可以是cookie)
      * along via a hidden field of an HTML form or an HTTP header value to support CSRF validation.
-	 * 当参数$regenerate为true的话，一般是需要生成csrf的令牌
      * @param bool $regenerate whether to regenerate CSRF token. When this parameter is true, each time
      * this method is called, a new CSRF token will be generated and persisted (in session or cookie).
      * @return string the token used to perform CSRF validation.
      */
     public function getCsrfToken($regenerate = false)
     {
-		//
         if ($this->_csrfToken === null || $regenerate) {
             if ($regenerate || ($token = $this->loadCsrfToken()) === null) {
-                $token = $this->generateCsrfToken();//一般
+                $token = $this->generateCsrfToken();
             }
-            // the mask doesn't need to be very random
-            $chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-.';
-            //五倍重复，随机打乱，取前8位
-            $mask = substr(str_shuffle(str_repeat($chars, 5)), 0, static::CSRF_MASK_LENGTH);
-            // The + sign may be decoded as blank space later, which will fail the validation
-            //$token和$mask进行亦或，左边拼接上原始的$mask(验证时有用），然后base64编码，替换+号
-            //注意这里操作的流程，待后续验证csrftoken时会进行逆操作
-            $this->_csrfToken = str_replace('+', '.', base64_encode($mask . $this->xorTokens($token, $mask)));
+            $this->_csrfToken = Yii::$app->security->maskToken($token);
         }
 
         return $this->_csrfToken;
     }
 
     /**
-	* 从cookie或者session里加载csrf令牌,如果是cookie，则表明从本次请求的cookie中读取。
-	，如果是session，不清楚。如果cookie和session里都没有时返回null
      * Loads the CSRF token from cookie or session.
      * @return string the CSRF token loaded from cookie or session. Null is returned if the cookie or session
      * does not have CSRF token.
      */
     protected function loadCsrfToken()
     {
-		//这个选项开启，意味着从客户端cookie中读取csrf的令牌，cookie的名字由csrfParam指定
         if ($this->enableCsrfCookie) {
             return $this->getCookies()->getValue($this->csrfParam);
-        } else {
-            return Yii::$app->getSession()->get($this->csrfParam);
         }
+
+        return Yii::$app->getSession()->get($this->csrfParam);
     }
 
     /**
-	* 生成Csrf令牌，一个随机的字符串而已
-	* 两种方式（cookie,session)，生成Csrf时使用了安全组件
-     * Generates  an unmasked random token used to perform CSRF validation.
+     * Generates an unmasked random token used to perform CSRF validation.
      * @return string the random token for CSRF validation.
      */
     protected function generateCsrfToken()
     {
-		//使用安全组件了
         $token = Yii::$app->getSecurity()->generateRandomString();
         if ($this->enableCsrfCookie) {
             $cookie = $this->createCsrfCookie($token);
@@ -1653,50 +1618,20 @@ class Request extends \yii\base\Request
         } else {
             Yii::$app->getSession()->set($this->csrfParam, $token);
         }
+
         return $token;
     }
 
     /**
-     * 返回两个字符串的亦或结果，XOR就是亦或
-	 * 亦或能够加密解密的关键，是确保两个字符串的字节长度相等,具体字符串的内容是什么不重要（含中文也可以）
-     * Returns the XOR result of two strings.
-     * 如果两个字符串的长度不等，那么短字符串将填充，填充到和长字符串一样的长度
-	 * 有点不明白
-	 * 该方法是私有方法，用在比较csrf的mask和token
-     * If the two strings are of different lengths, the shorter one will be padded to the length of the longer one.
-     * @param string $token1
-     * @param string $token2
-     * @return string the XOR result
-     */
-    private function xorTokens($token1, $token2)
-    {
-        $n1 = StringHelper::byteLength($token1);
-        $n2 = StringHelper::byteLength($token2);
-        if ($n1 > $n2) {
-            //从自身最左端截取指定的长度，填充到自身的右端，知道$token2的长度达到$n1
-            $token2 = str_pad($token2, $n1, $token2);
-        } elseif ($n1 < $n2) {
-			//如果$n1是0，则只填充空格，否则与上述类似
-            $token1 = str_pad($token1, $n2, $n1 === 0 ? ' ' : $token1);
-        }
-		//返回两者的亦或
-        return $token1 ^ $token2;
-    }
-
-    /**
-	* 通过http请求头里获得客户端的csrf令牌，哪个请求头呢？这个交给CSRF_HEADER来指定。属于自定义http头
      * @return string the CSRF token sent via [[CSRF_HEADER]] by browser. Null is returned if no such header is sent.
      */
     public function getCsrfTokenFromHeader()
     {
-        $key = 'HTTP_' . str_replace('-', '_', strtoupper(static::CSRF_HEADER));
-        return isset($_SERVER[$key]) ? $_SERVER[$key] : null;
+        return $this->headers->get(static::CSRF_HEADER);
     }
 
     /**
-	* 生成一个Cookie,这个cookie专门存储CSRF令牌信息的，所以它的名字，它的那6个字段值比较特殊
      * Creates a cookie with a randomly generated CSRF token.
-		使用由csrfCookie指定的初始化值来生成令牌
      * Initial values specified in [[csrfCookie]] will be applied to the generated cookie.
      * @param string $token the CSRF token
      * @return Cookie the generated cookie
@@ -1705,78 +1640,60 @@ class Request extends \yii\base\Request
     protected function createCsrfCookie($token)
     {
         $options = $this->csrfCookie;
-        $options['name'] = $this->csrfParam;//cookie名字由它来指定
-        $options['value'] = $token;
-        return new Cookie($options);
+        return Yii::createObject(array_merge($options, [
+            'class' => 'yii\web\Cookie',
+            'name' => $this->csrfParam,
+            'value' => $token,
+        ]));
     }
 
     /**
      * Performs the CSRF validation.
-     *  验证，验证服务端存储的csrf(cookie或者session里）和客户端本次请求给出的csrf是否一致
+     *
      * This method will validate the user-provided CSRF token by comparing it with the one stored in cookie or session.
-	 * 该方法一般在[[Controller::beforeAction()]]级别的beforeAction里调用
      * This method is mainly called in [[Controller::beforeAction()]].
-     * 注意，当未开启，或者请求方法是GET,HEAD,OPTIONS都不会验证csrf
+     *
      * Note that the method will NOT perform CSRF validation if [[enableCsrfValidation]] is false or the HTTP method
      * is among GET, HEAD or OPTIONS.
      *
-	 * $token提供，或者从POST域，或者http请求头字段里
-     * @param string $token the user-provided CSRF token to be validated. If null, the token will be retrieved from
+     * @param string $clientSuppliedToken the user-provided CSRF token to be validated. If null, the token will be retrieved from
      * the [[csrfParam]] POST field or HTTP header.
-	 * 从2.0.4里有这个参数的
      * This parameter is available since version 2.0.4.
-	 如果csrf功能是关闭的，将总是返回true
      * @return bool whether CSRF token is valid. If [[enableCsrfValidation]] is false, this method will return true.
      */
-    public function validateCsrfToken($token = null)
+    public function validateCsrfToken($clientSuppliedToken = null)
     {
         $method = $this->getMethod();
-        // only validate CSRF token on non-"safe" methods http://www.w3.org/Protocols/rfc2616/rfc2616-sec9.html#sec9.1.1
-		//不是所有的http请求方法都验证csrf令牌，比如get,head,options就不验证，直接return true
+        // only validate CSRF token on non-"safe" methods https://tools.ietf.org/html/rfc2616#section-9.1.1
         if (!$this->enableCsrfValidation || in_array($method, ['GET', 'HEAD', 'OPTIONS'], true)) {
             return true;
         }
-		//加载曾经向客户端种植的csrf令牌（可以是cookie（居多），可以是session）
-        $trueToken = $this->loadCsrfToken();
 
-        if ($token !== null) {
-            return $this->validateCsrfTokenInternal($token, $trueToken);
-        } else {
-			//从实体参数（一般是post参数）中也获取一份csrf，这两份token进行比较
-            return $this->validateCsrfTokenInternal($this->getBodyParam($this->csrfParam), $trueToken)
-                || $this->validateCsrfTokenInternal($this->getCsrfTokenFromHeader(), $trueToken);
+        $trueToken = $this->getCsrfToken();
+
+        if ($clientSuppliedToken !== null) {
+            return $this->validateCsrfTokenInternal($clientSuppliedToken, $trueToken);
         }
+
+        return $this->validateCsrfTokenInternal($this->getBodyParam($this->csrfParam), $trueToken)
+            || $this->validateCsrfTokenInternal($this->getCsrfTokenFromHeader(), $trueToken);
     }
 
     /**
-	* 执行csrf令牌的验证，这是验证的关键，所以是私有方法，由其他地方调用到这里。
-     * Validates CSRF token
-     * 主要是把表单隐藏域的$token进行解码，拆分，亦或。最终的结果再和$trueToken比较。
-	 * 为什么它俩比较呢？其实只要你看到服务端如何向客户端发送csrf的过程，你就会明白这里的验证逻辑了，对不对？
-     * @param string $token  实体参数的token,一般是来自页面表单的隐藏域_csrf
-     * @param string $trueToken 从cookie或者session中读取的cookie
+     * Validates CSRF token.
+     *
+     * @param string $clientSuppliedToken The masked client-supplied token.
+     * @param string $trueToken The masked true token.
      * @return bool
      */
-    private function validateCsrfTokenInternal($token, $trueToken)
+    private function validateCsrfTokenInternal($clientSuppliedToken, $trueToken)
     {
-        if (!is_string($token)) {
+        if (!is_string($clientSuppliedToken)) {
             return false;
         }
-		//这里把英文句号替换为+号，并用base64解码（是当初往页面设置时做了如此替换和base64编码吗？暂时不知在哪里）
-        $token = base64_decode(str_replace('.', '+', $token));
-		//用助手函数计算字节长度
-        $n = StringHelper::byteLength($token);
-		//长度对不对
-        if ($n <= static::CSRF_MASK_LENGTH) {
-            return false;
-        }
-		//csrf包含了两部分，一部分是mask，另一部分是真正的令牌，先取出mask
-        $mask = StringHelper::byteSubstr($token, 0, static::CSRF_MASK_LENGTH);
-		//再取出令牌
-        $token = StringHelper::byteSubstr($token, static::CSRF_MASK_LENGTH, $n - static::CSRF_MASK_LENGTH);
-		//进行亦或操作（确保两个字符串的字节长度相等）
-        $token = $this->xorTokens($mask, $token);
-		//判断亦或后的$token是否和$trueToken完全相等呢
-        return $token === $trueToken;
+
+        $security = Yii::$app->security;
+
+        return $security->unmaskToken($clientSuppliedToken) === $security->unmaskToken($trueToken);
     }
 }
