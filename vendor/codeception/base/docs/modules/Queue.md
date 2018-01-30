@@ -116,7 +116,6 @@ service.
              'region': 'us-west-2'
 
 
-
 ## Actions
 
 ### addMessageToQueue
