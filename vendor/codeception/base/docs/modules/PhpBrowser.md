@@ -64,7 +64,6 @@ Properties:
 * `client` - Symfony BrowserKit instance.
 
 
-
 ## Actions
 
 ### _findElements
@@ -610,7 +609,6 @@ Fails if element is not found.
 $I->grabAttributeFrom('#tooltip', 'title');
 ?>
 ```
-
 
  * `param` $cssOrXpath
  * `param` $attribute

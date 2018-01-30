@@ -19,8 +19,9 @@
         "yiisoft/yii2-bootstrap": "~2.0.0",
         "yiisoft/yii2-swiftmailer": "~2.0.0",
         "yiisoft/yii2-redis": "^2.0",
-        "phpoffice/phpexcel": "^1.8",
-        "yiisoft/yii2-queue": "1.1.0"
+	"phpoffice/phpspreadsheet":"^1.1.0",
+        "yiisoft/yii2-queue": "1.1.0",
+        "yiisoft/yii2-httpclient": "^2.0"
     },
     "require-dev": {
         "yiisoft/yii2-debug": "~2.0.0",
