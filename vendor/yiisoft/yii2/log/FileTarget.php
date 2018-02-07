@@ -35,6 +35,9 @@ class FileTarget extends Target
      * Log rotation is enabled by default. This property allows you to disable it, when you have configured
      * an external tools for log rotation on your server.
      * @since 2.0.3
+     * 默认是开启日志轮替的。但是注意，这个日志轮替不是每天一个日志文件，而是按照文件大小来轮替的
+     * 当app.log文件达到默认配置的10M时，就会把当前app.log备份为一个旧的日志文件，并重新生成app.log
+     *这是yii2的日志轮替。而之前看到Monolog的日志轮替是可以设置每天一个日志文件。
      */
     public $enableRotation = true;
     /**最大单个日志文件大小，当文件超过这个数值时，进行日志文件轮替。
