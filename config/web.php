@@ -43,6 +43,9 @@ $config = [
             //当rules都没有匹配到时，将会使用pathinfo就是最终的路由了
             'rules' => [
             ],
+            //该属性默认就是false，即不开启严格解析。当rules都没有匹配时，直接按照path info解析，
+            //开启严格解析情况下，如果rules都没有匹配时，将会报异常。NotFoundHttpException
+            'enableStrictParsing'=>true,
         ],
         //*/
     ],
