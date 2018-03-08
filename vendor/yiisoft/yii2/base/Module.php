@@ -701,6 +701,8 @@ class Module extends ServiceLocator
             $route = '';
         }
 
+
+		//注意，这里先判断控制器映射，再去判断Module。
         // module and controller map take precedence
         //是否在控制器映射里（这是应用自定义控制器别名的好地方吧？）
         if (isset($this->controllerMap[$id])) {
