@@ -99,6 +99,7 @@ abstract class BaseActiveRecord extends Model implements ActiveRecordInterface
 
 
     /**
+	 * 基于findByCondition获得一个AR实例
      * @inheritdoc
      * @return static ActiveRecord instance matching the condition, or `null` if nothing matches.
      */
@@ -609,7 +610,7 @@ abstract class BaseActiveRecord extends Model implements ActiveRecordInterface
 
     /**
      * Saves the current record.
-     *
+     * 保存记录的统一用法
      * This method will call [[insert()]] when [[isNewRecord]] is `true`, or [[update()]]
      * when [[isNewRecord]] is `false`.
      *
@@ -700,7 +701,7 @@ abstract class BaseActiveRecord extends Model implements ActiveRecordInterface
 
     /**
      * Updates the specified attributes.
-     *
+     *  更新指定的字段，该方法是update的快捷方式，无需验证，只更新少部分字段
      * This method is a shortcut to [[update()]] when data validation is not needed
      * and only a small set attributes need to be updated.
      *

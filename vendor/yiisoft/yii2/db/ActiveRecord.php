@@ -104,6 +104,7 @@ class ActiveRecord extends BaseActiveRecord
 
 
     /**
+	* 加载AR字段的默认值，尤其在AR刚刚实例化之后
      * Loads default values from database table schema
      *
      * You may call this method to load default values after creating a new instance:
@@ -140,6 +141,7 @@ class ActiveRecord extends BaseActiveRecord
     }
 
     /**
+	 * 这是创建AQ的快捷方式
      * Creates an [[ActiveQuery]] instance with a given SQL statement.
      *
      * Note that because the SQL statement is already specified, calling additional
@@ -165,7 +167,8 @@ class ActiveRecord extends BaseActiveRecord
         return $query->params($params);
     }
 
-    /**
+    /** 
+	 * protected 供其他方法如findOne来调用
      * Finds ActiveRecord instance(s) by the given condition.
      * This method is internally called by [[findOne()]] and [[findAll()]].
      * @param mixed $condition please refer to [[findOne()]] for the explanation of this parameter
@@ -195,16 +198,19 @@ class ActiveRecord extends BaseActiveRecord
     }
 
     /**
+	 * 用条件更新整个表的指定字段
      * Updates the whole table using the provided attribute values and conditions.
-     *
+     * 看例子：把状态是2的都改成状态1
      * For example, to change the status to be 1 for all customers whose status is 2:
      *
      * ```php
      * Customer::updateAll(['status' => 1], 'status = 2');
      * ```
-     *
+     *  注意，如果不指定条件，那么将更新整个表，这非常危险
      * > Warning: If you do not specify any condition, this method will update **all** rows in the table.
-     *
+     *该方法不会触发任何事件，所以依赖[EVENT_BEFORE_UPDATE],[EVENT_AFTER_UPDATE]这些事件的功能都不会触发执行
+	 *否则请使用其他方法执行更新语句。
+	 * 查看方法体得知，因为使用了createCommand()所以才不触发事件的。
      * Note that this method will not trigger any events. If you need [[EVENT_BEFORE_UPDATE]] or
      * [[EVENT_AFTER_UPDATE]] to be triggered, you need to [[find()|find]] the models first and then
      * call [[update()]] on each of them. For example an equivalent of the example above would be:
@@ -216,9 +222,9 @@ class ActiveRecord extends BaseActiveRecord
      *     $model->update(false); // skipping validation as no user input is involved
      * }
      * ```
-     *
+     *  如果有大量的模型需要处理，考虑内存限制可以使用ActiveQuery::each()方法来减少内存消耗
      * For a large set of models you might consider using [[ActiveQuery::each()]] to keep memory usage within limits.
-     *
+     * 
      * @param array $attributes attribute values (name-value pairs) to be saved into the table
      * @param string|array $condition the conditions that will be put in the WHERE part of the UPDATE SQL.
      * Please refer to [[Query::where()]] on how to specify this parameter.
@@ -234,17 +240,19 @@ class ActiveRecord extends BaseActiveRecord
     }
 
     /**
+	 * 计数器更新，counter。
      * Updates the whole table using the provided counter changes and conditions.
-     *
+     *比如，增加customers表的age字段都加1
      * For example, to increment all customers' age by 1,
      *
      * ```php
      * Customer::updateAllCounters(['age' => 1]);
      * ```
-     *
+     *该方法也不触发事件
      * Note that this method will not trigger any events.
-     *
+     *  $counters计数器。注意计数器的格式：数组的key是要更新的字段，数组的val是增量。
      * @param array $counters the counters to be updated (attribute name => increment value).
+	 * 增量可以是负值，这样实际就是减少。
      * Use negative values if you want to decrement the counters.
      * @param string|array $condition the conditions that will be put in the WHERE part of the UPDATE SQL.
      * Please refer to [[Query::where()]] on how to specify this parameter.
@@ -266,14 +274,15 @@ class ActiveRecord extends BaseActiveRecord
     }
 
     /**
+	 * 用提供的条件删除多行
      * Deletes rows in the table using the provided conditions.
-     *
+     *比如，删除status是3的所有记录
      * For example, to delete all customers whose status is 3:
      *
      * ```php
      * Customer::deleteAll('status = 3');
      * ```
-     *
+     *注意，一定要加条件，否则删除整个表
      * > Warning: If you do not specify any condition, this method will delete **all** rows in the table.
      *
      * Note that this method will not trigger any events. If you need [[EVENT_BEFORE_DELETE]] or
@@ -324,7 +333,7 @@ class ActiveRecord extends BaseActiveRecord
         return '{{%' . Inflector::camel2id(StringHelper::basename(get_called_class()), '_') . '}}';
     }
 
-    /**
+    /**返回跟当前AR关联的数据库的元数据信息，
      * Returns the schema information of the DB table associated with this AR class.
      * @return TableSchema the schema information of the DB table associated with this AR class.
      * @throws InvalidConfigException if the table for the AR class does not exist.
@@ -343,10 +352,11 @@ class ActiveRecord extends BaseActiveRecord
     }
 
     /**
+	 * 返回AR类对应表的主键字段名
      * Returns the primary key name(s) for this AR class.
      * The default implementation will return the primary key(s) as declared
      * in the DB table that is associated with this AR class.
-     *
+     * 如果表没有声明主键，那么开放者应该覆盖该方法并返回一个字段名
      * If the DB table does not declare any primary key, you should override
      * this method to return the attributes that you want to use as primary keys
      * for this AR class.
@@ -360,7 +370,7 @@ class ActiveRecord extends BaseActiveRecord
         return static::getTableSchema()->primaryKey;
     }
 
-    /**
+    /**获取模型的所有字段集，用TableSchema完成的
      * Returns the list of all attribute names of the model.
      * The default implementation will return all column names of the table associated with this AR class.
      * @return array list of attribute names.
@@ -417,6 +427,9 @@ class ActiveRecord extends BaseActiveRecord
     }
 
     /**
+	 * insert方法的执行流程。用过save()的都知道，save其实就是判断了下是更新还是插入。
+	 * 而以后的流程都是一样的了。所以，如果自己清楚是更新还是插入操作，那么插入时
+	 * 完全可以自己直接调用insert()
      * Inserts a row into the associated database table using the attribute values of this record.
      *
      * This method performs the following steps in order:
@@ -514,6 +527,7 @@ class ActiveRecord extends BaseActiveRecord
     }
 
     /**
+	 * 这里是update更新。流程与insert类似。
      * Saves the changes to this active record into the associated database table.
      *
      * This method performs the following steps in order:
@@ -595,8 +609,9 @@ class ActiveRecord extends BaseActiveRecord
     }
 
     /**
+	 * 删除当前AR对应的表记录
      * Deletes the table row corresponding to this active record.
-     *
+     * 按照如下顺序执行，会触发事件
      * This method performs the following steps in order:
      *
      * 1. call [[beforeDelete()]]. If the method returns `false`, it will skip the
@@ -667,6 +682,7 @@ class ActiveRecord extends BaseActiveRecord
     }
 
     /**
+	 * 比较两个AR是否一样
      * Returns a value indicating whether the given active record is the same as the current one.
      * The comparison is made by comparing the table names and the primary key values of the two active records.
      * If one of the records [[isNewRecord|is new]] they are also considered not equal.

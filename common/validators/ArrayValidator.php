@@ -2,6 +2,11 @@
 /**
  *   @author liumingwei  liumingwei@xiyun.com.cn
  *   @date  2018年3月7日 下午2:16:58
+
+	在rules数组里使用时：
+		['sn_code',ArrayValidator::className(),'method'=>['unique']]
+		因为ArrayValidator是自定义的，不是内置的验证器有自己的别名，比如unique,string这些。所以第二个参数必须
+		是验证器类的全名
 */
 namespace app\common\validators;
 
@@ -52,6 +57,9 @@ class ArrayValidator extends Validator
     /**
      * @inheritdoc
      * 在模型上下文下执行验证，应该实现该方法
+	 * 在base\Model的validate()方法里通过$validate->validateAttributes()，
+	 * 调用到父类Validator，然后再该方法里通过循环属性调用到这里
+	 * 大循环是每个验证器（包含行内验证器），嵌套循环是被验证的属性们
      */
     public function validateAttribute($model, $attribute)
     {
