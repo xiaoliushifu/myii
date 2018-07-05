@@ -106,6 +106,8 @@ class JsonResponseFormatter extends Component implements ResponseFormatterInterf
 	* JSONP的Content-Type是application/javascript; charset=UTF-8，与JSON不一样哟！
      * Formats response data in JSONP format.
      * @param Response $response
+	 *注意，如果服务端响应jsonp的话，action方法需要返回数组，且数组包含data和callback两个下标的关联数组
+	 *做钉钉微应用时，下滑组件使用了jsonp格式的数据交互用到了这个知识点
      */
     protected function formatJsonp($response)
     {

@@ -324,7 +324,6 @@ class UrlRule extends Object implements UrlRuleInterface
         if ($this->host !== null) {
             $pathInfo = strtolower($request->getHostInfo()) . ($pathInfo === '' ? '' : '/' . $pathInfo);
         }
-
         if (!preg_match($this->pattern, $pathInfo, $matches)) {
             return false;
         }
