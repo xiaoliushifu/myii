@@ -13,11 +13,13 @@ use yii\web\Request;
 use yii\web\Response;
 
 /**
+* Cors过滤器就是为了实现跨源资源共享的
  * Cors filter implements [Cross Origin Resource Sharing](http://en.wikipedia.org/wiki/Cross-origin_resource_sharing).
- *
+ *请一定仔细阅读了解CORS做了什么和不做什么。CORS并不会增加API的安全性，它是允许开发者分配访问资源的权限给第三方的代码（一般是ajax从外域调用服务端）
  * Make sure to read carefully what CORS does and does not. CORS do not secure your API,
  * but allow the developer to grant access to third party code (ajax calls from external domain).
- *
+
+ * 具体使用CORS就是配置它作为一个行为给控制器或模块，如下：
  * You may use CORS filter by attaching it as a behavior to a controller or module, like the following,
  *
  * ```php
@@ -30,7 +32,7 @@ use yii\web\Response;
  *     ];
  * }
  * ```
- *
+ *也可以配置严格的参数限制 详见MDN cors 信息
  * The CORS filter can be specialized to restrict parameters, like this,
  * [MDN CORS Information](https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS)
  *
@@ -58,7 +60,7 @@ use yii\web\Response;
  *     ];
  * }
  * ```
- *
+ *  详情如何给控制器添加该过滤器，看指南[Guide on REST controllers](guide:rest-controllers#cors).
  * For more information on how to add the CORS filter to a controller, see
  * the [Guide on REST controllers](guide:rest-controllers#cors).
  *
