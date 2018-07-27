@@ -13,6 +13,7 @@ use yii\web\Request;
 use yii\web\Response;
 
 /**
+*
 * Cors过滤器就是为了实现跨源资源共享的
  * Cors filter implements [Cross Origin Resource Sharing](http://en.wikipedia.org/wiki/Cross-origin_resource_sharing).
  *请一定仔细阅读了解CORS做了什么和不做什么。CORS并不会增加API的安全性，它是允许开发者分配访问资源的权限给第三方的代码（一般是ajax从外域调用服务端）

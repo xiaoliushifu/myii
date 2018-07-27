@@ -28,4 +28,6 @@ phpunit.phar
 
 tests/_output/*
 tests/_support/_generated
-web-local.php
+
+#这是自己增加的
+#web-local.php
