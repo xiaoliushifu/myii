@@ -171,6 +171,8 @@ class Cors extends ActionFilter
         // handle Origin
         if (isset($requestHeaders['Origin'], $this->cors['Origin'])) {
             if (in_array('*', $this->cors['Origin']) || in_array($requestHeaders['Origin'], $this->cors['Origin'])) {
+				//Access-Control-Allow-Origin这个是W3C的Cors协议指定的服务端必须明确返回的响应header
+				//因为客户端的浏览器就是据此来判断是否允许本地脚本向外域发送http请求的，该值必须含有客户端脚本所在的域才行
                 $responseHeaders['Access-Control-Allow-Origin'] = $requestHeaders['Origin'];
             }
         }

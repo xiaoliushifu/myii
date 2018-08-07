@@ -414,9 +414,6 @@ class Response extends \yii\base\Response
      */
     protected function sendHeaders()
     {
-		//headers_send是干啥的？这是php基础，跟Yii框架没有关系
-		//判断是否已经发送过http的响应头部，已发，则不再发；否则可发。
-		//该函数还能传递两个参数，据此可以知道哪个php文件的哪一行发送过header。
         if (headers_sent()) {
             return;
         }
