@@ -103,6 +103,7 @@ class Captcha extends InputWidget
      */
     public function run()
     {
+        //还需要配合一个前端专门的验证码脚本
         $this->registerClientScript();
         if ($this->hasModel()) {
             $input = Html::activeTextInput($this->model, $this->attribute, $this->options);

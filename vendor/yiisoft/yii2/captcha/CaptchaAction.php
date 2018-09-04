@@ -119,6 +119,9 @@ class CaptchaAction extends Action
     }
 
     /**
+     * 前端作为一个widget会调用site/capture，该方法属于行内动作
+     * 行内动作的入口方法就是run方法。
+     * 这里判断是初始渲染页面用来生成验证码或者是点击图片ajax重新生成验证码
      * Runs the action.
      */
     public function run()
@@ -135,6 +138,7 @@ class CaptchaAction extends Action
                 'url' => Url::to([$this->id, 'v' => uniqid()]),
             ];
         } else {
+            Yii::error('生成验证码');
             $this->setHttpHeaders();
             //验证码都是二进制流，无需再处理其他格式，故应该使用FORMAT_RAW
             Yii::$app->response->format = Response::FORMAT_RAW;
