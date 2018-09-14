@@ -208,6 +208,7 @@ class ActiveForm extends Widget
     }
 
     /**
+     * ActiveForm也是一个小部件widget
      * Runs the widget.
      * This registers the necessary JavaScript code and renders the form close tag.
      * @throws InvalidCallException if `beginField()` and `endField()` calls are not matching.
@@ -226,6 +227,7 @@ class ActiveForm extends Widget
             $id = $this->options['id'];
             $options = Json::htmlEncode($this->getClientOptions());
             $attributes = Json::htmlEncode($this->attributes);
+            Yii::error($attributes,'客户端验证对象');
             $view = $this->getView();
             ActiveFormAsset::register($view);
             $view->registerJs("jQuery('#$id').yiiActiveForm($attributes, $options);");

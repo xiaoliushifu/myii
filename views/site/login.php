@@ -69,6 +69,27 @@ $this->registerJs("console.log('this is registerJs')",$this::POS_HEAD, $key = nu
         <?= $form->field($model, 'username')->textInput(['autofocus' => true]) ?>
 
         <?= $form->field($model, 'password')->passwordInput() ?>
+        <!-- 增加验证码  官网给出使用widget方式生成验证码-->
+        <!-- widget到底是啥，应该是视图小部件吧，前端的东西 -->
+        <?= $form->field($model, 'verifyCode')
+//             ->error(false)
+            ->label('验证码')
+            ->widget(\yii\captcha\Captcha::class, [
+                'options' => [
+                        'class' => 'form-control',
+                        'placeholder' => '验证码',
+                        'maxlength' => 6,
+                        'style' => 'width:60px;padding:6px;ime-mode:disabled; display:inline;'
+                ],
+                //修改下模板
+                'template' => '{input} {image}',
+                'attribute' => 'captcha',
+                'imageOptions' => [
+                            'class' => 'cpatcha-img',
+                            'style' => 'height:34px;cursor:pointer;',
+                            'title' => '点击更换一张'
+                ]
+            ]); ?>
 
         <?= $form->field($model, 'rememberMe')->checkbox([
             'template' => "<div class=\"col-lg-offset-1 col-lg-3\">{input} {label}</div>\n<div class=\"col-lg-8\">{error}</div>",
@@ -95,7 +116,7 @@ $this->registerJs("console.log('this is registerJs')",$this::POS_HEAD, $key = nu
         因为平时开发时一般情况下个别js文件只是某个视图需要，就样就不能直接去编辑layout，也就不能直接写在</body>前的jquery.js之后，
         这种时候就不要使用原始加载方式了，只能写个AssetBundle，其中的position位置是View::POS_END，depends写好才能解决问题
  -->
-<script type="text/javascript" src="static/js/yz_stock_in.js"></script>
+<!-- <script type="text/javascript" src="static/js/yz_stock_in.js"></script> -->
 
 <!-- 单独加载JS代码块，通过参数二指定位置是 .POS_LOAD会嵌入到HTMl的</body>里单独一个Jquery的load函数中-->
 <?= $this->registerJs("console.log('this is registerJs2')",$this::POS_LOAD, $key = null);?>

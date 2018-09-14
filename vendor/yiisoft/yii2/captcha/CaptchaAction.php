@@ -119,8 +119,8 @@ class CaptchaAction extends Action
     }
 
     /**
-     * 前端作为一个widget会调用site/capture，该方法属于行内动作
-     * 行内动作的入口方法就是run方法。
+     * 前端的一个widget形成的<img xxx>会调用site/capture，该方法属于独立动作（相对于内联动作）
+     * 独立动作的入口方法就是run方法。
      * 这里判断是初始渲染页面用来生成验证码或者是点击图片ajax重新生成验证码
      * Runs the action.
      */
@@ -147,6 +147,11 @@ class CaptchaAction extends Action
     }
 
     /**
+     * 为验证码生成hash码，所谓hash就是根据一定的算法计算对应关系
+     * 这里生成hash传递给客户端，这样免除发送http请求到服务端的及时验证
+     * 虽然有点不完美，但是思路不错。
+     * 所谓不完美，是因为这里是把验证码的ascii码求和，作为最终的hash;
+     * 要是hash相等但是验证码不等的话，就会出问题；比如abd和acc的ascii求和是一样的。
      * Generates a hash code that can be used for client-side validation.
      * @param string $code the CAPTCHA code
      * @return string a hash code generated from the CAPTCHA code
@@ -175,6 +180,8 @@ class CaptchaAction extends Action
         $session = Yii::$app->getSession();
         $session->open();
         $name = $this->getSessionKey();
+        //首先从session中获取，没有的话才重新生成，一般页面首次渲染时验证码已经保存在session中
+        //后续点击图片刷新时才会重新生成验证码
         if ($session[$name] === null || $regenerate) {
             $session[$name] = $this->generateVerifyCode();
             $session[$name . 'count'] = 1;
@@ -225,6 +232,7 @@ class CaptchaAction extends Action
         $vowels = 'aeiou';
         $code = '';
         for ($i = 0; $i < $length; ++$i) {
+            //这是什么随机算法呢？
             if ($i % 2 && mt_rand(0, 10) > 2 || !($i % 2) && mt_rand(0, 10) > 9) {
                 $code .= $vowels[mt_rand(0, 4)];
             } else {

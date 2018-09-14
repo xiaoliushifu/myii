@@ -83,6 +83,7 @@ class CaptchaValidator extends Validator
 
     /**
      * @inheritdoc
+     * 客户端脚本的对象yiiActiveForm
      */
     public function clientValidateAttribute($model, $attribute, $view)
     {
@@ -98,6 +99,7 @@ class CaptchaValidator extends Validator
     public function getClientOptions($model, $attribute)
     {
         $captcha = $this->createCaptchaAction();
+        //这里就是首次生成验证码的地方
         $code = $captcha->getVerifyCode(false);
         $hash = $captcha->generateValidationHash($this->caseSensitive ? $code : strtolower($code));
         $options = [

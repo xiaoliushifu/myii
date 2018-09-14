@@ -15,10 +15,10 @@ class LoginForm extends Model
 {
     public $username;
     public $password;
+    public $verifyCode;
     public $rememberMe = true;
 
     private $_user = false;
-
 
     /**
      * @return array the validation rules.
@@ -31,6 +31,8 @@ class LoginForm extends Model
             [['username'], 'string','max'=>'5'],
             // rememberMe must be a boolean value
             ['rememberMe', 'boolean'],
+            //登录场景下需要验证码
+            ['verifyCode', 'captcha', 'on' => ['login']],
             // password is validated by validatePassword()
             //针对这种规则，将会使用行内验证器，但是验证逻辑写在当前model的一个同名方法里，
             //方法名validatePassword存储在行内验证器（InlineValidator)的method属性中

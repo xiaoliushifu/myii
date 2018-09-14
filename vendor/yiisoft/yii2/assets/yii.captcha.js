@@ -10,6 +10,8 @@
  * @since 2.0
  */
 (function ($) {
+    //js小部件，在yii\captcha\Captcha这个小部件里开始使用
+    //为客户端刷新验证码的作用
     $.fn.yiiCaptcha = function (method) {
         if (methods[method]) {
             return methods[method].apply(this, Array.prototype.slice.call(arguments, 1));
@@ -34,7 +36,7 @@
                 $e.data('yiiCaptcha', {
                     settings: settings
                 });
-
+                //绑定click事件，交给refresh函数响应
                 $e.on('click.yiiCaptcha', function () {
                     methods.refresh.apply($e);
                     return false;
@@ -42,6 +44,7 @@
             });
         },
 
+        //刷新网页的验证码，由此调用ajax去服务端重新生成验证码
         refresh: function () {
             var $e = this,
                 settings = this.data('yiiCaptcha').settings;
