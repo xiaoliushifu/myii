@@ -138,7 +138,6 @@ class CaptchaAction extends Action
                 'url' => Url::to([$this->id, 'v' => uniqid()]),
             ];
         } else {
-            Yii::error('生成验证码');
             $this->setHttpHeaders();
             //验证码都是二进制流，无需再处理其他格式，故应该使用FORMAT_RAW
             Yii::$app->response->format = Response::FORMAT_RAW;

@@ -189,6 +189,19 @@ class Component extends Object
 
             return;
 		//on xxx绑定事件的方式？嘿嘿少见呀
+            //看例子,比如涉及接口应用时response组件的一个事件
+            /**
+             * response=>[
+             *      'class'=>'yii\web\response',
+             *      'on beforeSend' => function($event){
+                        $response = $event->sender;
+             *          $response->format = $response::FORMT_JSON;
+             *          $response->statusCode = 200;
+             *
+             *      }
+             * ]
+             *
+             */
         } elseif (strncmp($name, 'on ', 3) === 0) {
             // on event: attach event handler
             $this->on(trim(substr($name, 3)), $value);
