@@ -42,6 +42,8 @@ class BooleanValidator extends Validator
 
 
     /**
+     * 每个核心验证器的init方法一般都是先处理message
+     * message是所有核心验证器继承自父类Validator而来的
      * @inheritdoc
      */
     public function init()
@@ -59,8 +61,10 @@ class BooleanValidator extends Validator
      */
     protected function validateValue($value)
     {
+        //这行代码写的真棒，利用了逻辑运算符的短路，分成了或||的两个部分
         $valid = !$this->strict && ($value == $this->trueValue || $value == $this->falseValue)
-                 || $this->strict && ($value === $this->trueValue || $value === $this->falseValue);
+                 ||//两个或部分拆开来非常好
+            $this->strict && ($value === $this->trueValue || $value === $this->falseValue);
 
         //出现错误，就组织一下错误信息
         if (!$valid) {
@@ -74,6 +78,8 @@ class BooleanValidator extends Validator
     }
 
     /**
+     * 生成客户端验证的逻辑
+     * 一般在activeForm里开始的
      * @inheritdoc
      */
     public function clientValidateAttribute($model, $attribute, $view)
@@ -85,6 +91,7 @@ class BooleanValidator extends Validator
     }
 
     /**
+     * 获得客户端的配置数组
      * @inheritdoc
      */
     public function getClientOptions($model, $attribute)

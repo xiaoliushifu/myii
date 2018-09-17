@@ -38,7 +38,7 @@ class TestController extends Controller
     //第二个调用的方法，且返回false时后续不再执行，直接返回响应
     public function beforeAction($action)
     {
-        //var_dump($action);
+        var_dump('beforeAction');
 		return true;
     }
     /**
@@ -151,4 +151,14 @@ class TestController extends Controller
 		*/
 		return $this->render('test');
 	}
+
+    public function actionTime()
+    {
+        return $this->render('_time',['time'=>date("h:i:s"),'mp'=>'tt']);
+    }
+
+    public function actionPjax($_pjax)
+    {
+        return $this->renderAjax('_time',['time'=>date("h:i:s"),'mp'=>$_pjax]);
+    }
 }
