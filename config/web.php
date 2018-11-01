@@ -57,8 +57,10 @@ $config = [
 
 if (YII_ENV_DEV) {
     // configuration adjustments for 'dev' environment
-   // $config['bootstrap'][] = 'debug';
-    
+//    $config['bootstrap'][] = 'debug';
+    //队列要在bootstrap过程启动
+    $config['bootstrap'][] = 'queue';
+
     //添加一个模块debug
     $config['modules']['debug'] = [
         'class' => 'yii\debug\Module',

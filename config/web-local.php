@@ -2,6 +2,13 @@
 
 $config = [
     'components' => [
+        //队列组件的配置,一个队列对应一个组件配置
+        'queue' => [
+            'class' => zhuravljov\yii\queue\db\Queue::class,
+            'as log' => zhuravljov\yii\queue\LogBehavior::class,
+            'mutex' => \yii\mutex\MysqlMutex::class
+            // Other driver options
+        ],
         'mailer' => [
             'class' => 'yii\swiftmailer\Mailer',
             // send all mails to a file by default. You have to set
@@ -34,7 +41,8 @@ $config = [
                 [
                     'class'=>'yii\log\FileTarget',
                     //加上profile，就会打入进去到app.log里
-                    'levels' => ['error','warning','profile'],#空数组代表任何级别的都打印
+//                    'levels' => ['error','warning','profile'],#空数组代表任何级别的都打印
+                    'levels' => ['error'],
                     //'categories'=>['yii\db\*','application'],#一定要记录的日志类别
                     'exportInterval' => 1,#该target也可以配置积累量
                     'logVars'=>[],#不是每条日志都有这些信息，而是在最后真正输出到媒介时才补充这些信息到日志中

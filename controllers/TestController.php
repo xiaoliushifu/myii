@@ -8,6 +8,7 @@ use app\models\TestSearch;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+use app\common\job\DownloadJob;
 
 /**
  * TestController implements the CRUD actions for Test model.
@@ -32,13 +33,12 @@ class TestController extends Controller
     //控制器第一个调用的方法
     public function init()
     {
-        var_dump(__FUNCTION__);
+//        var_dump(__FUNCTION__);
     }
     
     //第二个调用的方法，且返回false时后续不再执行，直接返回响应
     public function beforeAction($action)
     {
-        var_dump('beforeAction');
 		return true;
     }
     /**
@@ -160,5 +160,40 @@ class TestController extends Controller
     public function actionPjax($_pjax)
     {
         return $this->renderAjax('_time',['time'=>date("h:i:s"),'mp'=>$_pjax]);
+    }
+
+    /**
+     * 生成一个任务并把它加入到队列里，返回队列里到id
+     * 这是队列操作的第一步
+     */
+    public function actionQueue()
+    {
+
+
+        //加入队列里
+        return Yii::$app->queue->push(new DownloadJob([
+            'url' => 'http://example.com/image.jpg',
+            'file' => '/tmp/image.jpg',
+        ]));
+    }
+
+    /**
+     * 加入到队列里，返回队列里到id
+     */
+    public function actionQueueDelay()
+    {
+
+        //先绑定EVENT_BEFORE_EXEC事件。该事件在这里绑定是无效的，因为触发执行是在控制台，这是两个PHP进程
+        //为调试起见，在执行execute方法之前退出，观察reserved_at字段的状态
+//        Yii::$app->queue->on(Queue::EVENT_BEFORE_EXEC, function ($event) {
+//            \Yii::error($event,'eventObj');
+//            $event->handled = true;//阻止后续的执行
+//        });
+
+        //加入队列里,延迟3分钟后再执行
+        return Yii::$app->queue->delay(3*60)->push(new DownloadJob([
+            'url' => 'http://example.com/image.jpg',
+            'file' => '/tmp/image.jpg',
+        ]));
     }
 }

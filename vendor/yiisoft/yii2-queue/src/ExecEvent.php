@@ -9,7 +9,7 @@ namespace zhuravljov\yii\queue;
 
 /**
  * Class ExecEvent
- *
+ * 任务执行时，也就是execute之前触发该事件
  * @author Roman Zhuravlev <zhuravljov@gmail.com>
  */
 class ExecEvent extends JobEvent

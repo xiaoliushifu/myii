@@ -50,6 +50,8 @@ abstract class Queue extends BaseQueue implements BootstrapInterface
     }
 
     /**
+     * 队列作为yii2扩展,必须有一个bootstrap方法初始化扩展，在控制台添加命令（控制器）command控制器
+     * 别名是queue,但是真正的class是Command
      * @inheritdoc
      */
     public function bootstrap($app)
@@ -63,6 +65,7 @@ abstract class Queue extends BaseQueue implements BootstrapInterface
     }
 
     /**
+     * 处理任务
      * @inheritdoc
      */
     protected function handleMessage($id, $message, $ttr, $attempt)

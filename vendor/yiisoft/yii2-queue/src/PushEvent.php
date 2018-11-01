@@ -9,16 +9,18 @@ namespace zhuravljov\yii\queue;
 
 /**
  * Class PushEvent
- *
+ * 任务加入到队列时，触发该事件
  * @author Roman Zhuravlev <zhuravljov@gmail.com>
  */
 class PushEvent extends JobEvent
 {
     /**
      * @var int
+     * 延迟秒数
      */
     public $delay;
     /**
+     * 任务优先级
      * @var mixed
      */
     public $priority;

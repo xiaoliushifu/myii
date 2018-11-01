@@ -8,6 +8,8 @@
 namespace zhuravljov\yii\queue;
 
 /**
+ * 如果你的任务在执行失败时，希望给出机会再次尝试执行，那么
+ * 需要在任务类里实现下述的两个方法
  * Interface RetryableJob
  *
  * @author Roman Zhuravlev <zhuravljov@gmail.com>
@@ -15,6 +17,7 @@ namespace zhuravljov\yii\queue;
 interface RetryableJob extends Job
 {
     /**
+     *
      * @return int time to reserve in seconds
      */
     public function getTtr();
@@ -22,7 +25,7 @@ interface RetryableJob extends Job
     /**
      * @param int $attempt number
      * @param \Exception $error from last execute of the job
-     * @return bool
+     * @return bool  返回true表示可以下次再执行
      */
     public function canRetry($attempt, $error);
 }
