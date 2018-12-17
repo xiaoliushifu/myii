@@ -10,6 +10,7 @@ use app\models\LoginForm;
 use app\models\ContactForm;
 use app\models\EntryForm;
 use yii\helpers\Url;
+use app\models\Test;
 
 class SiteController extends Controller
 {
@@ -355,4 +356,23 @@ Content-Length: 11562225
         //第一个参数是服务端文件系统的路径，第二个参数是展示给浏览器端的文件名。两者有可能相同
              return Yii::$app->response->sendFile("$storagePath/$filename", $filename);
          }
+
+    /**
+     * 测试学习sluggable行为的方法
+     * @return string
+     */
+    public function actionTest()
+    {
+        $model = new Test();
+        //title属性是sluggable，所以它没必要写在rule里
+        $model->name="liushifu";
+        $model->title="我slug-user你好";
+        $model->slug="slug-user";
+        if ($model->save() ) {
+            return "OK";
+        } else {
+            var_dump($model->getErrors());    
+        }
+        
+    }
 }

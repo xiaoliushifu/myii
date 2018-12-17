@@ -477,9 +477,9 @@ class BaseInflector
     public static function slug($string, $replacement = '-', $lowercase = true)
     {
         $string = static::transliterate($string);
-        $string = preg_replace('/[^a-zA-Z0-9=\s—–-]+/u', '', $string);
-        $string = preg_replace('/[=\s—–-]+/u', $replacement, $string);
-        $string = trim($string, $replacement);
+        $string = preg_replace('/[^a-zA-Z0-9=\s—–-]+/u', '', $string);//只保留英文字母数字空白-
+        $string = preg_replace('/[=\s—–-]+/u', $replacement, $string);//"=","空白"，中文的"——"，还有英文的连字符"-"
+        $string = trim($string, $replacement);//去掉两边的"-"
 
         return $lowercase ? strtolower($string) : $string;
     }
