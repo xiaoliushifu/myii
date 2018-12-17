@@ -185,10 +185,10 @@ DateGroup rule identifying the selected year and month:
 $columnFilter->createRule()
     ->setRule(
         \PhpOffice\PhpSpreadsheet\Worksheet\AutoFilter\Column\Rule::AUTOFILTER_COLUMN_RULE_EQUAL,
-        array(
+        [
             'year' => 2012,
             'month' => 1
-        )
+        ]
     )
     ->setRuleType(
         \PhpOffice\PhpSpreadsheet\Worksheet\AutoFilter\Column\Rule::AUTOFILTER_RULETYPE_DATEGROUP
@@ -285,8 +285,8 @@ $columnFilter->createRule()
 
 We also set the rule type to CUSTOMFILTER.
 
-This defined two rules, filtering numbers that are &gt;= -20 OR &lt;=
-20, so we also need to modify the join condition to reflect AND rather
+This defined two rules, filtering numbers that are `>= -20` OR `<=
+20`, so we also need to modify the join condition to reflect AND rather
 than OR.
 
 ``` php

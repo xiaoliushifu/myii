@@ -47,7 +47,8 @@ class NumberFormat extends Supervisor
 
     const FORMAT_CURRENCY_USD_SIMPLE = '"$"#,##0.00_-';
     const FORMAT_CURRENCY_USD = '$#,##0_-';
-    const FORMAT_CURRENCY_EUR_SIMPLE = '[$EUR ]#,##0.00_-';
+    const FORMAT_CURRENCY_EUR_SIMPLE = '#,##0.00_-"€"';
+    const FORMAT_CURRENCY_EUR = '#,##0_-"€"';
 
     /**
      * Excel built-in number formats.
@@ -123,13 +124,14 @@ class NumberFormat extends Supervisor
 
     /**
      * Apply styles from array.
+     *
      * <code>
      * $spreadsheet->getActiveSheet()->getStyle('B2')->getNumberFormat()->applyFromArray(
-     *        array(
-     *            'formatCode' => NumberFormat::FORMAT_CURRENCY_EUR_SIMPLE
-     *        )
+     *     [
+     *         'formatCode' => NumberFormat::FORMAT_CURRENCY_EUR_SIMPLE
+     *     ]
      * );
-     * </code>.
+     * </code>
      *
      * @param array $pStyles Array containing style information
      *
@@ -587,7 +589,7 @@ class NumberFormat extends Supervisor
         }
 
         // Convert any other escaped characters to quoted strings, e.g. (\T to "T")
-        $format = preg_replace('/(\\\(.))(?=(?:[^"]|"[^"]*")*$)/u', '"${2}"', $format);
+        $format = preg_replace('/(\\\([^ ]))(?=(?:[^"]|"[^"]*")*$)/u', '"${2}"', $format);
 
         // Get the sections, there can be up to four sections, separated with a semi-colon (but only if not a quoted literal)
         $sections = preg_split('/(;)(?=(?:[^"]|"[^"]*")*$)/u', $format);
@@ -688,6 +690,9 @@ class NumberFormat extends Supervisor
 
                     // Strip #
                     $format = preg_replace('/\\#/', '0', $format);
+
+                    // Remove locale code [$-###]
+                    $format = preg_replace('/\[\$\-.*\]/', '', $format);
 
                     $n = '/\\[[^\\]]+\\]/';
                     $m = preg_replace($n, '', $format);

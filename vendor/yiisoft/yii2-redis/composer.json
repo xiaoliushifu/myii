@@ -18,10 +18,13 @@
         }
     ],
     "require": {
-        "yiisoft/yii2": "~2.0.13"
+        "yiisoft/yii2": "~2.0.14"
     },
     "autoload": {
-        "psr-4": { "yii\\redis\\": "" }
+        "psr-4": { "yii\\redis\\": "src" }
+    },
+    "autoload-dev": {
+        "psr-4": { "yiiunit\\extensions\\redis\\": "tests/"}
     },
     "extra": {
         "branch-alias": {
@@ -33,5 +36,8 @@
             "type": "composer",
             "url": "https://asset-packagist.org"
         }
-    ]
+    ],
+    "require-dev": {
+        "yiisoft/yii2-dev": "~2.0.14"
+    }
 }

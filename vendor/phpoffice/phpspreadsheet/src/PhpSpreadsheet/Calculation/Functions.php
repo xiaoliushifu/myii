@@ -2,6 +2,8 @@
 
 namespace PhpOffice\PhpSpreadsheet\Calculation;
 
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
+
 class Functions
 {
     const PRECISION = 8.88E-016;
@@ -265,7 +267,7 @@ class Functions
     public static function ifCondition($condition)
     {
         $condition = self::flattenSingleValue($condition);
-        if (!isset($condition[0])) {
+        if (!isset($condition[0]) && !is_numeric($condition)) {
             $condition = '=""';
         }
         if (!in_array($condition[0], ['>', '<', '='])) {
@@ -275,7 +277,7 @@ class Functions
 
             return '=' . $condition;
         }
-        preg_match('/([<>=]+)(.*)/', $condition, $matches);
+        preg_match('/(=|<[>=]?|>=?)(.*)/', $condition, $matches);
         list(, $operator, $operand) = $matches;
 
         if (!is_numeric($operand)) {
@@ -353,7 +355,7 @@ class Functions
             return false;
         }
 
-        return in_array($value, array_values(self::$errorCodes));
+        return in_array($value, self::$errorCodes);
     }
 
     /**
@@ -641,5 +643,31 @@ class Functions
         }
 
         return $value;
+    }
+
+    /**
+     * ISFORMULA.
+     *
+     * @param mixed $cellReference The cell to check
+     * @param Cell $pCell The current cell (containing this formula)
+     *
+     * @return bool|string
+     */
+    public static function isFormula($cellReference = '', Cell $pCell = null)
+    {
+        if ($pCell === null) {
+            return self::REF();
+        }
+
+        preg_match('/^' . Calculation::CALCULATION_REGEXP_CELLREF . '$/i', $cellReference, $matches);
+
+        $cellReference = $matches[6] . $matches[7];
+        $worksheetName = trim($matches[3], "'");
+
+        $worksheet = (!empty($worksheetName))
+            ? $pCell->getWorksheet()->getParent()->getSheetByName($worksheetName)
+            : $pCell->getWorksheet();
+
+        return $worksheet->getCell($cellReference)->isFormula();
     }
 }
