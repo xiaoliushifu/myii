@@ -2,7 +2,7 @@
 // comment out the following two lines when deployed to production
 defined('YII_DEBUG') or define('YII_DEBUG', true);
 defined('YII_ENV') or define('YII_ENV', 'dev');
-defined('YII_ENABLE_ERROR_HANDLER') or define('YII_ENABLE_ERROR_HANDLER', false);
+defined('YII_ENABLE_ERROR_HANDLER') or define('YII_ENABLE_ERROR_HANDLER', true);
 //这是composer的自动加载机制
 require(__DIR__ . '/../vendor/autoload.php');
 //注册yii框架自己的自动加载机制，并首次出现Yii全局对象，还把容器对象填充到Yii的属性$container

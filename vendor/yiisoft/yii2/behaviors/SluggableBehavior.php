@@ -62,11 +62,14 @@ class SluggableBehavior extends AttributeBehavior
 {
     /**
      * @var string the attribute that will receive the slug value
+     * 接收slug的值的属性，一个AR对象的属性
+     * 一般就是表的字段名为slug的列
      */
     public $slugAttribute = 'slug';
     /**
      * @var string|array|null the attribute or list of attributes whose value will be converted into a slug
      * or `null` meaning that the `$value` property will be used to generate a slug.
+     * 从该属性上解析出slug的值
      */
     public $attribute;
     /**
@@ -74,7 +77,7 @@ class SluggableBehavior extends AttributeBehavior
      * or an arbitrary value or null. If the former, the return value of the function will be used as a slug.
      * If `null` then the `$attribute` property will be used to generate a slug.
      * The signature of the function should be as follows,
-     *
+     * 用来生成slug的回调，在attribute为空时用到它。
      * ```php
      * function ($event)
      * {
@@ -86,6 +89,7 @@ class SluggableBehavior extends AttributeBehavior
     /**
      * @var bool whether to generate a new slug if it has already been generated before.
      * If true, the behavior will not generate a new slug even if [[attribute]] is changed.
+     * 后续生成到slug是否允许覆盖之前生成到
      * @since 2.0.2
      */
     public $immutable = false;
@@ -93,12 +97,14 @@ class SluggableBehavior extends AttributeBehavior
      * @var bool whether to ensure generated slug value to be unique among owner class records.
      * If enabled behavior will validate slug uniqueness automatically. If validation fails it will attempt
      * generating unique slug value from based one until success.
+     * 在AR里是否验证slug的唯一性
      */
     public $ensureUnique = false;
     /**
      * @var bool whether to skip slug generation if [[attribute]] is null or an empty string.
      * If true, the behaviour will not generate a new slug if [[attribute]] is null or an empty string.
      * @since 2.0.13
+     * 生成slug字段的属性是空的话
      */
     public $skipOnEmpty = false;
     /**
@@ -151,14 +157,18 @@ class SluggableBehavior extends AttributeBehavior
         if ($this->attribute !== null) {
             $slugParts = [];
             foreach ((array) $this->attribute as $attribute) {
+                //从$attribute里解析出slug值
                 $part = ArrayHelper::getValue($this->owner, $attribute);
+
                 if ($this->skipOnEmpty && $this->isEmpty($part)) {
+                    //为空时直接返回原来的slug字段的值,相当于没有生成slug，原来是啥还是啥
                     return $this->owner->{$this->slugAttribute};
                 }
                 $slugParts[] = $part;
             }
             $slug = $this->generateSlug($slugParts);
         } else {
+            //用value属性给出的回调去生成slug
             $slug = parent::getValue($event);
         }
 
@@ -223,6 +233,7 @@ class SluggableBehavior extends AttributeBehavior
         $iteration = 0;
         while (!$this->validateSlug($uniqueSlug)) {
             $iteration++;
+            //生成唯一的slug值
             $uniqueSlug = $this->generateUniqueSlug($slug, $iteration);
         }
 
@@ -231,6 +242,7 @@ class SluggableBehavior extends AttributeBehavior
 
     /**
      * Checks if given slug value is unique.
+     * 检测slug在AR里是否唯一
      * @param string $slug slug value
      * @return bool whether slug is unique.
      */
@@ -262,10 +274,11 @@ class SluggableBehavior extends AttributeBehavior
      */
     protected function generateUniqueSlug($baseSlug, $iteration)
     {
+        //是否给出生成唯一slug的回调
         if (is_callable($this->uniqueSlugGenerator)) {
             return call_user_func($this->uniqueSlugGenerator, $baseSlug, $iteration, $this->owner);
         }
-
+        //生成唯一slug的办法：增加一个迭代的后缀
         return $baseSlug . '-' . ($iteration + 1);
     }
 
