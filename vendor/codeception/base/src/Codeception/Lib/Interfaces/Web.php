@@ -383,7 +383,7 @@ interface Web
      * ``` php
      * <?php
      * // to match root url
-     * $I->seeCurrentUrlMatches('~$/users/(\d+)~');
+     * $I->seeCurrentUrlMatches('~^/users/(\d+)~');
      * ?>
      * ```
      *
@@ -425,7 +425,7 @@ interface Web
      * ``` php
      * <?php
      * // to match root url
-     * $I->dontSeeCurrentUrlMatches('~$/users/(\d+)~');
+     * $I->dontSeeCurrentUrlMatches('~^/users/(\d+)~');
      * ?>
      * ```
      *
@@ -439,7 +439,7 @@ interface Web
      *
      * ``` php
      * <?php
-     * $user_id = $I->grabFromCurrentUrl('~$/user/(\d+)/~');
+     * $user_id = $I->grabFromCurrentUrl('~^/user/(\d+)/~');
      * $uri = $I->grabFromCurrentUrl();
      * ?>
      * ```
@@ -698,7 +698,7 @@ interface Web
      * @param $value
      */
     public function fillField($field, $value);
-
+    
     /**
      * Attaches a file relative to the Codeception `_data` directory to the given file upload field.
      *

@@ -47,6 +47,7 @@ class RunCest
         $I->seeFileFound('report.json', 'tests/_output');
         $I->seeInThisFile('"suite":');
         $I->seeInThisFile('"dummy"');
+        $I->assertNotNull(json_decode(file_get_contents('tests/_output/report.json')));
     }
 
     /**
@@ -97,22 +98,11 @@ class RunCest
      *
      * @param CliGuy $I
      */
-    public function runReportMode(\CliGuy $I)
-    {
-        $I->wantTo('try the reporting mode');
-        $I->executeCommand('run dummy --report');
-        $I->seeInShellOutput('FileExistsCept');
-        $I->seeInShellOutput('........Ok');
-    }
-
-    /**
-     * @group reports
-     *
-     * @param CliGuy $I
-     */
     public function runCustomReport(\CliGuy $I)
     {
-        $I->wantTo('try the reporting mode');
+        if (\PHPUnit\Runner\Version::series() >= 7) {
+            throw new \Codeception\Exception\Skip('Not for PHPUnit 7');
+        }
         $I->executeCommand('run dummy --report -c codeception_custom_report.yml');
         $I->seeInShellOutput('FileExistsCept: Check config exists');
         $I->dontSeeInShellOutput('Ok');
@@ -239,7 +229,7 @@ class RunCest
         $I->executeCommand('run unit ErrorTest --no-exit');
         $I->seeInShellOutput('There was 1 error');
         $I->seeInShellOutput('Array to string conversion');
-        $I->seeInShellOutput('ErrorTest.php:9');
+        $I->seeInShellOutput('ErrorTest.php');
     }
 
     public function runTestWithException(\CliGuy $I)
@@ -303,7 +293,7 @@ EOF
             $scenario->skip("Xdebug not loaded");
         }
 
-        $file = "codeception".DIRECTORY_SEPARATOR."c3";
+        $file = "codeception" . DIRECTORY_SEPARATOR . "c3";
         $I->executeCommand('run scenario SubStepsCept --steps');
         $I->seeInShellOutput(<<<EOF
 Scenario --
@@ -485,7 +475,7 @@ EOF
         $I->executeCommand('run powers PowerUpCest');
         $I->dontSeeInShellOutput('FAILURES');
     }
-    
+
     public function runCestWithTwoFailedTest(CliGuy $I)
     {
         $I->executeCommand('run scenario PartialFailedCest', false);
@@ -494,4 +484,56 @@ EOF
         $I->seeInShellOutput('Tests: 3,');
         $I->seeInShellOutput('Failures: 2.');
     }
+
+
+    public function runWarningTests(CliGuy $I)
+    {
+        $I->executeCommand('run unit WarningTest.php', false);
+        $I->seeInShellOutput('There was 1 warning');
+        $I->seeInShellOutput('WarningTest::testWarningInvalidDataProvider');
+        $I->seeInShellOutput('Tests: 1,');
+        $I->seeInShellOutput('Warnings: 1.');
+    }
+
+    /**
+     * @group shuffle
+     * @param CliGuy $I
+     */
+    public function showSeedNumberOnShuffle(CliGuy $I)
+    {
+        $I->executeCommand('run unit -o "settings: shuffle: true"', false);
+        $I->seeInShellOutput('Seed');
+        $I->executeCommand('run unit', false);
+        $I->dontSeeInShellOutput('Seed');
+    }
+
+
+    /**
+     * @group shuffle
+     * @param CliGuy $I
+     */
+    public function showSameOrderOfFilesOnSeed(CliGuy $I, \Codeception\Scenario $s)
+    {
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $s->skip('Failing on Windows. Need to investigate');
+        }
+        $I->executeCommand('run unit -o "settings: shuffle: true"', false);
+        $I->seeInShellOutput('Seed');
+        $output = $I->grabFromOutput('/---\n((.|\n)*?)---/m');
+        $output = preg_replace('~\(\d\.\d+s\)~m', '', $output);
+        $seed = $I->grabFromOutput('~\[Seed\] (.*)~');
+
+        $I->executeCommand('run unit -o "settings: shuffle: true" --seed ' . $seed, false);
+        $newOutput = $I->grabFromOutput('/---\n((.|\n)*?)---/m');
+        $newOutput = preg_replace('~\(\d\.\d+s\)~m', '', $newOutput);
+
+        $I->assertEquals($output, $newOutput, 'order of tests is the same');
+
+        $I->executeCommand('run unit -o "settings: shuffle: true"', false);
+        $newOutput = $I->grabFromOutput('/---\n((.|\n)*?)---/m');
+        $newOutput = preg_replace('~\(\d\.\d+s\)~m', '', $newOutput);
+
+        $I->assertNotEquals($output, $newOutput, 'order of tests is the same');
+    }
+
 }
