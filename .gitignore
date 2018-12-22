@@ -28,6 +28,6 @@ phpunit.phar
 
 tests/_output/*
 tests/_support/_generated
-web-local.php
+config/web-local.php
 #对已经提交到仓库到文件来说，只能先主动删除，然后再写到gitignore文件里才有效
 config/db.php

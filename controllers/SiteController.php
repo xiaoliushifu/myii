@@ -363,16 +363,22 @@ Content-Length: 11562225
      */
     public function actionTest()
     {
-        $model = new Test();
-        //title属性是sluggable，所以它没必要写在rule里
-        $model->name="liushifu";
-        $model->title="我slug-user你好";
-        $model->slug="slug-user";
-        if ($model->save() ) {
-            return "OK";
-        } else {
-            var_dump($model->getErrors());    
+//        $model = new Test();
+        try{
+            $model = Test::findOne(7);
+            $model->title="乐2观锁";
+            //版本字段不应该被主动赋值，它应该是表单的隐藏值或者在业务处理中不会更改的字段，
+            //在读取到更新（删除）AR记录之间一直保持不变。这是判断版本变换的依据
+//            $model->version="10001";
+            if ($model->save() ) {
+                return "OK";
+            } else {
+                var_dump($model->getErrors());
+            }
+        } catch(\Exception $e) {
+            echo $e->getMessage();
         }
+
         
     }
 }

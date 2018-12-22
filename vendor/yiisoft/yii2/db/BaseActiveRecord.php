@@ -791,6 +791,7 @@ abstract class BaseActiveRecord extends Model implements ActiveRecordInterface
      */
     protected function updateInternal($attributes = null)
     {
+        //这里会触发：before_insert或者before_update
         if (!$this->beforeSave(false)) {
             return false;
         }
@@ -800,10 +801,11 @@ abstract class BaseActiveRecord extends Model implements ActiveRecordInterface
             return 0;
         }
         $condition = $this->getOldPrimaryKey(true);
+        //乐观锁开始检测的地方
         $lock = $this->optimisticLock();
         if ($lock !== null) {
-            $values[$lock] = $this->$lock + 1;
-            $condition[$lock] = $this->$lock;
+            $values[$lock] = $this->$lock + 1; //本次更新的版本应该是上一个版本基础上加1
+            $condition[$lock] = $this->$lock;  //当时取出时的版本，作为条件。这就说明这个锁版本不应该在load()或者主动赋值修改
         }
         // We do not check the return value of updateAll() because it's possible
         // that the UPDATE statement doesn't change anything and thus returns 0.
