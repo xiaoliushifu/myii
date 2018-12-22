@@ -104,6 +104,7 @@ class AttributeBehavior extends Behavior
     }
 
     /**
+     * 估计属性值并赋值给当前的属性（们）
      * Evaluates the attribute value and assigns it to the current attributes.
      * @param Event $event
      */
@@ -118,6 +119,7 @@ class AttributeBehavior extends Behavior
 
         if (!empty($this->attributes[$event->name])) {
             $attributes = (array) $this->attributes[$event->name];
+            // 获取当前事件下的对应值，不同的事件对应不同的属性值
             $value = $this->getValue($event);
             foreach ($attributes as $attribute) {
                 // ignore attribute names which are not string (e.g. when set by TimestampBehavior::updatedAtAttribute)
@@ -125,6 +127,7 @@ class AttributeBehavior extends Behavior
                     if ($this->preserveNonEmptyValues && !empty($this->owner->$attribute)) {
                         continue;
                     }
+                    //赋值
                     $this->owner->$attribute = $value;
                 }
             }

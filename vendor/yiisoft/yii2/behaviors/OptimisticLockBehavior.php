@@ -119,6 +119,7 @@ class OptimisticLockBehavior extends AttributeBehavior
 
         /* @var $owner BaseActiveRecord */
         $owner = $this->owner;
+        //通过调用AR类覆盖BaseAR的方法来告知属主AR类是哪个属性存储版本值
         $lock = $owner->optimisticLock();
         if ($lock === null || $owner->hasAttribute($lock) === false) {
             throw new InvalidCallException("Unable to get the optimistic lock attribute. Probably 'optimisticLock()' method is misconfigured.");
@@ -129,7 +130,7 @@ class OptimisticLockBehavior extends AttributeBehavior
 
     /**
      * {@inheritdoc}
-     *
+     * 从BodyParams里获取乐观锁属性的值
      * In case of `null`, value will be parsed from [[\yii\web\Request::getBodyParam()|getBodyParam()]] or set to 0.
      */
     protected function getValue($event)
@@ -138,8 +139,13 @@ class OptimisticLockBehavior extends AttributeBehavior
             $request = Yii::$app->getRequest();
             $lock = $this->getLockAttribute();
             $formName = $this->owner->formName();
+            //优先使用FormName的方式获取
+            
             $formValue = $formName ? ArrayHelper::getValue($request->getBodyParams(), $formName . '.' . $lock) : null;
+            //如果上一种方式没有获取到，那么就用下面这一种直接获取
             $input = $formValue ?: $request->getBodyParam($lock);
+            //如果有值，那么它是否是一个数字，不是就返回0
+            //这里就确定了，实现乐观锁里版本的字段的数据类型只能是整型
             $isValid = $input && (new NumberValidator())->validate($input);
             return $isValid ? $input : 0;
         }

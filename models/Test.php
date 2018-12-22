@@ -3,7 +3,7 @@
 namespace app\models;
 
 use Yii;
-use yii\behaviors\SluggableBehavior;
+use yii\behaviors\OptimisticLockBehavior;
 
 /**
  * This is the model class for table "test".
@@ -14,19 +14,15 @@ use yii\behaviors\SluggableBehavior;
 class Test extends \yii\db\ActiveRecord
 {
     //sluggable行为需要在AR的模型对象里写
-    public function behaviors()
-    {
-        return [
-            [
-                'class' => SluggableBehavior::className(),
-                'attribute' => 'title',//从该字段中解析slug
-                 'slugAttribute' => 'slug',//最终存储slug值的字段
-                'skipOnEmpty' => true,
-                'ensureUnique' => true,//验证唯一性
-            ],
-        ];
-    }
-    /**
+
+
+ public function behaviors()
+  {
+      return [
+          OptimisticLockBehavior::class,
+      ];
+  }
+    /*
      * @inheritdoc
      */
     public static function tableName()
@@ -58,5 +54,10 @@ class Test extends \yii\db\ActiveRecord
             'title' => 'Name',
             'addr' => '地址',
         ];
+    }
+
+    public function optimisticLock()
+    {
+        return "version";
     }
 }
