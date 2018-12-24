@@ -104,6 +104,8 @@ trait ActiveQueryTrait
     }
 
     /**
+     * 这里可以明白，findOne()或者findAll()的底层就是先从数据库根据查询条件找到对应的记录，然后再实例化N个新的AR对象(有几行记录就实例化几个AR对象）并
+     * 把这些数据库的记录以【属性名对应字段名】填充到AR对象里
      * Converts found rows into model instances.
      * @param array $rows
      * @return array|ActiveRecord[]

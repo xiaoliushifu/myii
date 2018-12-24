@@ -801,7 +801,7 @@ abstract class BaseActiveRecord extends Model implements ActiveRecordInterface
             return 0;
         }
         $condition = $this->getOldPrimaryKey(true);
-        //乐观锁开始检测的地方
+        //乐观锁开始检测的地方，也就是乐观锁发生作用的地方。在这之前已经通过OptimistickLockBehavior行为获取到了版本值，也就是$lock的值
         $lock = $this->optimisticLock();
         if ($lock !== null) {
             $values[$lock] = $this->$lock + 1; //本次更新的版本应该是上一个版本基础上加1
@@ -811,7 +811,7 @@ abstract class BaseActiveRecord extends Model implements ActiveRecordInterface
         // that the UPDATE statement doesn't change anything and thus returns 0.
         $rows = static::updateAll($values, $condition);
 
-        if ($lock !== null && !$rows) {
+        if ($lock !== null && !$rows) {//这里通过更新失败并且有$lock,就可以确定一定发生了脏数据吗？有没有漏洞？或者太独断了吧？
             throw new StaleObjectException('The object being updated is outdated.');
         }
 
@@ -932,6 +932,7 @@ abstract class BaseActiveRecord extends Model implements ActiveRecordInterface
     public function init()
     {
         parent::init();
+        //这是AR基类的特别之处，触发init事件，给所有的AR类绑定行为就在这里实现的
         $this->trigger(self::EVENT_INIT);
     }
 

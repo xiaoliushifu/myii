@@ -33,7 +33,8 @@ class Behavior extends BaseObject
      *
      * Child classes may override this method to declare what PHP callbacks should
      * be attached to the events of the [[owner]] component.
-     *
+     *当行为附加到属主时，就会把行为的事件处理回调都绑定到属主对象的事件里
+     * 当行为从属主断开关系时，事件也就解绑了
      * The callbacks will be attached to the [[owner]]'s events when the behavior is
      * attached to the owner; and they will be detached from the events when
      * the behavior is detached from the component.

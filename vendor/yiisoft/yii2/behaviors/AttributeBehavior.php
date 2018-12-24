@@ -55,7 +55,9 @@ class AttributeBehavior extends Behavior
      * The array keys are the ActiveRecord events upon which the attributes are to be updated,
      * and the array values are the corresponding attribute(s) to be updated. You can use a string to represent
      * a single attribute, or an array to represent a list of attributes. For example,
-     *
+     * 该属性的数据格式是，下标是事件名称，值是属性名
+     * 表示当这些事件发生时，哪些属性会被处理。
+     * 整个AttributeBehavior就是这样的一个工作机制，这给它的子类提供了模版
      * ```php
      * [
      *     ActiveRecord::EVENT_BEFORE_INSERT => ['attribute1', 'attribute2'],
@@ -127,7 +129,7 @@ class AttributeBehavior extends Behavior
                     if ($this->preserveNonEmptyValues && !empty($this->owner->$attribute)) {
                         continue;
                     }
-                    //赋值
+                    //赋值，这是关键，这里就覆盖了属主原始的值
                     $this->owner->$attribute = $value;
                 }
             }
