@@ -365,13 +365,17 @@ Content-Length: 11562225
     {
 //        $model = new Test();
         try{
-            $model = Test::findOne(7);
-            $model->title="乐2观锁";
+//            $model = Test::findOne(7);
+            $model = new Test();
+            $model->name="新数据";
+            $model->title="乐观锁3";
+            $model->age=3;
             //版本字段不应该被主动赋值，它应该是表单的隐藏值或者在业务处理中不会更改的字段，
             //在读取到更新（删除）AR记录之间一直保持不变。这是判断版本变换的依据
 //            $model->version="10001";
             if ($model->save() ) {
-                return "OK";
+                return "OK 添加成功<BR>";
+                var_dump($model->getAttributes());
             } else {
                 var_dump($model->getErrors());
             }

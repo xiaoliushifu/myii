@@ -491,7 +491,7 @@ class Request extends \yii\base\Request
     public function getRawBody()
     {
         if ($this->_rawBody === null) {
-            $this->_rawBody = file_get_contents('php://input');
+            $this->_rawBody = file_get_contents('php://input');//看来php获取原生请求体的办法就是它了
         }
 
         return $this->_rawBody;
