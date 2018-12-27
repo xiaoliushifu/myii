@@ -15,13 +15,14 @@ class TestController extends Controller
 {
     protected $csvPath;
     protected $user;
-    //一页的大小，这是待处理的数据按照这个量分为多个页，
-    //一般这个值要小于等于每个进程的任务量。即每个进程至少处理一页的数据
 
-    //如果step=10，size=5,那么一个子进程每次处理5条的数据，处理2次。
-    protected $size = 50;
-    //定义，每个进程分派的任务量
-    protected $step = 100;
+    //单个进程一次可以处理的任务量
+    //一般这个值要小于等于单个进程的任务量。
+
+    //如果step=10，size=5,那么一个子进程每次处理5条的数据，总共需要处理2次。
+    protected $size = 5;
+    //定义，每个进程分派的任务量,总任务量和单个进程的任务量，决定了进程的数量
+    protected $step = 25;
 
     public function beforeAction($action)
     {
@@ -32,7 +33,7 @@ class TestController extends Controller
         return true;
     }
 
-    //多进程的脚本，$count任务总量
+    //多进程的脚本，$count是所有子进程要处理的任务总量
     public function actionSend($count)
     {
         if (!$count) exit('count is zero');
@@ -42,11 +43,11 @@ class TestController extends Controller
             FileHelper::createDirectory($this->csvPath,0755,true);
 //            CommonFun::recursionMkDir($this->csvPath);
         }
-        //总共需要多少个进程
+        //总共需要多少个进程，是通过任务量计算的
         $totalNum = ceil($count/$this->step);
         $childs = array();
         for($i=0; $i< $totalNum; $i++) {
-            //从这一行开始，出现了一个新的进程，子进程。
+            //从这一行pcntl_fork()开始，出现了一个新的进程，子进程。
             //主进程和子进程同时在这里执行。
             //如何区别当前是主进程还是子进程呢？根据进程号$pid
             //如果当前在子进程工作，那么$pid=0，
@@ -56,11 +57,16 @@ class TestController extends Controller
                 exit('Could not fork');
                 // 大于0的，表示是子进程的进程号。表示程序运行在主进程中
             } elseif ($pid) {
-                echo "I'm the Parent $i\n";
+                //这里是主进程才会进入到这段代码执行
+                echo "I'm the Parent $i, pid={$pid}\n";
                 $childs[] = $pid;
                 //其它情况$pid=0,表示当前程序运行在子进程中
             } else {
-                //子进程处理业务
+                //从这里打印的数据可以看到，其实每次子进程的父进程是同一个
+                //因为主进程不会走到这一块的代码，只有子进程才会走到这儿的，这就是为什么是同一个主进程产生了的多个子进程，而不可能是由子进程再产生孙进程的根本原因
+                echo "子进程{$i}的父进程是 " . posix_getppid()."\n";
+                //子进程处理业务，并最后通过exit函数主动销毁自己
+                //所以子进程没有机会去再fork出它的子进程，也就是孙进程
                 $this->handelChildProcess($i,$count);
             }
         }
@@ -68,6 +74,7 @@ class TestController extends Controller
         // 上面已经完成了进程的fork,产生了子进程。并且子进程也各自工作了。
         //这里开始对各个子进程的执行状态，进行等待监听！
         while (count($childs) > 0) {
+            echo "childs count is " . count($childs) ."\n";
             foreach ($childs as $key => $pid) {
                 //等待$pid表示的子进程的返回，返回状态由$status给出，WNOHANG表示子进程已经退出时就直接返回
                 //$pid表示的子进程还没执行完这里有可能会阻塞，
