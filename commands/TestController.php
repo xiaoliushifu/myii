@@ -20,10 +20,15 @@ class TestController extends Controller
     //一般这个值要小于等于单个进程的任务量。
 
     //如果step=10，size=5,那么一个子进程每次处理5条的数据，总共需要处理2次。
-    protected $size = 5;
-    //定义，每个进程分派的任务量,总任务量和单个进程的任务量，决定了进程的数量
-    protected $step = 25;
+    //在$size小于2000的时候，基本上每个子进程处理一次大概花费一秒，无论它的任务量多少
+    //如果$size是2000，那么处理一次花费的时间将会大概是1.5,其它情况没有测试
+    protected $size = 2000;
+    //定义，每个进程分派的任务量,总任务量和单个进程的任务量，决定了子进程的数量
+    protected $step = 10000;
 
+    //合理设置每个子进程完成的总量和一次的处理量，如果总量多但是一次处理量少，那么每个子进程在获取下次处理量的开销上将增多。
+    //需要多多测试才知道什么比例才是最好的合理值
+    
     public function beforeAction($action)
     {
         parent::beforeAction($action);
@@ -79,6 +84,26 @@ class TestController extends Controller
                 //等待$pid表示的子进程的返回，返回状态由$status给出，WNOHANG表示子进程已经退出时就直接返回
                 //$pid表示的子进程还没执行完这里有可能会阻塞，
                 $res = pcntl_waitpid($pid, $status, WNOHANG);
+
+                //进程的退出原因
+                if ($res > 0) {
+                    //判断是否正常退出（比如exit,或者代码执行完）
+                    if (pcntl_wifexited($status)) {
+                        //正常退出的返回码（整型）
+                        $ret = pcntl_wexitstatus($status);
+                        echo "process$key=> $pid 正常退出 返回码：$ret \n";
+                    } else {
+                        echo "process$key=> $pid 非正常退出\n";
+                    }
+                    //是否因为某个外部的信号退出（比如kill之类的）
+                    if (pcntl_wifsignaled($status)) {
+                        $ret = pcntl_wtermsig($status);
+                        echo "process$key=> $pid 信号退出 信号码是： $ret\n";
+                    } else {
+                        echo "process$key=> $pid 非信号退出\n";
+                    }
+                }
+
                 //-1代表error,
                 // 大于0代表子进程已退出,返回的是子进程的pid,
                 //非阻塞时0代表没取到退出子进程
