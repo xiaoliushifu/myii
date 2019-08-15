@@ -70,6 +70,12 @@ $config = [
              'name' => 'SSID',
           ], */
     ],
+    //把模块配置进来
+    'modules' => [
+        'report' => [
+            'class' => 'app\modules\report\Module',
+        ],
+    ],
     'params' => ['adminEmail' => '872140945@qq.com'],
 ];
 return $config;
