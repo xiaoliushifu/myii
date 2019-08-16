@@ -711,10 +711,14 @@ class Module extends ServiceLocator
             //注意，第一个元素是控制器对象，第二个元素是剩余的路由信息，字符串。
             return [$controller, $route];
         }
-        //路由的第一段也许是个模块ID
+        //路由的第一段也许是个模块ID，这里就是了，这个前缀恰好找到了模块的前缀
+        //这就是模块的路由机制，文档有一句话：
+        //模块中控制器的路由必须以模块 ID 开始，接下来为控制器 ID 和操作 ID
         $module = $this->getModule($id);
         if ($module !== null) {
             //获得了模块之后，再去创建它下属的控制器信息
+            //比如cus/defaultController/index
+            //这里其实是嵌套，也就是支持模块下再包含子模块
             return $module->createController($route);
         }
         //子命名空间的那种了吧？

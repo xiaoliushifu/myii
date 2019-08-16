@@ -72,7 +72,8 @@ $config = [
     ],
     //把模块配置进来
     'modules' => [
-        'report' => [
+        //这个才是模块的id,
+        'cus' => [
             'class' => 'app\modules\report\Module',
         ],
     ],
