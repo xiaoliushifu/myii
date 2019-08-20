@@ -76,6 +76,10 @@ $config = [
         'cus' => [
             'class' => 'app\modules\report\Module',
         ],
+        //这个才是模块的id,
+        'rbac' => [
+            'class' => Wkii\Yii2Rbac\Rbac::class,
+        ],
     ],
     'params' => ['adminEmail' => '872140945@qq.com'],
 ];

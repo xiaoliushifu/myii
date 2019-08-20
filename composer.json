@@ -39,6 +39,11 @@
             "yii\\composer\\Installer::postCreateProject"
         ]
     },
+    "autoload":{
+        "psr-4": {
+            "Wkii\\": "modules/wkii"
+        }
+    },
     "extra": {
         "yii\\composer\\Installer::postCreateProject": {
             "setPermission": [
