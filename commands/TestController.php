@@ -57,6 +57,9 @@ class TestController extends Controller
             //如何区别当前是主进程还是子进程呢？根据进程号$pid
             //如果当前在子进程工作，那么$pid=0，
             //如果是一个大于0的数，那么就表示它是子进程的进程号，当前程序的执行进程是主进程
+            //注意，一旦fork出子进程，其实就是对主进程资源的近乎拷贝，包括计数器，内存等，还有代码（其中有变量）
+            //这里要特别说明一下的是：php对象的引用计数就会+1哦，所以好的优化方法就是如果不需要处理这个对象
+            //就把它销毁吧（php就是unset，可以使引用计数-1）
             $pid = pcntl_fork();
             if ($pid == -1) {
                 exit('Could not fork');
@@ -73,16 +76,22 @@ class TestController extends Controller
                 //子进程处理业务，并最后通过exit函数主动销毁自己
                 //所以子进程没有机会去再fork出它的子进程，也就是孙进程
                 $this->handelChildProcess($i,$count);
+
+                //其实这里还有优化的地方：比如子进程不需要的原来主进程里的资源，减少引用计数等
+                //后面学习《网络编程实战》时看到的
             }
         }
 
-        // 上面已经完成了进程的fork,产生了子进程。并且子进程也各自工作了。
-        //这里开始对各个子进程的执行状态，进行等待监听！
+        // 上面已经完成了进程的fork,产生了子进程。并且子进程也各自工作了。处理完后自动销毁
+        //也就是handelChildProcess最后有exit()代码
+        //因为子进程在handelChildProcess中自我销毁，所以理论上只有主进程才会执行下述代码
+        //这里开始对各个子进程的执行状态，通过轮询进行等待监听！
         while (count($childs) > 0) {
             echo "childs count is " . count($childs) ."\n";
             foreach ($childs as $key => $pid) {
-                //等待$pid表示的子进程的返回，返回状态由$status给出，WNOHANG表示子进程已经退出时就直接返回
-                //$pid表示的子进程还没执行完这里有可能会阻塞，
+                //等待$pid表示的子进程的返回，返回状态由$status给出，WNOHANG表示子进程未退出时就直接返回
+                //也就是非阻塞。pcntl_wait没有办法不阻塞，所以用waitpid。
+                //非阻塞一般要配合轮询，也就是后续再来调用
                 $res = pcntl_waitpid($pid, $status, WNOHANG);
 
                 //进程的退出原因
@@ -149,7 +158,8 @@ class TestController extends Controller
         //标记当前任务的时间开始
         $taskStartTime = microtime(true);
 
-        //根据每个子进程要处理的业务量，计算出要处理的页数
+        //根据当前子进程要处理的业务总量，计算出要处理的页数
+        //每个子进程也要拆分分配给它的业务总量，而不是直接开始循环，那样虽然简单但是有时并不高效
         $pageTotal = ceil($this->step/$this->size);
         for ($i=1; $i <= $pageTotal; $i++) {
             //计算起始位置，每个进程的起始位置都不一样
@@ -179,14 +189,17 @@ class TestController extends Controller
                 //把这一行数据写入到指定的文件中
                 $this->writeRow($value, $this->csvPath . '/' . $this->user . $processKey . '.csv');
             }
+            //子进程处理一次，歇息一段时间
             sleep(1);
         }
-        //计算下当前子进程处理完分派给它的业务量总共耗费了多久
+        //计算下当前子进程处理完分派给它的业务总量后总共耗费了多久
         $lastTime = $this->getElapsedTime($taskStartTime);
         Yii::info("lastTime|process" . $processKey . '|' . $lastTime, __METHOD__);
 //        echo "process $processKey end\n";
         //结束php代码，也就是结束了当前的子进程，
         //如果父进程在pcntl_waitpid()函数处展开了监听，那么此时父进程应该可以收到返回值
+        //注意，在这里就要结束进程（php就是exit），而不要再往下走了，
+        //这是多进程代码的一个通用写法，减少多进程变为僵尸进程的危险
         exit("process $processKey end " . $lastTime . "\n");
     }
 
